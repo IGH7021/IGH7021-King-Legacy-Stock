@@ -1,0 +1,67 @@
+:root {
+  --bg: #0b0e1a;
+  --bg-card: rgba(30,35,60,0.55);
+  --border: rgba(148,163,184,0.12);
+  --text: #e2e8f0;
+}
+html.light {
+  --bg: #f4f5fb;
+  --bg-card: rgba(255,255,255,0.75);
+  --border: rgba(100,110,150,0.15);
+  --text: #1e2433;
+}
+body { background: var(--bg); color: var(--text); }
+
+.glass-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  backdrop-filter: blur(6px); /* light blur only, per performance rule */
+}
+
+.sidebar-link { transition: background-color .12s ease; }
+.nav-active { background: linear-gradient(90deg, rgba(129,140,248,0.18), rgba(236,72,153,0.10)); color: #fff; border-left: 3px solid #818cf8; }
+html.light .nav-active { color: #312e81; }
+
+.btn-primary {
+  background: linear-gradient(90deg,#6366f1,#a855f7);
+  color: #fff; font-weight: 600;
+}
+.btn-primary:hover { opacity: .92; }
+.btn-primary:disabled { opacity: .6; cursor: not-allowed; }
+
+.seg-btn { transition: background-color .12s ease, color .12s ease; }
+.seg-active { background: linear-gradient(90deg,#6366f1,#a855f7); color:#fff; }
+
+#product-image-dropzone { transition: border-color .15s ease, background-color .15s ease; }
+#product-image-dropzone:hover { border-color: rgba(129,140,248,0.6); }
+#product-image-dropzone.dropzone-active {
+  border-color: #818cf8;
+  background: rgba(129,140,248,0.08);
+}
+
+.modal-overlay {
+  position: fixed; inset: 0; z-index: 100;
+  background: rgba(4,6,15,0.65);
+  display: flex; align-items: center; justify-content: center;
+  padding: 1rem;
+  opacity: 0; transition: opacity .12s ease;
+}
+.modal-overlay.modal-show { opacity: 1; }
+.modal-box { max-height: 90vh; overflow-y: auto; }
+
+.spinner {
+  display: inline-block; width: 14px; height: 14px;
+  border: 2px solid rgba(255,255,255,0.4); border-top-color: #fff;
+  border-radius: 50%; animation: spin .6s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.toast-item { transition: opacity .3s ease, transform .3s ease; }
+
+.skeleton { background: linear-gradient(90deg, rgba(148,163,184,0.08) 25%, rgba(148,163,184,0.16) 37%, rgba(148,163,184,0.08) 63%); background-size: 400% 100%; animation: skeleton-loading 1.4s ease infinite; }
+@keyframes skeleton-loading { 0% { background-position: 100% 50%; } 100% { background-position: 0 50%; } }
+
+input[type=range].slider { accent-color: #818cf8; }
+
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-thumb { background: rgba(148,163,184,0.25); border-radius: 4px; }

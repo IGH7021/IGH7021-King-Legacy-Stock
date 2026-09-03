@@ -1,0 +1,475 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>IGH7021 • King Legacy Stock</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body class="min-h-screen">
+
+<!-- ===== Skeleton Loading ===== -->
+<div id="app-skeleton" class="min-h-screen p-4 md:p-8">
+  <div class="skeleton h-10 w-64 rounded-xl mb-6"></div>
+  <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+    <div class="skeleton h-24 rounded-2xl"></div><div class="skeleton h-24 rounded-2xl"></div>
+    <div class="skeleton h-24 rounded-2xl"></div><div class="skeleton h-24 rounded-2xl"></div>
+  </div>
+  <div class="skeleton h-64 rounded-2xl"></div>
+</div>
+
+<!-- ===== App Root ===== -->
+<div id="app-root" class="hidden flex min-h-screen">
+
+  <!-- ===== Sidebar (Desktop) ===== -->
+  <aside class="hidden md:flex flex-col w-64 flex-shrink-0 border-r border-slate-700/30 p-5 gap-1 sticky top-0 h-screen">
+    <div class="flex items-center gap-2 mb-6 px-2">
+      <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-indigo-500 to-pink-500 flex items-center justify-center font-bold">👑</div>
+      <div>
+        <p class="font-bold leading-tight">IGH7021</p>
+        <p class="text-xs text-slate-400 leading-tight">King Legacy Stock</p>
+      </div>
+    </div>
+    <button data-nav="dashboard" class="sidebar-link nav-active flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium">📊 <span data-i18n="nav_dashboard">Dashboard</span></button>
+    <button data-nav="products" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium">🎒 <span data-i18n="nav_products">สินค้า / Stock</span></button>
+    <button data-nav="sales" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium">🧾 <span data-i18n="nav_sales">การขาย</span></button>
+    <button data-nav="reports" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium">📈 <span data-i18n="nav_reports">สรุปยอดขาย</span></button>
+    <button data-nav="settings" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium">⚙️ <span data-i18n="nav_settings">ตั้งค่า</span></button>
+    <div class="mt-auto px-2 flex flex-col gap-2">
+      <div class="flex rounded-xl bg-slate-800/50 p-1 border border-slate-700/50">
+        <button class="lang-btn seg-btn seg-active flex-1 py-1.5 rounded-lg text-xs font-semibold" data-lang="th">TH</button>
+        <button class="lang-btn seg-btn flex-1 py-1.5 rounded-lg text-xs font-semibold" data-lang="en">EN</button>
+      </div>
+      <button class="theme-toggle-btn w-full flex items-center justify-center gap-2 py-2 rounded-xl bg-slate-700/40 hover:bg-slate-700/70 text-sm" data-i18n-aria="theme_toggle">
+        <span class="theme-icon">☀️</span> <span data-i18n="theme_toggle">สลับธีม</span>
+      </button>
+    </div>
+  </aside>
+
+  <!-- ===== Main Content ===== -->
+  <main class="flex-1 min-w-0 pb-24 md:pb-8">
+    <!-- Mobile header -->
+    <header class="md:hidden flex items-center justify-between p-4 border-b border-slate-700/30 sticky top-0 bg-[var(--bg)] z-30">
+      <div class="flex items-center gap-2">
+        <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-500 to-pink-500 flex items-center justify-center text-sm">👑</div>
+        <div>
+          <p class="font-bold text-sm leading-tight">IGH7021</p>
+          <p class="text-[10px] text-slate-400 leading-tight">King Legacy Stock</p>
+        </div>
+      </div>
+      <div class="flex items-center gap-2">
+        <div class="flex rounded-lg bg-slate-800/50 p-0.5 border border-slate-700/50">
+          <button class="lang-btn seg-btn seg-active px-2 py-1 rounded-md text-[11px] font-semibold" data-lang="th">TH</button>
+          <button class="lang-btn seg-btn px-2 py-1 rounded-md text-[11px] font-semibold" data-lang="en">EN</button>
+        </div>
+        <button class="theme-toggle-btn w-9 h-9 rounded-full bg-slate-700/40 flex items-center justify-center" data-i18n-aria="theme_toggle"><span class="theme-icon">☀️</span></button>
+      </div>
+    </header>
+
+    <div class="p-4 md:p-8 max-w-6xl mx-auto">
+
+      <!-- ============ PAGE: DASHBOARD ============ -->
+      <section id="page-dashboard" class="page">
+        <div class="flex items-center justify-between mb-5">
+          <h1 class="text-xl md:text-2xl font-bold" data-i18n="dashboard_title">Dashboard</h1>
+          <button id="quick-sale-btn" class="btn-primary px-4 py-2 rounded-xl text-sm" data-i18n="quick_sale_btn">⚡ Quick Sale</button>
+        </div>
+
+        <div class="glass-card rounded-2xl p-4 mb-5 flex items-start gap-3">
+          <span class="text-xl">⚡</span>
+          <div>
+            <p class="font-semibold text-sm" data-i18n="quick_sale_banner_title">Quick Sale</p>
+            <p class="text-xs text-slate-400" data-i18n="quick_sale_banner_desc">เลือกสินค้าและกรอกจำนวนหรือเงิน ระบบจะคำนวณราคาให้อัตโนมัติ</p>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 mb-6">
+          <div class="glass-card rounded-2xl p-4">
+            <p class="text-xs text-slate-400 mb-1" data-i18n="stat_total_sales">ยอดขายรวม</p>
+            <p id="stat-total-sales" class="text-xl md:text-2xl font-bold text-indigo-300">฿0</p>
+          </div>
+          <div class="glass-card rounded-2xl p-4">
+            <p class="text-xs text-slate-400 mb-1" data-i18n="stat_sold_qty">ขายไปแล้ว</p>
+            <p id="stat-sold-qty" class="text-xl md:text-2xl font-bold text-pink-300">0</p>
+          </div>
+          <div class="glass-card rounded-2xl p-4">
+            <p class="text-xs text-slate-400 mb-1" data-i18n="stat_sale_count">รายการขาย</p>
+            <p id="stat-sale-count" class="text-xl md:text-2xl font-bold text-purple-300">0</p>
+          </div>
+          <div class="glass-card rounded-2xl p-4">
+            <p class="text-xs text-slate-400 mb-1" data-i18n="stat_remaining">สต็อกคงเหลือ</p>
+            <p id="stat-remaining" class="text-xl md:text-2xl font-bold text-emerald-300">0</p>
+          </div>
+        </div>
+
+        <div class="grid md:grid-cols-3 gap-4">
+          <div class="md:col-span-2 glass-card rounded-2xl p-4">
+            <p class="font-semibold text-sm mb-3" data-i18n="chart_title">ยอดขายย้อนหลัง 7 วัน</p>
+            <div class="h-56"><canvas id="sales-chart"></canvas></div>
+          </div>
+          <div class="glass-card rounded-2xl p-4">
+            <p class="font-semibold text-sm mb-3" data-i18n="best_sellers_title">สินค้าขายดี</p>
+            <div id="dashboard-best-sellers"></div>
+          </div>
+        </div>
+
+        <div class="glass-card rounded-2xl p-4 mt-4">
+          <p class="font-semibold text-sm mb-3" data-i18n="timeline_title">กิจกรรมล่าสุด</p>
+          <div id="activity-timeline" class="flex flex-col gap-3"></div>
+        </div>
+      </section>
+
+      <!-- ============ PAGE: PRODUCTS ============ -->
+      <section id="page-products" class="page hidden">
+        <div class="flex items-center justify-between mb-4 gap-2">
+          <h1 class="text-xl md:text-2xl font-bold" data-i18n="products_title">สินค้า / Stock</h1>
+          <div class="flex gap-2">
+            <button id="toggle-select-mode-btn" class="px-3 py-2 rounded-xl bg-slate-700/50 hover:bg-slate-700 text-sm whitespace-nowrap" data-i18n="select_mode_btn_on">☑️ เลือกหลายรายการ</button>
+            <button id="add-product-btn" class="btn-primary px-4 py-2 rounded-xl text-sm whitespace-nowrap" data-i18n="add_product_btn">+ เพิ่มสินค้า</button>
+          </div>
+        </div>
+
+        <!-- Bulk selection toolbar -->
+        <div id="bulk-toolbar" class="hidden glass-card rounded-2xl p-3 mb-4 flex flex-wrap items-center justify-between gap-2 sticky top-2 z-20">
+          <span class="text-sm"><span id="bulk-selected-count">0</span> <span data-i18n="bulk_selected_label">รายการที่เลือก</span></span>
+          <div class="flex gap-2 flex-wrap">
+            <button id="bulk-select-all-btn" class="px-3 py-1.5 rounded-lg bg-slate-700/60 hover:bg-slate-700 text-xs" data-i18n="bulk_select_all">เลือกทั้งหมด</button>
+            <button id="bulk-clear-btn" class="px-3 py-1.5 rounded-lg bg-slate-700/60 hover:bg-slate-700 text-xs" data-i18n="bulk_clear">ยกเลิกเลือก</button>
+            <button id="bulk-edit-btn" disabled class="px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-xs font-semibold disabled:opacity-40" data-i18n="bulk_edit">✏️ แก้ไขหมู่</button>
+            <button id="bulk-delete-btn" disabled class="px-3 py-1.5 rounded-lg bg-rose-600 hover:bg-rose-700 text-xs font-semibold disabled:opacity-40" data-i18n="bulk_delete">🗑️ ลบที่เลือก</button>
+          </div>
+        </div>
+
+        <div class="flex flex-col md:flex-row gap-2 mb-4">
+          <input id="product-search" type="text" data-i18n-placeholder="search_placeholder" placeholder="ค้นหาสินค้า หรือ หมวดหมู่..." class="flex-1 px-4 py-2.5 rounded-xl bg-slate-800/50 border border-slate-700/50 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+          <select id="status-filter" class="px-3 py-2.5 rounded-xl bg-slate-800/50 border border-slate-700/50 text-sm">
+            <option value="all" data-i18n="filter_all_status">ทุกสถานะ</option>
+            <option value="instock" data-i18n="status_instock">มีสินค้า</option>
+            <option value="low" data-i18n="status_low">ใกล้หมด</option>
+            <option value="out" data-i18n="status_out">หมด</option>
+          </select>
+          <select class="category-filter-select px-3 py-2.5 rounded-xl bg-slate-800/50 border border-slate-700/50 text-sm">
+            <option value="all" data-i18n="filter_all_category">ทุกหมวดหมู่</option>
+          </select>
+          <select id="rarity-filter" class="px-3 py-2.5 rounded-xl bg-slate-800/50 border border-slate-700/50 text-sm">
+            <option value="all" data-i18n="filter_all_rarity">ทุกระดับ</option>
+          </select>
+        </div>
+
+        <div id="products-grid" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-4"></div>
+      </section>
+
+      <!-- ============ PAGE: SALES ============ -->
+      <section id="page-sales" class="page hidden">
+        <div class="flex items-center justify-between mb-4">
+          <h1 class="text-xl md:text-2xl font-bold" data-i18n="sales_history_title">ประวัติการขาย</h1>
+        </div>
+        <div id="sales-history-list" class="flex flex-col gap-2"></div>
+      </section>
+
+      <!-- ============ PAGE: REPORTS ============ -->
+      <section id="page-reports" class="page hidden">
+        <h1 class="text-xl md:text-2xl font-bold mb-4" data-i18n="reports_title">สรุปยอดขาย</h1>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-5">
+          <div class="glass-card rounded-2xl p-4">
+            <p class="text-xs text-slate-400 mb-1" data-i18n="stat_total_sales">ยอดขายรวม</p>
+            <p id="report-total-sales" class="text-2xl font-bold text-indigo-300">฿0</p>
+          </div>
+          <div class="glass-card rounded-2xl p-4">
+            <p class="text-xs text-slate-400 mb-1" data-i18n="report_sold_qty_label">จำนวนที่ขาย</p>
+            <p id="report-sold-qty" class="text-2xl font-bold text-pink-300">0</p>
+          </div>
+          <div class="glass-card rounded-2xl p-4">
+            <p class="text-xs text-slate-400 mb-1" data-i18n="report_sale_count_label">รายการขาย</p>
+            <p id="report-sale-count" class="text-2xl font-bold text-purple-300">0</p>
+          </div>
+        </div>
+        <div class="glass-card rounded-2xl p-4">
+          <p class="font-semibold mb-3" data-i18n="report_bestseller_title">อันดับสินค้าขายดี</p>
+          <div id="report-best-sellers"></div>
+        </div>
+      </section>
+
+      <!-- ============ PAGE: SETTINGS ============ -->
+      <section id="page-settings" class="page hidden">
+        <h1 class="text-xl md:text-2xl font-bold mb-4" data-i18n="settings_title">ตั้งค่า</h1>
+
+        <div class="glass-card rounded-2xl p-4 mb-4">
+          <p class="font-semibold mb-2" data-i18n="settings_language">ภาษา</p>
+          <div class="flex rounded-xl bg-slate-800/50 p-1 border border-slate-700/50 w-fit">
+            <button class="lang-btn seg-btn seg-active px-5 py-1.5 rounded-lg text-sm font-semibold" data-lang="th">ไทย (TH)</button>
+            <button class="lang-btn seg-btn px-5 py-1.5 rounded-lg text-sm font-semibold" data-lang="en">English (EN)</button>
+          </div>
+        </div>
+
+        <div class="glass-card rounded-2xl p-4 mb-4">
+          <p class="font-semibold mb-2" data-i18n="settings_stock_alert_title">แจ้งเตือนเมื่อเหลือไม่เกิน</p>
+          <div class="flex items-center gap-3">
+            <input id="stock-alert-slider" type="range" min="1" max="50" value="5" class="slider flex-1">
+            <span id="stock-alert-value" class="w-10 text-center font-semibold">5</span>
+            <span class="text-sm text-slate-400" data-i18n="pieces_unit">ชิ้น</span>
+          </div>
+        </div>
+
+        <div class="glass-card rounded-2xl p-4 mb-4">
+          <p class="font-semibold mb-2" data-i18n="settings_category_title">หมวดหมู่สินค้า</p>
+          <div id="settings-category-list" class="flex flex-wrap gap-2 mb-3"></div>
+          <form id="add-category-form" class="flex gap-2">
+            <input id="new-category-input" type="text" data-i18n-placeholder="new_category_placeholder" placeholder="ชื่อหมวดหมู่ใหม่" class="flex-1 px-3 py-2 rounded-xl bg-slate-800/50 border border-slate-700/50 text-sm">
+            <button type="submit" class="btn-primary px-4 py-2 rounded-xl text-sm" data-i18n="add_btn">+ เพิ่ม</button>
+          </form>
+        </div>
+
+        <div class="glass-card rounded-2xl p-4">
+          <p class="font-semibold mb-3" data-i18n="backup_section_title">Backup / Restore / Export</p>
+          <div class="flex flex-wrap gap-2">
+            <button id="export-backup-btn" class="px-4 py-2 rounded-xl bg-slate-700/50 hover:bg-slate-700 text-sm" data-i18n="export_backup_btn">⬇️ Export Backup (.json)</button>
+            <label class="px-4 py-2 rounded-xl bg-slate-700/50 hover:bg-slate-700 text-sm cursor-pointer">
+              <span data-i18n="restore_backup_btn">⬆️ Restore Backup</span>
+              <input id="import-backup-input" type="file" accept="application/json" class="hidden">
+            </label>
+            <button id="export-products-csv-btn" class="px-4 py-2 rounded-xl bg-slate-700/50 hover:bg-slate-700 text-sm" data-i18n="export_products_csv_btn">📄 Export Products CSV</button>
+            <button id="export-sales-csv-btn" class="px-4 py-2 rounded-xl bg-slate-700/50 hover:bg-slate-700 text-sm" data-i18n="export_sales_csv_btn">📄 Export Sales CSV</button>
+          </div>
+        </div>
+      </section>
+
+    </div>
+  </main>
+
+  <!-- ===== Bottom Navigation (Mobile) ===== -->
+  <nav class="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-[var(--bg)]/95 backdrop-blur border-t border-slate-700/30 flex justify-around py-2">
+    <button data-nav="dashboard" class="sidebar-link nav-active flex flex-col items-center gap-0.5 px-2 py-1 rounded-xl text-[11px]">📊 <span data-i18n="nav_dashboard">Dashboard</span></button>
+    <button data-nav="products" class="sidebar-link flex flex-col items-center gap-0.5 px-2 py-1 rounded-xl text-[11px]">🎒 <span data-i18n="nav_products">สินค้า</span></button>
+    <button data-nav="sales" class="sidebar-link flex flex-col items-center gap-0.5 px-2 py-1 rounded-xl text-[11px]">🧾 <span data-i18n="nav_sales">การขาย</span></button>
+    <button data-nav="reports" class="sidebar-link flex flex-col items-center gap-0.5 px-2 py-1 rounded-xl text-[11px]">📈 <span data-i18n="nav_reports">สรุป</span></button>
+    <button data-nav="settings" class="sidebar-link flex flex-col items-center gap-0.5 px-2 py-1 rounded-xl text-[11px]">⚙️ <span data-i18n="nav_settings">ตั้งค่า</span></button>
+  </nav>
+</div>
+
+<!-- ===================== MODALS ===================== -->
+
+<!-- Product Add/Edit Modal -->
+<div id="product-modal" class="modal-overlay hidden">
+  <div class="modal-box glass-card w-full max-w-md rounded-2xl p-5 relative">
+    <button data-close-modal class="absolute top-4 right-4 text-slate-400 hover:text-white" aria-label="close">✕</button>
+    <h2 id="product-modal-title" class="font-bold text-lg mb-4" data-i18n="modal_add_product_title">เพิ่มสินค้า</h2>
+    <form id="product-form" class="flex flex-col gap-3">
+      <div>
+        <label class="text-xs text-slate-400" data-i18n="label_product_image">รูปสินค้า</label>
+        <div id="product-image-dropzone" class="mt-1 rounded-xl border-2 border-dashed border-slate-600/60 p-4 flex flex-col items-center justify-center gap-1 cursor-pointer transition-colors">
+          <div id="product-dropzone-placeholder" class="flex flex-col items-center gap-1 text-center">
+            <div class="w-10 h-10 rounded-full bg-indigo-500/15 text-indigo-300 flex items-center justify-center text-2xl font-bold">+</div>
+            <p class="text-xs text-slate-300" data-i18n="dropzone_text">ลากไฟล์รูปมาวางที่นี่ หรือคลิกเพื่อเลือกไฟล์</p>
+            <p class="text-[10px] text-slate-500" data-i18n="dropzone_hint">รองรับ PNG, JPG, WEBP</p>
+          </div>
+          <div id="product-image-preview-wrap" class="hidden w-20 h-20 rounded-xl overflow-hidden bg-slate-800/60">
+            <img id="product-image-preview" class="w-full h-full object-cover">
+          </div>
+        </div>
+        <input id="product-image-input" type="file" accept="image/png,image/jpeg,image/jpg,image/webp" class="hidden">
+      </div>
+      <div>
+        <label class="text-xs text-slate-400" data-i18n="label_product_name">ชื่อสินค้า</label>
+        <input name="name" required class="w-full px-3 py-2 rounded-xl bg-slate-800/50 border border-slate-700/50 text-sm mt-1">
+      </div>
+      <div>
+        <label class="text-xs text-slate-400" data-i18n="label_category">หมวดหมู่</label>
+        <select id="product-category" name="category" class="product-category-select w-full px-3 py-2 rounded-xl bg-slate-800/50 border border-slate-700/50 text-sm mt-1"></select>
+      </div>
+      <div>
+        <label class="text-xs text-slate-400" data-i18n="label_rarity">ระดับ (Rarity)</label>
+        <select name="rarity" class="rarity-select-input w-full px-3 py-2 rounded-xl bg-slate-800/50 border border-slate-700/50 text-sm mt-1"></select>
+      </div>
+      <div>
+        <label class="text-xs text-slate-400" data-i18n="label_stock_initial">สต็อกเริ่มต้น</label>
+        <input name="stock" type="number" min="0" required class="w-full px-3 py-2 rounded-xl bg-slate-800/50 border border-slate-700/50 text-sm mt-1">
+      </div>
+      <div>
+        <label class="text-xs text-slate-400" data-i18n="label_rate">เรทสินค้า (ชิ้น / บาท)</label>
+        <div class="flex items-center gap-2 mt-1">
+          <input name="rateQty" type="number" step="any" min="0.0001" value="1" class="w-full px-3 py-2 rounded-xl bg-slate-800/50 border border-slate-700/50 text-sm">
+          <span class="text-sm text-slate-400" data-i18n="unit_pieces_slash">ชิ้น /</span>
+          <input name="ratePrice" type="number" step="any" min="0.0001" value="1" class="w-full px-3 py-2 rounded-xl bg-slate-800/50 border border-slate-700/50 text-sm">
+          <span class="text-sm text-slate-400" data-i18n="unit_baht">บาท</span>
+        </div>
+      </div>
+      <div>
+        <label class="text-xs text-slate-400" data-i18n="label_description">รายละเอียด</label>
+        <textarea name="description" rows="2" class="w-full px-3 py-2 rounded-xl bg-slate-800/50 border border-slate-700/50 text-sm mt-1"></textarea>
+      </div>
+      <div class="flex gap-2 mt-2">
+        <button type="button" data-close-modal class="flex-1 py-2.5 rounded-xl bg-slate-700/50 hover:bg-slate-700 text-sm" data-i18n="btn_cancel">ยกเลิก</button>
+        <button type="submit" class="flex-1 btn-primary py-2.5 rounded-xl text-sm" data-i18n="btn_save_product">บันทึกสินค้า</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Restock Modal -->
+<div id="restock-modal" class="modal-overlay hidden">
+  <div class="modal-box glass-card w-full max-w-sm rounded-2xl p-5 relative">
+    <button data-close-modal class="absolute top-4 right-4 text-slate-400 hover:text-white" aria-label="close">✕</button>
+    <h2 class="font-bold text-lg mb-1" data-i18n="modal_restock_title">เติมสต็อก</h2>
+    <p class="text-sm text-slate-400 mb-4"><span id="restock-product-name"></span> — <span data-i18n="restock_current_label">ปัจจุบัน</span> <span id="restock-current" class="font-semibold text-slate-200"></span> <span data-i18n="pieces_unit">ชิ้น</span></p>
+    <form id="restock-form" class="flex flex-col gap-3">
+      <div>
+        <label class="text-xs text-slate-400" data-i18n="label_restock_amount">จำนวนที่เติม</label>
+        <input name="amount" type="number" min="1" required class="w-full px-3 py-2 rounded-xl bg-slate-800/50 border border-slate-700/50 text-sm mt-1">
+      </div>
+      <div class="flex gap-2 mt-1">
+        <button type="button" data-close-modal class="flex-1 py-2.5 rounded-xl bg-slate-700/50 hover:bg-slate-700 text-sm" data-i18n="btn_cancel">ยกเลิก</button>
+        <button type="submit" class="flex-1 btn-primary py-2.5 rounded-xl text-sm" data-i18n="btn_restock">เติมสต็อก</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Sale Modal -->
+<div id="sale-modal" class="modal-overlay hidden">
+  <div class="modal-box glass-card w-full max-w-md rounded-2xl p-5 relative">
+    <button data-close-modal class="absolute top-4 right-4 text-slate-400 hover:text-white" aria-label="close">✕</button>
+    <h2 class="font-bold text-lg mb-4" data-i18n="modal_sale_title">ขายสินค้า</h2>
+    <form id="sale-form" class="flex flex-col gap-3">
+      <div class="flex items-center gap-3">
+        <div id="sale-product-img" class="w-14 h-14 rounded-xl overflow-hidden bg-slate-800/60 flex-shrink-0"></div>
+        <select id="sale-product-select" class="flex-1 px-3 py-2 rounded-xl bg-slate-800/50 border border-slate-700/50 text-sm"></select>
+      </div>
+      <p class="text-xs text-slate-400"><span data-i18n="label_rate_short">เรท:</span> <span id="sale-product-rate" class="text-slate-200"></span> • <span data-i18n="label_remaining_short">คงเหลือ:</span> <span id="sale-product-remaining" class="text-slate-200"></span> <span data-i18n="pieces_unit">ชิ้น</span></p>
+
+      <div class="flex rounded-xl bg-slate-800/50 p-1 border border-slate-700/50">
+        <button type="button" id="mode-qty-btn" class="seg-btn seg-active flex-1 py-2 rounded-lg text-sm" data-i18n="mode_qty">คิดจากจำนวน</button>
+        <button type="button" id="mode-money-btn" class="seg-btn flex-1 py-2 rounded-lg text-sm" data-i18n="mode_money">คิดจากเงิน</button>
+      </div>
+
+      <div id="sale-qty-wrap">
+        <label class="text-xs text-slate-400" data-i18n="label_qty_pieces">จำนวนสินค้า (ชิ้น)</label>
+        <input id="sale-qty-input" type="number" min="0" step="any" class="w-full px-3 py-2 rounded-xl bg-slate-800/50 border border-slate-700/50 text-sm mt-1">
+      </div>
+      <div id="sale-money-wrap" class="hidden">
+        <label class="text-xs text-slate-400" data-i18n="label_money_baht">จำนวนเงิน (บาท)</label>
+        <input id="sale-money-input" type="number" min="0" step="any" class="w-full px-3 py-2 rounded-xl bg-slate-800/50 border border-slate-700/50 text-sm mt-1">
+      </div>
+
+      <div class="grid grid-cols-3 gap-2 text-center">
+        <div class="glass-card rounded-xl p-2">
+          <p class="text-[10px] text-slate-400" data-i18n="result_customer_gets">ลูกค้าได้รับ</p>
+          <p id="sale-result-qty" class="font-semibold text-sm">0</p>
+        </div>
+        <div class="glass-card rounded-xl p-2">
+          <p class="text-[10px] text-slate-400" data-i18n="result_price">ราคา</p>
+          <p id="sale-result-money" class="font-semibold text-sm text-emerald-400">฿0</p>
+        </div>
+        <div class="glass-card rounded-xl p-2">
+          <p class="text-[10px] text-slate-400" data-i18n="result_after">คงเหลือหลังขาย</p>
+          <p id="sale-result-after" class="font-semibold text-sm">0</p>
+        </div>
+      </div>
+      <p id="sale-error" class="hidden text-xs text-rose-400 font-medium" data-i18n="error_insufficient_stock">✕ สต็อกไม่เพียงพอ</p>
+
+      <label class="flex items-center gap-2 text-xs text-slate-400">
+        <input id="remember-rate-checkbox" type="checkbox" class="rounded"> <span data-i18n="remember_rate_label">จำเรทนี้ไว้กับสินค้านี้</span>
+      </label>
+
+      <div>
+        <label class="text-xs text-slate-400" data-i18n="label_date">วันที่</label>
+        <input id="sale-date" type="datetime-local" class="w-full px-3 py-2 rounded-xl bg-slate-800/50 border border-slate-700/50 text-sm mt-1">
+      </div>
+      <div>
+        <label class="text-xs text-slate-400" data-i18n="label_note">หมายเหตุ</label>
+        <input id="sale-note" type="text" class="w-full px-3 py-2 rounded-xl bg-slate-800/50 border border-slate-700/50 text-sm mt-1">
+      </div>
+
+      <div class="flex gap-2 mt-1">
+        <button type="button" data-close-modal class="flex-1 py-2.5 rounded-xl bg-slate-700/50 hover:bg-slate-700 text-sm" data-i18n="btn_cancel">ยกเลิก</button>
+        <button type="submit" id="confirm-sale-btn" disabled class="flex-1 btn-primary py-2.5 rounded-xl text-sm" data-i18n="btn_save_sale">บันทึกการขาย</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Confirm Dialog -->
+<div id="confirm-modal" class="modal-overlay hidden">
+  <div class="modal-box glass-card w-full max-w-xs rounded-2xl p-5 relative text-center">
+    <button data-close-modal class="absolute top-4 right-4 text-slate-400 hover:text-white" aria-label="close">✕</button>
+    <p class="text-3xl mb-2">⚠️</p>
+    <p id="confirm-message" class="text-sm mb-5"></p>
+    <div class="flex gap-2">
+      <button data-close-modal class="flex-1 py-2.5 rounded-xl bg-slate-700/50 hover:bg-slate-700 text-sm" data-i18n="btn_cancel">ยกเลิก</button>
+      <button id="confirm-ok-btn" class="flex-1 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-sm font-semibold" data-i18n="btn_confirm">ยืนยัน</button>
+    </div>
+  </div>
+</div>
+
+<!-- Bulk Edit Modal -->
+<div id="bulk-edit-modal" class="modal-overlay hidden">
+  <div class="modal-box glass-card w-full max-w-md rounded-2xl p-5 relative">
+    <button data-close-modal class="absolute top-4 right-4 text-slate-400 hover:text-white" aria-label="close">✕</button>
+    <h2 class="font-bold text-lg mb-1" data-i18n="modal_bulk_edit_title">แก้ไขสินค้าหลายรายการ</h2>
+    <p id="bulk-edit-desc" class="text-xs text-slate-400 mb-4"></p>
+    <form id="bulk-edit-form" class="flex flex-col gap-3">
+
+      <div class="glass-card rounded-xl p-3">
+        <label class="flex items-center gap-2 text-sm font-medium">
+          <input type="checkbox" id="bulk-toggle-rate" class="rounded"> <span data-i18n="bulk_apply_rate">เปลี่ยนเรทราคา</span>
+        </label>
+        <div id="bulk-fields-rate" class="hidden flex items-center gap-2 mt-2">
+          <input name="bulkRateQty" type="number" step="any" min="0.0001" value="1" class="w-full px-3 py-2 rounded-xl bg-slate-800/50 border border-slate-700/50 text-sm">
+          <span class="text-sm text-slate-400" data-i18n="unit_pieces_slash">ชิ้น /</span>
+          <input name="bulkRatePrice" type="number" step="any" min="0.0001" value="1" class="w-full px-3 py-2 rounded-xl bg-slate-800/50 border border-slate-700/50 text-sm">
+          <span class="text-sm text-slate-400" data-i18n="unit_baht">บาท</span>
+        </div>
+      </div>
+
+      <div class="glass-card rounded-xl p-3">
+        <label class="flex items-center gap-2 text-sm font-medium">
+          <input type="checkbox" id="bulk-toggle-stock" class="rounded"> <span data-i18n="bulk_apply_stock">ปรับสต็อก</span>
+        </label>
+        <div id="bulk-fields-stock" class="hidden flex items-center gap-2 mt-2">
+          <select name="bulkStockMode" class="px-3 py-2 rounded-xl bg-slate-800/50 border border-slate-700/50 text-sm">
+            <option value="set" data-i18n="bulk_stock_mode_set">ตั้งค่าใหม่เป็น</option>
+            <option value="add" data-i18n="bulk_stock_mode_add">เพิ่มจากเดิม</option>
+          </select>
+          <input name="bulkStockValue" type="number" min="0" value="0" class="w-full px-3 py-2 rounded-xl bg-slate-800/50 border border-slate-700/50 text-sm">
+          <span class="text-sm text-slate-400" data-i18n="pieces_unit">ชิ้น</span>
+        </div>
+      </div>
+
+      <div class="glass-card rounded-xl p-3">
+        <label class="flex items-center gap-2 text-sm font-medium">
+          <input type="checkbox" id="bulk-toggle-category" class="rounded"> <span data-i18n="bulk_apply_category">เปลี่ยนหมวดหมู่</span>
+        </label>
+        <div id="bulk-fields-category" class="hidden mt-2">
+          <select name="bulkCategory" class="product-category-select w-full px-3 py-2 rounded-xl bg-slate-800/50 border border-slate-700/50 text-sm"></select>
+        </div>
+      </div>
+
+      <div class="glass-card rounded-xl p-3">
+        <label class="flex items-center gap-2 text-sm font-medium">
+          <input type="checkbox" id="bulk-toggle-rarity" class="rounded"> <span data-i18n="bulk_apply_rarity">เปลี่ยนระดับ</span>
+        </label>
+        <div id="bulk-fields-rarity" class="hidden mt-2">
+          <select name="bulkRarity" class="rarity-select-input w-full px-3 py-2 rounded-xl bg-slate-800/50 border border-slate-700/50 text-sm"></select>
+        </div>
+      </div>
+
+      <div class="flex gap-2 mt-1">
+        <button type="button" data-close-modal class="flex-1 py-2.5 rounded-xl bg-slate-700/50 hover:bg-slate-700 text-sm" data-i18n="btn_cancel">ยกเลิก</button>
+        <button type="submit" class="flex-1 btn-primary py-2.5 rounded-xl text-sm" data-i18n="btn_apply_bulk">บันทึกการแก้ไข</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script src="js/data.js"></script>
+<script src="js/i18n.js"></script>
+<script src="js/utils.js"></script>
+<script src="js/products.js"></script>
+<script src="js/sales.js"></script>
+<script src="js/dashboard.js"></script>
+<script src="js/backup.js"></script>
+<script src="js/main.js"></script>
+</body>
+</html>
