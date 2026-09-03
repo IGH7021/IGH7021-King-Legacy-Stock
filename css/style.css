@@ -12,6 +12,11 @@ html.light {
 }
 body { background: var(--bg); color: var(--text); }
 
+.products-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 210px), 1fr));
+}
+
 .glass-card {
   background: var(--bg-card);
   border: 1px solid var(--border);

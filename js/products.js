@@ -86,11 +86,19 @@ function getFilteredProducts() {
     return true;
   });
 
-  // Sort by rarity according to RARITY_ORDER (higher rarity first), then by name
+  // Keep categories together, then sort by rarity before remaining stock.
   filtered.sort((a, b) => {
-    const ra = RARITY_ORDER.indexOf(a.rarity || "none");
-    const rb = RARITY_ORDER.indexOf(b.rarity || "none");
-    if (ra !== rb) return ra - rb;
+    const categoryOrder = state.settings.categories || [];
+    const categoryA = categoryOrder.indexOf(a.category);
+    const categoryB = categoryOrder.indexOf(b.category);
+    const safeCategoryA = categoryA === -1 ? Number.MAX_SAFE_INTEGER : categoryA;
+    const safeCategoryB = categoryB === -1 ? Number.MAX_SAFE_INTEGER : categoryB;
+    if (safeCategoryA !== safeCategoryB) return safeCategoryA - safeCategoryB;
+    const rarityA = RARITY_ORDER.indexOf(a.rarity || "none");
+    const rarityB = RARITY_ORDER.indexOf(b.rarity || "none");
+    if (rarityA !== rarityB) return rarityA - rarityB;
+    const remainingDifference = remaining(b) - remaining(a);
+    if (remainingDifference !== 0) return remainingDifference;
     return (a.name || "").localeCompare(b.name || "");
   });
 

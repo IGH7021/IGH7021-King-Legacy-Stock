@@ -1,6 +1,18 @@
 const STORAGE_KEY = "igh_kinglegacy_state";
 const THEME_KEY = "igh_theme";
 const LANG_KEY = "igh_lang";
+const APP_VERSION = "V.0.2";
+const APP_CHANGELOG = [
+  { version: "V.0.2", date: "2026-09-03", changes: [
+    "จัดลำดับสินค้าตามหมวดหมู่ ระดับความหายาก และจำนวนคงเหลือ",
+    "เพิ่ม Stat Card สรุปยอดขายรายวัน"
+  ] },
+  { version: "V.0.1", date: "2026-09-03", changes: [
+    "จัดกลุ่มสินค้าแยกตามหมวดหมู่",
+    "เรียงสินค้าตามจำนวนคงเหลือจากมากไปน้อย",
+    "ปรับ Grid สินค้าให้เหมาะกับทุกขนาดหน้าจอ"
+  ] }
+];
 
 const CATEGORY_ICONS = {
   "ดาบ": "🗡️",

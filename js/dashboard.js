@@ -3,12 +3,23 @@ let salesChart = null;
 function totalSales() { return state.sales.reduce((a,s) => a + s.money, 0); }
 function totalSoldQty() { return state.sales.reduce((a,s) => a + s.quantity, 0); }
 function totalRemainingStock() { return state.products.reduce((a,p) => a + remaining(p), 0); }
+function todaySales() {
+  const start = new Date();
+  start.setHours(0, 0, 0, 0);
+  return state.sales.filter(s => s.date >= start.getTime());
+}
 
 function renderDashboard() {
   document.getElementById("stat-total-sales").textContent = fmtBaht(Math.round(totalSales()*100)/100);
   document.getElementById("stat-sold-qty").textContent = fmtNum(totalSoldQty()) + " " + t("pieces_unit");
   document.getElementById("stat-sale-count").textContent = fmtNum(state.sales.length);
   document.getElementById("stat-remaining").textContent = fmtNum(totalRemainingStock()) + " " + t("pieces_unit");
+  const salesToday = todaySales();
+  const todayMoney = salesToday.reduce((sum, sale) => sum + sale.money, 0);
+  document.getElementById("stat-today-sales").textContent = fmtBaht(Math.round(todayMoney * 100) / 100);
+  document.getElementById("stat-today-qty").textContent = fmtNum(salesToday.reduce((sum, sale) => sum + sale.quantity, 0));
+  document.getElementById("stat-today-orders").textContent = fmtNum(salesToday.length);
+  document.getElementById("stat-average-order").textContent = fmtBaht(salesToday.length ? Math.round(todayMoney / salesToday.length * 100) / 100 : 0);
   renderSalesChart();
   renderTimeline();
   renderBestSellers("dashboard-best-sellers", 5);

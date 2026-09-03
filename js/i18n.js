@@ -8,6 +8,7 @@ const I18N = {
     quick_sale_banner_desc: "เลือกสินค้าและกรอกจำนวนหรือเงิน ระบบจะคำนวณราคาให้อัตโนมัติ",
     stat_total_sales: "ยอดขายรวม", stat_sold_qty: "ขายไปแล้ว",
     stat_sale_count: "รายการขาย", stat_remaining: "สต็อกคงเหลือ",
+    today_stats_title: "สถิติวันนี้", today_sales: "ยอดขายวันนี้", today_qty: "ขายวันนี้", today_orders: "ออเดอร์วันนี้", average_order: "เฉลี่ยต่อออเดอร์",
     chart_title: "ยอดขายย้อนหลัง 7 วัน", best_sellers_title: "สินค้าขายดี",
     timeline_title: "กิจกรรมล่าสุด", chart_dataset_label: "ยอดขาย (บาท)",
 
@@ -43,7 +44,8 @@ const I18N = {
     report_sale_count_label: "รายการขาย", report_bestseller_title: "อันดับสินค้าขายดี",
     no_sales_data: "ยังไม่มีข้อมูลการขาย",
 
-    settings_title: "ตั้งค่า", settings_language: "ภาษา",
+    settings_title: "ตั้งค่า", update_log_title: "มีอะไรอัปเดต", update_date_prefix: "วันที่",
+    settings_language: "ภาษา",
     settings_stock_alert_title: "แจ้งเตือนเมื่อเหลือไม่เกิน",
     settings_category_title: "หมวดหมู่สินค้า", new_category_placeholder: "ชื่อหมวดหมู่ใหม่",
     add_btn: "+ เพิ่ม", backup_section_title: "Backup / Restore / Export",
@@ -108,6 +110,7 @@ const I18N = {
     quick_sale_banner_desc: "Pick a product and enter quantity or money — price calculates automatically.",
     stat_total_sales: "Total Sales", stat_sold_qty: "Sold",
     stat_sale_count: "Sale Transactions", stat_remaining: "Remaining Stock",
+    today_stats_title: "Today's statistics", today_sales: "Today's sales", today_qty: "Today's quantity", today_orders: "Today's orders", average_order: "Average order",
     chart_title: "Sales — Last 7 Days", best_sellers_title: "Best Sellers",
     timeline_title: "Recent Activity", chart_dataset_label: "Sales (Baht)",
 
@@ -143,7 +146,8 @@ const I18N = {
     report_sale_count_label: "Sale Transactions", report_bestseller_title: "Best Sellers Ranking",
     no_sales_data: "No sales data yet",
 
-    settings_title: "Settings", settings_language: "Language",
+    settings_title: "Settings", update_log_title: "What’s new", update_date_prefix: "Date",
+    settings_language: "Language",
     settings_stock_alert_title: "Alert when stock is below",
     settings_category_title: "Product Categories", new_category_placeholder: "New category name",
     add_btn: "+ Add", backup_section_title: "Backup / Restore / Export",

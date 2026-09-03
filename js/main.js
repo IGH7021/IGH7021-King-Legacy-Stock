@@ -28,6 +28,15 @@ function initSkeleton(cb) {
 }
 
 function renderSettings() {
+  document.getElementById("app-version").textContent = APP_VERSION;
+  document.getElementById("update-log").innerHTML = APP_CHANGELOG.map(entry => `
+    <div class="border-l-2 border-indigo-400/70 pl-3">
+      <div class="flex items-center justify-between gap-2">
+        <strong class="text-sm">${entry.version}</strong>
+        <span class="text-[11px] text-slate-400">${t("update_date_prefix")} ${entry.date}</span>
+      </div>
+      <ul class="mt-1 text-xs text-slate-400 list-disc list-inside">${entry.changes.map(change => `<li>${change}</li>`).join("")}</ul>
+    </div>`).join("");
   document.getElementById("stock-alert-slider").value = state.settings.stockAlert;
   document.getElementById("stock-alert-value").textContent = state.settings.stockAlert;
   const catList = document.getElementById("settings-category-list");
