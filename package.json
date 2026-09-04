@@ -1,0 +1,9 @@
+{
+  "name": "igh7021-kinglegacy-stock",
+  "version": "1.4.0",
+  "private": true,
+  "description": "King Legacy stock dashboard with a lightweight Node.js API",
+  "scripts": {
+    "start": "node server/server.js"
+  }
+}

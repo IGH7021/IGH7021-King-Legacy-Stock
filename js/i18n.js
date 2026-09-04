@@ -9,6 +9,10 @@ const I18N = {
     stat_total_sales: "ยอดขายรวม", stat_sold_qty: "ขายไปแล้ว",
     stat_sale_count: "รายการขาย", stat_remaining: "สต็อกคงเหลือ",
     today_stats_title: "สถิติวันนี้", today_sales: "ยอดขายวันนี้", today_qty: "ขายวันนี้", today_orders: "ออเดอร์วันนี้", average_order: "เฉลี่ยต่อออเดอร์",
+    community_title: "ชุมชนผู้ใช้งาน", community_demo_note: "สถานะจากโหมด Demo ในเครื่องนี้", demo_badge: "DEMO",
+    total_users: "ผู้ใช้งานทั้งหมด", online_users: "กำลังออนไลน์", average_rating: "คะแนนเฉลี่ย", review_count: "รีวิวทั้งหมด",
+    review_title: "Rating / Review", review_local_note: "บันทึกในเครื่องนี้", review_rating_label: "ให้คะแนน",
+    review_placeholder: "เขียนความคิดเห็นของคุณ...", submit_review: "ส่งรีวิว", no_reviews: "ยังไม่มีรีวิว", review_saved: "✓ บันทึกรีวิวแล้ว",
     chart_title: "ยอดขายย้อนหลัง 7 วัน", best_sellers_title: "สินค้าขายดี",
     timeline_title: "กิจกรรมล่าสุด", chart_dataset_label: "ยอดขาย (บาท)",
 
@@ -38,13 +42,13 @@ const I18N = {
     btn_sell: "ขาย", aria_restock: "เพิ่มสต็อก", aria_edit: "แก้ไข", aria_delete: "ลบ",
     select_btn_selected: "✓ เลือกแล้ว", select_btn_default: "เลือก",
 
-    sales_history_title: "ประวัติการขาย", empty_no_sales: "ยังไม่มีรายการขาย",
+    sales_history_title: "ประวัติการขาย", empty_no_sales: "ยังไม่มีรายการขาย", no_sales_in_range: "ไม่พบรายการในช่วงวันที่นี้", sales_date_filter: "กรองตามวันที่", date_from: "เริ่มวันที่", date_to: "ถึงวันที่", clear_date_filter: "ล้างตัวกรอง", previous_month: "เดือนก่อนหน้า", next_month: "เดือนถัดไป",
 
     reports_title: "สรุปยอดขาย", report_sold_qty_label: "จำนวนที่ขาย",
     report_sale_count_label: "รายการขาย", report_bestseller_title: "อันดับสินค้าขายดี",
     no_sales_data: "ยังไม่มีข้อมูลการขาย",
 
-    settings_title: "ตั้งค่า", update_log_title: "มีอะไรอัปเดต", update_date_prefix: "วันที่",
+    settings_title: "ตั้งค่า", update_log_title: "มีอะไรอัปเดต", update_date_prefix: "วันที่", credits_title: "ช่องทางติดต่อแอดมิน", back_to_top: "กลับด้านบน",
     settings_language: "ภาษา",
     settings_stock_alert_title: "แจ้งเตือนเมื่อเหลือไม่เกิน",
     settings_category_title: "หมวดหมู่สินค้า", new_category_placeholder: "ชื่อหมวดหมู่ใหม่",
@@ -111,6 +115,10 @@ const I18N = {
     stat_total_sales: "Total Sales", stat_sold_qty: "Sold",
     stat_sale_count: "Sale Transactions", stat_remaining: "Remaining Stock",
     today_stats_title: "Today's statistics", today_sales: "Today's sales", today_qty: "Today's quantity", today_orders: "Today's orders", average_order: "Average order",
+    community_title: "User community", community_demo_note: "Status from Demo mode on this device", demo_badge: "DEMO",
+    total_users: "Total users", online_users: "Online now", average_rating: "Average rating", review_count: "Total reviews",
+    review_title: "Rating / Review", review_local_note: "Saved on this device", review_rating_label: "Rating",
+    review_placeholder: "Write your review...", submit_review: "Submit review", no_reviews: "No reviews yet", review_saved: "✓ Review saved",
     chart_title: "Sales — Last 7 Days", best_sellers_title: "Best Sellers",
     timeline_title: "Recent Activity", chart_dataset_label: "Sales (Baht)",
 
@@ -140,13 +148,13 @@ const I18N = {
     btn_sell: "Sell", aria_restock: "Restock", aria_edit: "Edit", aria_delete: "Delete",
     select_btn_selected: "✓ Selected", select_btn_default: "Select",
 
-    sales_history_title: "Sales History", empty_no_sales: "No sales yet",
+    sales_history_title: "Sales History", empty_no_sales: "No sales yet", no_sales_in_range: "No sales in this date range", sales_date_filter: "Filter by date", date_from: "From", date_to: "To", clear_date_filter: "Clear filter", previous_month: "Previous month", next_month: "Next month",
 
     reports_title: "Sales Report", report_sold_qty_label: "Quantity Sold",
     report_sale_count_label: "Sale Transactions", report_bestseller_title: "Best Sellers Ranking",
     no_sales_data: "No sales data yet",
 
-    settings_title: "Settings", update_log_title: "What’s new", update_date_prefix: "Date",
+    settings_title: "Settings", update_log_title: "What’s new", update_date_prefix: "Date", credits_title: "Contact admin", back_to_top: "Back to top",
     settings_language: "Language",
     settings_stock_alert_title: "Alert when stock is below",
     settings_category_title: "Product Categories", new_category_placeholder: "New category name",

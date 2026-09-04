@@ -14,7 +14,6 @@ function showPage(pageId) {
 function applyTheme(theme) {
   document.documentElement.classList.toggle("light", theme === "light");
   localStorage.setItem(THEME_KEY, theme);
-  document.querySelectorAll(".theme-icon").forEach(el => el.textContent = theme === "light" ? "🌙" : "☀️");
 }
 
 function initSkeleton(cb) {
@@ -29,7 +28,9 @@ function initSkeleton(cb) {
 
 function renderSettings() {
   document.getElementById("app-version").textContent = APP_VERSION;
-  document.getElementById("update-log").innerHTML = APP_CHANGELOG.map(entry => `
+  const updateLog = document.getElementById("update-log");
+  updateLog.classList.toggle("update-log-parallax", APP_CHANGELOG.length > 5);
+  updateLog.innerHTML = APP_CHANGELOG.map(entry => `
     <div class="border-l-2 border-indigo-400/70 pl-3">
       <div class="flex items-center justify-between gap-2">
         <strong class="text-sm">${entry.version}</strong>
@@ -64,8 +65,15 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // Navigation (sidebar + bottom nav)
   document.querySelectorAll("[data-nav]").forEach(el => {
-    el.addEventListener("click", () => showPage(el.dataset.nav));
+    el.addEventListener("click", () => { showPage(el.dataset.nav); closeMobileDrawer(); });
   });
+
+  const menuButton = document.getElementById("mobile-menu-btn");
+  const closeButton = document.getElementById("mobile-menu-close");
+  const scrim = document.getElementById("mobile-nav-scrim");
+  menuButton?.addEventListener("click", openMobileDrawer);
+  closeButton?.addEventListener("click", closeMobileDrawer);
+  scrim?.addEventListener("click", closeMobileDrawer);
 
   // Theme toggle
   document.querySelectorAll(".theme-toggle-btn").forEach(btn => {
@@ -74,6 +82,13 @@ document.addEventListener("DOMContentLoaded", () => {
       applyTheme(isLight ? "dark" : "light");
     });
   });
+
+  const backToTop = document.getElementById("products-back-to-top");
+  const updateBackToTop = () => {
+    backToTop?.classList.toggle("back-to-top-visible", window.scrollY > 300);
+  };
+  window.addEventListener("scroll", updateBackToTop, { passive: true });
+  backToTop?.addEventListener("click", () => window.scrollTo({ top: 0, behavior: "smooth" }));
 
   // Language toggle
   document.querySelectorAll(".lang-btn").forEach(btn => {
@@ -126,3 +141,19 @@ document.addEventListener("DOMContentLoaded", () => {
   document.getElementById("export-products-csv-btn").addEventListener("click", exportProductsCSV);
   document.getElementById("export-sales-csv-btn").addEventListener("click", exportSalesCSV);
 });
+
+function openMobileDrawer() {
+  document.getElementById("mobile-nav-drawer")?.classList.add("nav-drawer-open");
+  document.getElementById("mobile-nav-scrim")?.classList.remove("hidden");
+  document.getElementById("mobile-menu-btn")?.setAttribute("aria-expanded", "true");
+  document.getElementById("mobile-nav-drawer")?.setAttribute("aria-hidden", "false");
+  document.body.classList.add("overflow-hidden");
+}
+
+function closeMobileDrawer() {
+  document.getElementById("mobile-nav-drawer")?.classList.remove("nav-drawer-open");
+  document.getElementById("mobile-nav-scrim")?.classList.add("hidden");
+  document.getElementById("mobile-menu-btn")?.setAttribute("aria-expanded", "false");
+  document.getElementById("mobile-nav-drawer")?.setAttribute("aria-hidden", "true");
+  document.body.classList.remove("overflow-hidden");
+}

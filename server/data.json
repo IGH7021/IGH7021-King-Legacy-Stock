@@ -1,0 +1,64 @@
+{
+  "reviews": [],
+  "totalUsers": 2,
+  "userIds": [
+    "ac2cd539-a100-45c5-8f8e-875af6fab50c",
+    "7bb4a61b-ce87-448a-84c8-28a3587c38de"
+  ],
+  "keys": [
+    {
+      "id": "seed-admin-20260904",
+      "value": "IGH00000026090400PERMADM7021ADMIN",
+      "permanent": true,
+      "admin": true,
+      "createdAt": 1756944000000,
+      "expiresAt": null,
+      "revoked": false
+    },
+    {
+      "id": "seed-user-20260904",
+      "value": "IGH000001260904020001TEMPUSR7021USER",
+      "permanent": false,
+      "admin": false,
+      "createdAt": 1756944000000,
+      "expiresAt": 1788484454377,
+      "revoked": false
+    },
+    {
+      "id": "4bec079d-4317-4347-ab59-e7493f2896b5",
+      "value": "IGH00000326090303PERMCBF0597021USER",
+      "permanent": true,
+      "admin": false,
+      "createdAt": 1788477263477,
+      "expiresAt": null,
+      "revoked": false
+    },
+    {
+      "id": "seed-user-20260904b",
+      "value": "IGH000004260904063002TEMPNEW7021USER",
+      "permanent": false,
+      "admin": false,
+      "createdAt": 1788478636000,
+      "expiresAt": 1788485836000,
+      "revoked": false
+    },
+    {
+      "id": "25ab8b98-b63f-4895-a100-dd69db74ed6a",
+      "value": "IGH000005260903065305TEMP9A91C87021USER",
+      "permanent": false,
+      "admin": false,
+      "createdAt": 1788479622487,
+      "expiresAt": 1788566022487,
+      "revoked": false
+    }
+  ],
+  "users": [
+    {
+      "id": "b90c6c4e-e05f-446a-9bb3-846569f9f304",
+      "name": "sdfaea",
+      "email": "asdaw@gmail.com",
+      "keyId": "seed-user-20260904",
+      "createdAt": 1788479025167
+    }
+  ]
+}

@@ -1,5 +1,6 @@
 let currentSaleProductId = null;
 let saleMode = "qty"; // qty | money
+let salesDateRange = { from: "", to: "" };
 
 function openSaleModal(productId) {
   currentSaleProductId = productId;
@@ -84,7 +85,29 @@ document.addEventListener("DOMContentLoaded", () => {
     openSaleModal(state.products[0].id);
   });
   document.getElementById("sale-form").addEventListener("submit", handleSaleSubmit);
+  document.getElementById("sales-date-from").addEventListener("change", event => { salesDateRange.from = event.target.value; renderSalesHistory(); });
+  document.getElementById("sales-date-to").addEventListener("change", event => { salesDateRange.to = event.target.value; renderSalesHistory(); });
+  document.getElementById("sales-clear-date").addEventListener("click", () => {
+    salesDateRange = { from: "", to: "" };
+    document.getElementById("sales-date-from").value = "";
+    document.getElementById("sales-date-to").value = "";
+    renderSalesHistory();
+  });
+  document.getElementById("sales-prev-month").addEventListener("click", () => shiftSalesMonth(-1));
+  document.getElementById("sales-next-month").addEventListener("click", () => shiftSalesMonth(1));
 });
+
+function shiftSalesMonth(offset) {
+  const base = salesDateRange.from ? new Date(`${salesDateRange.from}T00:00:00`) : new Date();
+  base.setDate(1); base.setMonth(base.getMonth() + offset);
+  const year = base.getFullYear();
+  const month = String(base.getMonth() + 1).padStart(2, "0");
+  const lastDay = new Date(year, base.getMonth() + 1, 0).getDate();
+  salesDateRange = { from: `${year}-${month}-01`, to: `${year}-${month}-${String(lastDay).padStart(2, "0")}` };
+  document.getElementById("sales-date-from").value = salesDateRange.from;
+  document.getElementById("sales-date-to").value = salesDateRange.to;
+  renderSalesHistory();
+}
 
 function handleSaleSubmit(e) {
   e.preventDefault();
@@ -125,12 +148,15 @@ function handleSaleSubmit(e) {
 function renderSalesHistory() {
   const box = document.getElementById("sales-history-list");
   if (!box) return;
-  if (state.sales.length === 0) {
+  const from = salesDateRange.from ? new Date(`${salesDateRange.from}T00:00:00`).getTime() : -Infinity;
+  const to = salesDateRange.to ? new Date(`${salesDateRange.to}T23:59:59.999`).getTime() : Infinity;
+  const visibleSales = state.sales.filter(s => s.date >= from && s.date <= to);
+  if (visibleSales.length === 0) {
     box.innerHTML = `<div class="flex flex-col items-center justify-center py-16 text-slate-400">
-      <div class="text-5xl mb-3">🧾</div><p>${t("empty_no_sales")}</p></div>`;
+      <div class="text-5xl mb-3">🧾</div><p>${state.sales.length ? t("no_sales_in_range") : t("empty_no_sales")}</p></div>`;
     return;
   }
-  box.innerHTML = state.sales.map(s => {
+  box.innerHTML = visibleSales.map(s => {
     const p = state.products.find(x => x.id === s.productId);
     return `<div class="glass-card rounded-xl p-3 flex items-center gap-3">
       <div class="w-12 h-12 rounded-lg overflow-hidden bg-slate-800/60 flex-shrink-0">${p ? productImg(p) : '<div class="w-full h-full flex items-center justify-center text-xl">📦</div>'}</div>

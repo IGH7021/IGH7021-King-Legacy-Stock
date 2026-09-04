@@ -1,8 +1,54 @@
 const STORAGE_KEY = "igh_kinglegacy_state";
 const THEME_KEY = "igh_theme";
 const LANG_KEY = "igh_lang";
-const APP_VERSION = "V.0.2";
+const APP_VERSION = "V.1.4";
 const APP_CHANGELOG = [
+  { version: "V.1.4", date: "2026-09-04", changes: [
+    "เพิ่มฟอนต์ Itim และปรับหน้า Admin ให้เห็นส่วนควบคุมชัดเจนขึ้น"
+  ] },
+  { version: "V.1.3", date: "2026-09-04", changes: [
+    "ปรับรายงาน PDF/JSON ให้รวมคีย์ทุกสถานะและข้อมูลเจ้าของคีย์",
+    "เพิ่ม Password toggle, Form validation, 404 และ Cookie consent"
+  ] },
+  { version: "V.1.2", date: "2026-09-04", changes: [
+    "เพิ่มหน้า Admin Key Manager พร้อมดูผู้ใช้และเวลาคงเหลือ",
+    "เพิ่มปุ่มออกจากบัญชีและแสดงเวลาคีย์ใต้ชื่อเว็บไซต์"
+  ] },
+  { version: "V.1.1", date: "2026-09-04", changes: [
+    "แก้การตรวจคีย์ให้แจ้งเมื่อไม่ได้เปิด Node.js Server",
+    "ปรับช่อง Key ให้ตัวอักษรสีขาวคมชัดและกู้คืนไฟล์ Admin key"
+  ] },
+  { version: "V.1.0", date: "2026-09-04", changes: [
+    "แก้การตอบกลับ API เมื่อ Server ไม่พร้อมใช้งาน",
+    "สร้างไฟล์คีย์แยกอัตโนมัติทุกครั้งที่ Admin สร้างคีย์"
+  ] },
+  { version: "V.0.9", date: "2026-09-04", changes: [
+    "ซ่อน Admin access จากหน้าสาธารณะและให้ Admin เข้าโดยใช้คีย์เดียวกัน",
+    "เพิ่มคีย์ Admin ถาวรและคีย์ผู้ใช้แบบทดลองอายุ 2 ชั่วโมง"
+  ] },
+  { version: "V.0.8", date: "2026-09-04", changes: [
+    "เพิ่ม Key Gate, Sign Up, Login และหน้า Admin สร้างคีย์",
+    "เพิ่ม Cube Loader สำหรับหน้า Auth และตรวจอายุคีย์อัตโนมัติ"
+  ] },
+  { version: "V.0.7", date: "2026-09-04", changes: [
+    "ปรับช่องทางติดต่อให้แสดงเป็นโลโก้เท่านั้น",
+    "เพิ่ม Date Range Picker, Mobile Nav Drawer, Parallax Changelog และ Easing สีส้ม"
+  ] },
+  { version: "V.0.6", date: "2026-09-04", changes: [
+    "เปลี่ยนช่องทางติดต่อเป็นโลโก้ SVG ของแต่ละแพลตฟอร์ม",
+    "เพิ่มปุ่ม Back to Top ในหน้า Stock และปรับปุ่มสลับธีมใหม่"
+  ] },
+  { version: "V.0.5", date: "2026-09-04", changes: [
+    "เพิ่ม Node.js Server และ API สำหรับรีวิวกับสถานะผู้ใช้งาน",
+    "เปลี่ยนระบบให้คะแนนเป็นดาว SVG แบบโต้ตอบ"
+  ] },
+  { version: "V.0.4", date: "2026-09-03", changes: [
+    "เพิ่ม Feature Section สถานะผู้ใช้งานและระบบ Rating / Review แบบ Demo",
+    "เพิ่มเครดิตลิงก์เจ้าของเว็บไซต์และ Skeleton สำหรับส่วนโหลดหลัก"
+  ] },
+  { version: "V.0.3", date: "2026-09-03", changes: [
+    "แก้ Grid ให้ปรับจำนวนคอลัมน์ตามพื้นที่จริงและการซูมหน้าจอ"
+  ] },
   { version: "V.0.2", date: "2026-09-03", changes: [
     "จัดลำดับสินค้าตามหมวดหมู่ ระดับความหายาก และจำนวนคงเหลือ",
     "เพิ่ม Stat Card สรุปยอดขายรายวัน"
@@ -24,13 +70,13 @@ const CATEGORY_ICONS = {
 
 const RARITY_ORDER = ["mythical","legendary","epic","rare","uncommon","common","limited","none"];
 const RARITY_COLORS = {
+  limited:   "bg-yellow-500/15 text-yellow-300 border-yellow-500/30",
   mythical:  "bg-fuchsia-500/15 text-fuchsia-300 border-fuchsia-500/30",
   legendary: "bg-red-500/15 text-red-300 border-red-500/30",
   epic:      "bg-purple-500/15 text-purple-300 border-purple-500/30",
   rare:      "bg-cyan-500/15 text-cyan-300 border-cyan-500/30",
   uncommon:  "bg-green-500/15 text-green-300 border-green-500/30",
   common:    "bg-slate-300/15 text-slate-200 border-slate-300/30",
-  limited:   "bg-yellow-500/15 text-yellow-300 border-yellow-500/30",
   none:      "bg-slate-600/15 text-slate-400 border-slate-600/30",
 };
 
