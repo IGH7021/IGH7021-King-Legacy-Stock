@@ -16,8 +16,15 @@ function readData() {
   try { return JSON.parse(fs.readFileSync(DATA_FILE, "utf8")); }
   catch (error) { return { reviews: [], totalUsers: 0, userIds: [] }; }
 }
-function writeData(data) { fs.writeFileSync(DATA_FILE, JSON.stringify(data, null, 2)); }
+function writeData(data) { const { keys, ...nonKeyData } = data; fs.writeFileSync(DATA_FILE, JSON.stringify(nonKeyData, null, 2)); }
 function writeKeyFile(key) { fs.mkdirSync(KEYS_DIR, { recursive: true }); fs.writeFileSync(path.join(KEYS_DIR, `${key.id}.json`), JSON.stringify({ id: key.id, value: key.value, admin: key.admin, permanent: key.permanent, expiresAt: key.expiresAt || null, revoked: key.revoked }, null, 2)); }
+function readKeyFiles() {
+  fs.mkdirSync(KEYS_DIR, { recursive: true });
+  return fs.readdirSync(KEYS_DIR).filter(file => file.toLowerCase().endsWith(".json")).map(file => {
+    try { return JSON.parse(fs.readFileSync(path.join(KEYS_DIR, file), "utf8")); }
+    catch (error) { return null; }
+  }).filter(key => key && key.id && key.value);
+}
 function json(response, status, body) { response.writeHead(status, { "Content-Type": "application/json; charset=utf-8", "Access-Control-Allow-Origin": "*" }); response.end(JSON.stringify(body)); }
 function requestBody(request) {
   return new Promise((resolve, reject) => { let raw = ""; request.on("data", chunk => { raw += chunk; if (raw.length > 10000) reject(new Error("payload too large")); }); request.on("end", () => { try { resolve(raw ? JSON.parse(raw) : {}); } catch (error) { reject(error); } }); request.on("error", reject); });
@@ -27,7 +34,7 @@ function communityStats() {
   for (const [id, lastSeen] of presence) if (now - lastSeen > ONLINE_WINDOW) presence.delete(id);
   return { onlineUsers: presence.size, totalUsers: readData().totalUsers };
 }
-function authData() { const data = readData(); data.keys = Array.isArray(data.keys) ? data.keys : []; data.users = Array.isArray(data.users) ? data.users : []; let changed = false; data.keys.forEach(key => { if (!key.permanent && !key.expiresAt && key.seedExpiresHours) { key.expiresAt = Date.now() + key.seedExpiresHours * 3600000; delete key.seedExpiresHours; changed = true; } writeKeyFile(key); }); const expired = new Set(data.keys.filter(key => !key.permanent && key.expiresAt && key.expiresAt + 259200000 < Date.now()).map(key => key.id)); const keptUsers = data.users.filter(user => !expired.has(user.keyId)); if (keptUsers.length !== data.users.length) { data.users = keptUsers; changed = true; } if (changed) writeData(data); return data; }
+function authData() { const data = readData(); data.keys = readKeyFiles(); data.users = Array.isArray(data.users) ? data.users : []; const expired = new Set(data.keys.filter(key => !key.permanent && key.expiresAt && key.expiresAt + 259200000 < Date.now()).map(key => key.id)); const keptUsers = data.users.filter(user => !expired.has(user.keyId)); if (keptUsers.length !== data.users.length) { data.users = keptUsers; writeData(data); } return data; }
 function makeKey(data, permanent, admin = false) {
   const sequence = String(data.keys.length + 1).padStart(6, "0");
   const date = new Date().toISOString().slice(2, 10).replace(/-/g, "").toUpperCase();
@@ -45,7 +52,7 @@ const server = http.createServer(async (request, response) => {
   const url = new URL(request.url, `http://${request.headers.host || "localhost"}`);
   if (request.method === "OPTIONS") { response.writeHead(204, { "Access-Control-Allow-Origin": "*", "Access-Control-Allow-Methods": "GET,POST,OPTIONS", "Access-Control-Allow-Headers": "Content-Type" }); return response.end(); }
   if (url.pathname === "/api/auth/key" && request.method === "POST") {
-    try { const body = await requestBody(request); const value = String(body.key || "").trim(); if (process.env.ADMIN_BOOTSTRAP_KEY && value === process.env.ADMIN_BOOTSTRAP_KEY) return json(response, 200, { valid: true, admin: true, registered: true, permanent: true, expiresAt: null }); const data = authData(); const key = keyRecord(data, value); if (!validKey(key)) return json(response, 401, { error: "KEY_INVALID_OR_EXPIRED" }); return json(response, 200, { valid: true, admin: !!key.admin, registered: key.admin || data.users.some(user => user.keyId === key.id), permanent: key.permanent, expiresAt: key.expiresAt || null }); }
+    try { const body = await requestBody(request); const value = String(body.key || "").trim(); const data = authData(); const key = keyRecord(data, value); if (!validKey(key)) return json(response, 401, { error: "KEY_INVALID_OR_EXPIRED" }); return json(response, 200, { valid: true, admin: !!key.admin, registered: key.admin || data.users.some(user => user.keyId === key.id), permanent: key.permanent, expiresAt: key.expiresAt || null }); }
     catch (error) { return json(response, 400, { error: "Invalid JSON" }); }
   }
   if (url.pathname === "/api/auth/signup" && request.method === "POST") {
@@ -56,12 +63,12 @@ const server = http.createServer(async (request, response) => {
     } catch (error) { return json(response, 400, { error: "Invalid JSON" }); }
   }
   if (url.pathname === "/api/auth/login" && request.method === "POST") {
-    try { const body = await requestBody(request); const value = String(body.key || "").trim(); if (process.env.ADMIN_BOOTSTRAP_KEY && value === process.env.ADMIN_BOOTSTRAP_KEY) { const token = crypto.randomBytes(32).toString("hex"); sessions.set(token, { admin: true }); return json(response, 200, { token, admin: true, permanent: true, expiresAt: null }); } const data = authData(); const key = keyRecord(data, value); const user = data.users.find(item => item.keyId === key?.id); if (!validKey(key)) return json(response, 401, { error: "ACCOUNT_NOT_FOUND_OR_EXPIRED" }); const token = crypto.randomBytes(32).toString("hex"); sessions.set(token, { userId: user?.id, keyId: key.id, admin: !!key.admin }); return json(response, 200, { token, admin: !!key.admin, user: user ? { id: user.id, nickname: user.nickname } : null, expiresAt: key.expiresAt || null }); }
+    try { const body = await requestBody(request); const value = String(body.key || "").trim(); const data = authData(); const key = keyRecord(data, value); const user = data.users.find(item => item.keyId === key?.id); if (!validKey(key)) return json(response, 401, { error: "ACCOUNT_NOT_FOUND_OR_EXPIRED" }); const token = crypto.randomBytes(32).toString("hex"); sessions.set(token, { userId: user?.id, keyId: key.id, admin: !!key.admin }); return json(response, 200, { token, admin: !!key.admin, user: user ? { id: user.id, nickname: user.nickname } : null, expiresAt: key.expiresAt || null }); }
     catch (error) { return json(response, 400, { error: "Invalid JSON" }); }
   }
   if (url.pathname === "/api/admin/keys" && request.method === "POST") {
     const session = authUser(request); if (!session?.admin) return json(response, 403, { error: "ADMIN_ONLY" });
-    try { const body = await requestBody(request); const data = authData(); const isAdmin = Boolean(body.admin); const permanent = isAdmin || Boolean(body.permanent); const key = { id: crypto.randomUUID(), value: makeKey(data, permanent, isAdmin), permanent, admin: isAdmin, createdAt: Date.now(), expiresAt: permanent ? null : Date.now() + Math.max(1, Number(body.hours) || 24) * 3600000, revoked: false }; data.keys.push(key); writeData(data); writeKeyFile(key); return json(response, 201, key); } catch (error) { return json(response, 400, { error: "Invalid JSON" }); }
+    try { const body = await requestBody(request); const data = authData(); const isAdmin = Boolean(body.admin); const permanent = isAdmin || Boolean(body.permanent); const key = { id: crypto.randomUUID(), value: makeKey(data, permanent, isAdmin), permanent, admin: isAdmin, createdAt: Date.now(), expiresAt: permanent ? null : Date.now() + Math.max(1, Number(body.hours) || 24) * 3600000, revoked: false }; writeKeyFile(key); return json(response, 201, key); } catch (error) { return json(response, 400, { error: "Invalid JSON" }); }
   }
   if (url.pathname === "/api/admin/keys" && request.method === "GET") {
     const session = authUser(request); if (!session?.admin) return json(response, 403, { error: "ADMIN_ONLY" });

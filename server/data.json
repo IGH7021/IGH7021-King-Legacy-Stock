@@ -1,6 +1,6 @@
 {
   "reviews": [],
-  "totalUsers": 11,
+  "totalUsers": 12,
   "userIds": [
     "ac2cd539-a100-45c5-8f8e-875af6fab50c",
     "7bb4a61b-ce87-448a-84c8-28a3587c38de",
@@ -12,63 +12,8 @@
     "8397574e-c479-4666-9aac-890fecbb59f4",
     "c40b1396-31dc-444a-a9e1-5a4be3182a26",
     "407529c9-7335-4d96-a80d-3d47caca30ad",
-    "9def6236-7563-42e0-ae85-79916b73de98"
-  ],
-  "keys": [
-    {
-      "id": "seed-admin-20260904",
-      "value": "IGH00000026090400PERMADM7021ADMIN",
-      "permanent": true,
-      "admin": true,
-      "createdAt": 1756944000000,
-      "expiresAt": null,
-      "revoked": false
-    },
-    {
-      "id": "seed-user-20260904",
-      "value": "IGH000001260904020001TEMPUSR7021USER",
-      "permanent": false,
-      "admin": false,
-      "createdAt": 1756944000000,
-      "expiresAt": 1788484454377,
-      "revoked": false
-    },
-    {
-      "id": "4bec079d-4317-4347-ab59-e7493f2896b5",
-      "value": "IGH00000326090303PERMCBF0597021USER",
-      "permanent": true,
-      "admin": false,
-      "createdAt": 1788477263477,
-      "expiresAt": null,
-      "revoked": false
-    },
-    {
-      "id": "seed-user-20260904b",
-      "value": "IGH000004260904063002TEMPNEW7021USER",
-      "permanent": false,
-      "admin": false,
-      "createdAt": 1788478636000,
-      "expiresAt": 1788485836000,
-      "revoked": false
-    },
-    {
-      "id": "25ab8b98-b63f-4895-a100-dd69db74ed6a",
-      "value": "IGH000005260903065305TEMP9A91C87021USER",
-      "permanent": false,
-      "admin": false,
-      "createdAt": 1788479622487,
-      "expiresAt": 1788566022487,
-      "revoked": false
-    },
-    {
-      "id": "b42dd9a5-72e6-465f-afdd-a9c91f87b67d",
-      "value": "IGH000006260905223306TEMP01F1EC7021USER",
-      "permanent": false,
-      "admin": false,
-      "createdAt": 1788622418402,
-      "expiresAt": 1788708818402,
-      "revoked": false
-    }
+    "9def6236-7563-42e0-ae85-79916b73de98",
+    "d0a1b366-729a-4a03-8d68-0327ee4fdbb0"
   ],
   "users": [
     {

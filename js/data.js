@@ -1,8 +1,11 @@
 const STORAGE_KEY = "igh_kinglegacy_state";
 const THEME_KEY = "igh_theme";
 const LANG_KEY = "igh_lang";
-const APP_VERSION = "V.2.1";
+const APP_VERSION = "V.2.2";
 const APP_CHANGELOG = [
+  { version: "V.2.2", date: "2026-09-05", changes: [
+    "ปรับระบบคีย์ให้อ่านจากไฟล์ server/keys เท่านั้น และสร้างไฟล์อัตโนมัติหลังสร้างคีย์"
+  ] },
   { version: "V.2.1", date: "2026-09-05", changes: [
     "จำกัดการเข้าหน้า Admin ให้เฉพาะคีย์ที่มีสิทธิ์ Admin เท่านั้น"
   ] },

@@ -10,16 +10,13 @@ Install Node.js 18 or newer, then run from the project root:
 npm start
 ```
 
-Open `http://localhost:3000`. Data is stored in `server/data.json`.
+Open `http://localhost:3000`. Reviews, users, and community data are stored in `server/data.json`. Access keys are read only from individual JSON files in `server/keys/`.
 
-Set `ADMIN_BOOTSTRAP_KEY` before starting the server to create the first admin access key. The admin key is used only to open the key-management screen; generated user keys are created there.
+When an admin creates a key, the server automatically creates a new file in `server/keys/`. The key list in `data.json` is ignored and is removed the next time the server writes non-key data.
 
-PowerShell example:
+Keep `server/keys/` private. Do not commit real key files to a public repository.
 
-```powershell
-$env:ADMIN_BOOTSTRAP_KEY = "IGH-ADMIN-CHANGE-ME"
-npm start
-```
+The first admin key must be present as a JSON file in `server/keys/`. Admin-created keys are also written to that folder automatically.
 
 ## API
 
