@@ -9,6 +9,7 @@ function pageFromLocation() {
 function showPage(pageId, updateHistory = true) {
   if (!PAGE_ROUTES[pageId]) pageId = "dashboard";
   if (pageId === "admin" && localStorage.getItem("igh_kinglegacy_is_admin") !== "1") {
+    if (!localStorage.getItem(AUTH_TOKEN_KEY)) sessionStorage.setItem("igh_pending_admin_route", "1");
     toast("หน้านี้สำหรับ Admin เท่านั้น", "error");
     pageId = "dashboard";
     updateHistory = false;

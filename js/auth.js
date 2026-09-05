@@ -28,6 +28,10 @@ function openApp(result) {
   setTimeout(() => document.getElementById("auth-gate")?.remove(), 350);
   startKeyStatus(result.expiresAt);
   window.updateKeySettings?.(result);
+  if (result.admin && sessionStorage.getItem("igh_pending_admin_route") === "1") {
+    sessionStorage.removeItem("igh_pending_admin_route");
+    setTimeout(() => window.showPage?.("admin"), 400);
+  }
 }
 function startKeyStatus(expiresAt) {
   const expiry = Number(expiresAt || localStorage.getItem("igh_kinglegacy_expires_at"));
@@ -69,5 +73,20 @@ document.addEventListener("DOMContentLoaded", () => {
     } catch (error) { authMessage(error.message); }
   });
   document.querySelectorAll("#logout-btn, #mobile-logout-btn").forEach(button => button.addEventListener("click", () => { localStorage.removeItem(AUTH_TOKEN_KEY); localStorage.removeItem(AUTH_KEY_KEY); localStorage.removeItem("igh_kinglegacy_is_admin"); localStorage.removeItem("igh_kinglegacy_expires_at"); location.reload(); }));
-  if (localStorage.getItem(AUTH_TOKEN_KEY) && localStorage.getItem(AUTH_KEY_KEY)) { pendingAuthKey = localStorage.getItem(AUTH_KEY_KEY); fetch("/api/auth/key", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ key: pendingAuthKey }) }).then(async response => { if (response.ok) { openApp({ token: localStorage.getItem(AUTH_TOKEN_KEY), expiresAt: (await readApiResponse(response)).expiresAt, admin: localStorage.getItem("igh_kinglegacy_is_admin") === "1" }); } else { localStorage.removeItem(AUTH_TOKEN_KEY); localStorage.removeItem(AUTH_KEY_KEY); localStorage.removeItem("igh_kinglegacy_is_admin"); localStorage.removeItem("igh_kinglegacy_expires_at"); } }); }
+  if (localStorage.getItem(AUTH_TOKEN_KEY) && localStorage.getItem(AUTH_KEY_KEY)) {
+    pendingAuthKey = localStorage.getItem(AUTH_KEY_KEY);
+    postAuth("/api/auth/key", { key: pendingAuthKey }).then(async response => {
+      const keyResult = await readApiResponse(response);
+      if (!response.ok) throw new Error("expired");
+      const login = await postAuth("/api/auth/login", { key: pendingAuthKey });
+      const loginResult = await readApiResponse(login);
+      if (!login.ok) throw new Error("login_failed");
+      openApp(loginResult);
+    }).catch(() => {
+      localStorage.removeItem(AUTH_TOKEN_KEY);
+      localStorage.removeItem(AUTH_KEY_KEY);
+      localStorage.removeItem("igh_kinglegacy_is_admin");
+      localStorage.removeItem("igh_kinglegacy_expires_at");
+    });
+  }
 });

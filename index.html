@@ -224,16 +224,16 @@
             <div class="relative">
               <button id="add-entry-btn" class="btn-primary px-4 py-2 rounded-xl text-sm whitespace-nowrap" type="button">+ เพิ่มรายการเพิ่มเติม</button>
               <div id="add-entry-menu" class="hidden absolute right-0 top-full mt-2 z-30 w-44 glass-card rounded-xl p-1 shadow-xl">
-                <button id="add-product-menu-btn" type="button" class="w-full text-left px-3 py-2 rounded-lg hover:bg-slate-700/60 text-sm">เพิ่มสินค้า</button>
-                <button id="add-farm-menu-btn" type="button" class="w-full text-left px-3 py-2 rounded-lg hover:bg-slate-700/60 text-sm">เพิ่มรายการฟาร์ม</button>
+                <button id="add-product-menu-btn" type="button" class="w-full text-left px-3 py-2 rounded-lg hover:bg-slate-700/60 text-sm">📦 เพิ่มสินค้า</button>
+                <button id="add-farm-menu-btn" type="button" class="w-full text-left px-3 py-2 rounded-lg hover:bg-slate-700/60 text-sm">🌾 เพิ่มรายการฟาร์ม</button>
               </div>
             </div>
           </div>
         </div>
 
         <div class="flex rounded-xl bg-slate-800/50 p-1 border border-slate-700/50 mb-4 max-w-md">
-          <button id="stock-tab-products" type="button" class="seg-btn seg-active flex-1 py-2 rounded-lg text-sm font-semibold">ขายไอเทม</button>
-          <button id="stock-tab-farming" type="button" class="seg-btn flex-1 py-2 rounded-lg text-sm font-semibold">รับฟาร์ม</button>
+          <button id="stock-tab-products" type="button" class="seg-btn seg-active flex-1 py-2 rounded-lg text-sm font-semibold">🛒 ขายไอเทม</button>
+          <button id="stock-tab-farming" type="button" class="seg-btn flex-1 py-2 rounded-lg text-sm font-semibold">🌾 รับฟาร์ม</button>
         </div>
 
         <!-- Bulk selection toolbar -->
@@ -251,10 +251,10 @@
         <div class="flex flex-col md:flex-row gap-2 mb-4">
           <input id="product-search" type="text" data-i18n-placeholder="search_placeholder" placeholder="ค้นหาสินค้า หรือ หมวดหมู่..." class="flex-1 px-4 py-2.5 rounded-xl bg-slate-800/50 border border-slate-700/50 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
           <div id="status-filter-chips" class="filter-chips" role="group" aria-label="กรองสถานะ">
-            <button type="button" class="filter-chip status-chip-active" data-status-filter="all" data-i18n="filter_all_status">ทุกสถานะ</button>
-            <button type="button" class="filter-chip filter-chip-stock" data-status-filter="instock" data-i18n="status_instock">มีสินค้า</button>
-            <button type="button" class="filter-chip filter-chip-low" data-status-filter="low" data-i18n="status_low">ใกล้หมด</button>
-            <button type="button" class="filter-chip filter-chip-out" data-status-filter="out" data-i18n="status_out">หมด</button>
+            <button type="button" class="filter-chip status-chip-active" data-status-filter="all" data-i18n="filter_all_status">🔎 ทุกสถานะ</button>
+            <button type="button" class="filter-chip filter-chip-stock" data-status-filter="instock" data-i18n="status_instock">✅ มีสินค้า</button>
+            <button type="button" class="filter-chip filter-chip-low" data-status-filter="low" data-i18n="status_low">⚠️ ใกล้หมด</button>
+            <button type="button" class="filter-chip filter-chip-out" data-status-filter="out" data-i18n="status_out">⛔ หมด</button>
           </div>
           <select class="category-filter-select px-3 py-2.5 rounded-xl bg-slate-800/50 border border-slate-700/50 text-sm">
             <option value="all" data-i18n="filter_all_category">ทุกหมวดหมู่</option>
@@ -286,15 +286,15 @@
         </div>
         <div class="date-range-toolbar glass-card rounded-2xl p-3 mb-4">
           <div class="flex items-center justify-between gap-2 mb-2">
-            <span class="text-sm font-semibold" data-i18n="sales_date_filter">กรองตามวันที่</span>
+            <span class="text-sm font-semibold" data-i18n="sales_date_filter">🗓️ กรองตามวันที่</span>
             <div class="flex gap-1">
               <button id="sales-prev-month" class="date-nav-btn" type="button" data-i18n-aria="previous_month">‹</button>
               <button id="sales-next-month" class="date-nav-btn" type="button" data-i18n-aria="next_month">›</button>
             </div>
           </div>
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
-            <div class="date-picker" data-date-picker="sales-date-from"><span class="text-xs text-slate-400">เริ่มวันที่</span><input id="sales-date-from" type="date" class="date-input date-native-input"><button type="button" class="date-picker-trigger"><span>เลือกวันที่</span><b>▣</b></button><div class="date-picker-popover"></div></div>
-            <div class="date-picker" data-date-picker="sales-date-to"><span class="text-xs text-slate-400">ถึงวันที่</span><input id="sales-date-to" type="date" class="date-input date-native-input"><button type="button" class="date-picker-trigger"><span>เลือกวันที่</span><b>▣</b></button><div class="date-picker-popover"></div></div>
+            <div class="date-picker" data-date-picker="sales-date-from"><span class="text-xs text-slate-400">📅 เริ่มวันที่</span><input id="sales-date-from" type="date" class="date-input date-native-input"><button type="button" class="date-picker-trigger"><span>เลือกวันที่</span><b>▣</b></button><div class="date-picker-popover"></div></div>
+            <div class="date-picker" data-date-picker="sales-date-to"><span class="text-xs text-slate-400">📅 ถึงวันที่</span><input id="sales-date-to" type="date" class="date-input date-native-input"><button type="button" class="date-picker-trigger"><span>เลือกวันที่</span><b>▣</b></button><div class="date-picker-popover"></div></div>
           </div>
           <button id="sales-clear-date" type="button" class="text-xs text-orange-300 mt-2" data-i18n="clear_date_filter">ล้างตัวกรอง</button>
         </div>
@@ -403,7 +403,7 @@
         <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4" id="admin-key-stats"></div>
         <div class="glass-card rounded-2xl p-4 mb-4"><form id="admin-key-form" class="flex flex-wrap items-end gap-2"><label class="text-xs text-slate-400">อายุคีย์ (ชั่วโมง)<input id="admin-hours" type="number" min="1" value="24" class="date-input"></label><label class="flex items-center gap-2 text-sm pb-2"><input id="admin-permanent" type="checkbox"> คีย์ถาวร</label><label class="flex items-center gap-2 text-sm pb-2"><input id="admin-key-is-admin" type="checkbox"> คีย์แอดมิน</label><button class="btn-primary px-4 py-2 rounded-xl text-sm" type="submit">สุ่มคีย์</button></form><div class="flex items-center gap-2"><p id="admin-generated-key" class="generated-key hidden flex-1"></p><button id="copy-generated-key" type="button" class="hidden px-3 py-1.5 rounded-lg bg-slate-700/60 text-xs">คัดลอก</button></div></div>
         <div class="flex gap-2 mb-3"><button id="admin-export-json" class="btn-primary px-3 py-2 rounded-xl text-sm" type="button">Export JSON</button><button id="admin-export-pdf" class="px-3 py-2 rounded-xl bg-slate-700/60 text-sm" type="button">Export PDF</button></div>
-        <div class="key-filter-chips flex items-center gap-2 mb-3 text-xs"><button type="button" data-key-filter="active" class="key-filter-chip is-selected">ใช้งานได้</button><button type="button" data-key-filter="unlimited" class="key-filter-chip">อันลิมิต</button><button type="button" data-key-filter="limited" class="key-filter-chip">จำกัดเวลา</button><button type="button" data-key-filter="expired" class="key-filter-chip">หมดอายุ</button><button type="button" data-key-filter="all" class="key-filter-chip">ทั้งหมด</button></div>
+        <div class="key-filter-chips flex items-center gap-2 mb-3 text-xs"><button type="button" data-key-filter="active" class="key-filter-chip is-selected">🟢 ใช้งานได้</button><button type="button" data-key-filter="unlimited" class="key-filter-chip">♾️ อันลิมิต</button><button type="button" data-key-filter="limited" class="key-filter-chip">⏳ จำกัดเวลา</button><button type="button" data-key-filter="expired" class="key-filter-chip">🔴 หมดอายุ</button><button type="button" data-key-filter="all" class="key-filter-chip">📋 ทั้งหมด</button></div>
         <div id="admin-key-list" class="flex flex-col gap-2"></div>
       </section>
 

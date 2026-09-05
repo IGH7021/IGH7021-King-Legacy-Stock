@@ -4,7 +4,7 @@ let salesDateRange = { from: "", to: "" };
 const datePickerMonths = new Map();
 
 function dateValueLabel(value) {
-  if (!value) return "เลือกวันที่";
+  if (!value) return "📅 เลือกวันที่";
   return new Date(`${value}T00:00:00`).toLocaleDateString("th-TH", { day: "numeric", month: "short", year: "numeric" });
 }
 
@@ -29,7 +29,7 @@ function renderDatePicker(picker) {
     const today = new Date().toDateString() === day.toDateString();
     cells += `<button type="button" class="calendar-day ${muted ? "is-muted" : ""} ${selected ? "is-selected" : ""} ${today ? "is-today" : ""}" data-date-value="${value}">${day.getDate()}</button>`;
   }
-  popover.innerHTML = `<div class="calendar-header"><button type="button" data-calendar-nav="prev">‹</button><strong>${monthLabel}</strong><button type="button" data-calendar-nav="next">›</button></div><div class="calendar-grid">${cells}</div><div class="calendar-footer"><button type="button" data-calendar-clear>ล้าง</button><button type="button" data-calendar-today>วันนี้</button></div>`;
+  popover.innerHTML = `<div class="calendar-header"><button type="button" data-calendar-nav="prev" aria-label="เดือนก่อนหน้า">‹</button><strong>🗓️ ${monthLabel}</strong><button type="button" data-calendar-nav="next" aria-label="เดือนถัดไป">›</button></div><div class="calendar-grid">${cells}</div><div class="calendar-footer"><button type="button" data-calendar-clear>🧹 ล้าง</button><button type="button" data-calendar-today>✨ วันนี้</button></div>`;
   trigger.textContent = dateValueLabel(input.value);
 }
 
