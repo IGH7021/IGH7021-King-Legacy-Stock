@@ -7,6 +7,8 @@ function loadState() {
     const parsed = JSON.parse(raw);
     if (!parsed.products || !parsed.sales || !parsed.settings) throw new Error("invalid");
     state = parsed;
+    if (!Array.isArray(state.farmServices)) state.farmServices = [];
+    if (!Array.isArray(state.farmOrders)) state.farmOrders = [];
     if (!state.settings.categories) state.settings.categories = Object.keys(CATEGORY_ICONS).filter(c=>c!=="อื่นๆ");
     return state;
   } catch (e) {
@@ -29,6 +31,82 @@ function saveState() {
 }
 
 function genId(prefix) { return prefix + "_" + Date.now().toString(36) + Math.random().toString(36).slice(2,7); }
+
+async function copyText(text) {
+  if (!text) return false;
+  try {
+    await navigator.clipboard.writeText(text);
+  } catch (error) {
+    const input = document.createElement("textarea");
+    input.value = text;
+    input.style.position = "fixed";
+    input.style.opacity = "0";
+    document.body.appendChild(input);
+    input.select();
+    document.execCommand("copy");
+    input.remove();
+  }
+  return true;
+}
+
+function customSelectLabel(select) {
+  return select.options[select.selectedIndex]?.textContent || "เลือกตัวเลือก";
+}
+
+function syncCustomSelect(select) {
+  const wrapper = select.closest(".custom-select");
+  if (!wrapper) return;
+  const trigger = wrapper.querySelector(".custom-select-trigger");
+  const menu = wrapper.querySelector(".custom-select-menu");
+  if (trigger) trigger.querySelector("span").textContent = customSelectLabel(select);
+  menu?.querySelectorAll("button").forEach(button => button.classList.toggle("is-selected", button.dataset.value === select.value));
+}
+
+function buildCustomSelect(select) {
+  if (select.closest(".custom-select")) { syncCustomSelect(select); return; }
+  const wrapper = document.createElement("div");
+  wrapper.className = "custom-select";
+  if (select.classList.contains("w-full")) wrapper.classList.add("w-full");
+  if (select.classList.contains("flex-1")) wrapper.classList.add("flex-1");
+  if (select.classList.contains("mt-1")) wrapper.classList.add("mt-1");
+  select.parentNode.insertBefore(wrapper, select);
+  wrapper.appendChild(select);
+  select.classList.add("custom-select-native");
+  const trigger = document.createElement("button");
+  trigger.type = "button";
+  trigger.className = "custom-select-trigger";
+  trigger.innerHTML = `<span></span><b aria-hidden="true">⌄</b>`;
+  const menu = document.createElement("div");
+  menu.className = "custom-select-menu";
+  wrapper.append(trigger, menu);
+  const rebuild = () => {
+    menu.innerHTML = Array.from(select.options).map(option => `<button type="button" data-value="${option.value}">${option.textContent}</button>`).join("");
+    syncCustomSelect(select);
+  };
+  trigger.addEventListener("click", event => {
+    event.stopPropagation();
+    document.querySelectorAll(".custom-select.is-open").forEach(item => { if (item !== wrapper) item.classList.remove("is-open"); });
+    wrapper.classList.toggle("is-open");
+  });
+  menu.addEventListener("click", event => {
+    const option = event.target.closest("button[data-value]");
+    if (!option) return;
+    select.value = option.dataset.value;
+    select.dispatchEvent(new Event("change", { bubbles: true }));
+    syncCustomSelect(select);
+    wrapper.classList.remove("is-open");
+  });
+  new MutationObserver(rebuild).observe(select, { childList: true });
+  rebuild();
+}
+
+function enhanceCustomSelects() {
+  document.querySelectorAll("select").forEach(buildCustomSelect);
+}
+
+document.addEventListener("click", event => {
+  if (!event.target.closest(".custom-select")) document.querySelectorAll(".custom-select.is-open").forEach(select => select.classList.remove("is-open"));
+});
 
 function debounce(fn, ms) {
   let t;

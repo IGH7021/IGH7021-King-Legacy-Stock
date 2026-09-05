@@ -68,6 +68,7 @@ function renderTimeline() {
   if (!box) return;
   const events = [];
   state.sales.slice(0, 8).forEach(s => events.push({ ts: s.date, text: t("timeline_sold", { name: s.productName, qty: fmtNum(s.quantity) }), sub: fmtBaht(s.money), color: "bg-emerald-400" }));
+  (state.farmOrders || []).slice(0, 8).forEach(order => events.push({ ts: order.date, text: `รับฟาร์ม ${order.serviceName} ${fmtNum(order.quantity)} ${t("pieces_unit")}`, sub: fmtBaht(order.money), color: "bg-orange-400" }));
   state.products.forEach(p => (p.restockHistory||[]).forEach(r => events.push({ ts: r.date, text: t("timeline_restocked", { name: p.name }), sub: `+${fmtNum(r.amount)} ${t("pieces_unit")}`, color: "bg-indigo-400" })));
   events.sort((a,b) => b.ts - a.ts);
   const top = events.slice(0, 8);
@@ -86,7 +87,12 @@ function renderTimeline() {
 }
 
 function getBestSellers() {
-  return [...state.products].filter(p=>p.sold>0).sort((a,b) => b.sold - a.sold);
+  const products = state.products.filter(p => p.sold > 0).map(product => ({ ...product, itemType: "product", totalQuantity: product.sold }));
+  const farms = (state.farmServices || []).map(service => {
+    const orders = (state.farmOrders || []).filter(order => order.serviceId === service.id);
+    return { ...service, itemType: "farm", totalQuantity: orders.reduce((sum, order) => sum + Number(order.quantity || 0), 0) };
+  }).filter(service => service.totalQuantity > 0);
+  return [...products, ...farms].sort((a, b) => b.totalQuantity - a.totalQuantity);
 }
 
 function renderBestSellers(elId, limit) {
@@ -98,9 +104,9 @@ function renderBestSellers(elId, limit) {
   box.innerHTML = list.map((p,i) => `
     <div class="flex items-center gap-3 py-1.5">
       <span class="w-6 text-center font-bold text-sm">${medals[i]||(i+1)}</span>
-      <div class="w-8 h-8 rounded-lg overflow-hidden bg-slate-800/60 flex-shrink-0">${productImg(p)}</div>
-      <span class="flex-1 text-sm truncate">${p.name}</span>
-      <span class="text-sm font-semibold text-indigo-300">${fmtNum(p.sold)} ${t("pieces_unit")}</span>
+      <div class="w-8 h-8 rounded-lg overflow-hidden bg-slate-800/60 flex-shrink-0">${p.itemType === "farm" ? (p.image ? `<img src="${p.image}" class="w-full h-full object-cover" alt="${p.name}">` : "🌾") : productImg(p)}</div>
+      <span class="flex-1 text-sm truncate">${p.itemType === "farm" ? "ฟาร์ม: " : ""}${p.name}</span>
+      <span class="text-sm font-semibold text-indigo-300">${fmtNum(p.totalQuantity)} ${t("pieces_unit")}</span>
     </div>`).join("");
 }
 

@@ -21,19 +21,6 @@
       <h1>Access key</h1><p class="auth-help">กรอกคีย์เพื่อเข้าสู่ระบบ</p>
       <form id="auth-key-form" class="auth-form"><div class="inputContainer"><label for="auth-key">Access key <b>*</b></label><input id="auth-key" required autocomplete="off" placeholder="เช่น IGH000001..."><small id="auth-key-hint">ใช้คีย์ที่ได้รับจากแอดมิน</small><span id="auth-key-error" class="field-error" role="alert"></span></div><button class="enter" type="submit">Continue</button></form>
     </div>
-    <div id="auth-account-step" class="hidden">
-      <button id="auth-back-btn" class="auth-link auth-back" type="button">← เปลี่ยนคีย์</button>
-      <div id="auth-signup-view">
-        <h1>Sign Up</h1><p class="auth-help">สร้างบัญชีสำหรับคีย์นี้</p>
-        <form id="auth-signup-form" class="auth-form auth-fields">
-          <div class="inputContainer"><label for="signup-name">ชื่อ <b>*</b></label><input id="signup-name" required placeholder="ชื่อที่ใช้แสดง" aria-describedby="signup-name-hint signup-name-error"><small id="signup-name-hint">กรอกชื่อของคุณ</small><span id="signup-name-error" class="field-error" role="alert"></span></div>
-          <div class="inputContainer"><label for="signup-email">อีเมล <b>*</b></label><input id="signup-email" type="email" required placeholder="name@example.com" aria-describedby="signup-email-hint signup-email-error"><small id="signup-email-hint">ใช้สำหรับกู้คืนบัญชี</small><span id="signup-email-error" class="field-error" role="alert"></span></div>
-          <div class="inputContainer password-field"><label for="signup-password">รหัสผ่าน <b>*</b></label><input id="signup-password" type="password" required minlength="9" placeholder="อย่างน้อย 9 ตัวอักษร" aria-describedby="signup-password-hint signup-password-error"><button id="signup-password-toggle" type="button" class="password-toggle" aria-label="Show password">แสดง</button><small id="signup-password-hint">ต้องมีพิมพ์เล็ก พิมพ์ใหญ่ ตัวเลข และอักขระพิเศษ</small><span id="signup-password-error" class="field-error" role="alert"></span></div>
-          <button class="enter" type="submit">Create account</button>
-        </form><button id="auth-login-switch" class="auth-link" type="button">มีบัญชีแล้ว? Login</button>
-      </div>
-      <div id="auth-login-view" class="hidden"><h1>Login</h1><p class="auth-help">ใช้คีย์เดิมเพื่อเข้าใช้งาน</p><form id="auth-login-form" class="auth-form"><div class="inputContainer"><label for="login-key">Access key <b>*</b></label><input id="login-key" required placeholder="กรอกคีย์ของคุณ" aria-describedby="login-key-hint login-key-error"><small id="login-key-hint">คีย์ที่มีบัญชีแล้วจะเข้าสู่ระบบทันที</small><span id="login-key-error" class="field-error" role="alert"></span></div><button class="enter" type="submit">Enter</button></form></div>
-    </div>
     <p id="auth-message" class="auth-message" role="alert"></p>
   </div>
 </section>
@@ -80,6 +67,7 @@
     <button data-nav="sales" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium">🧾 <span data-i18n="nav_sales">การขาย</span></button>
     <button data-nav="reports" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium">📈 <span data-i18n="nav_reports">สรุปยอดขาย</span></button>
     <button data-nav="settings" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium">⚙️ <span data-i18n="nav_settings">ตั้งค่า</span></button>
+    <button data-nav="updates" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium">🆕 <span>อัปเดต</span></button>
     <button id="admin-nav-btn" data-nav="admin" class="sidebar-link admin-only hidden flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium">🔐 <span>Admin</span></button>
     <button id="logout-btn" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-rose-300">↪ <span>ออกจากบัญชี</span></button>
     <div class="mt-auto px-2 flex flex-col gap-2">
@@ -233,8 +221,19 @@
           <h1 class="text-xl md:text-2xl font-bold" data-i18n="products_title">สินค้า / Stock</h1>
           <div class="flex gap-2">
             <button id="toggle-select-mode-btn" class="px-3 py-2 rounded-xl bg-slate-700/50 hover:bg-slate-700 text-sm whitespace-nowrap" data-i18n="select_mode_btn_on">☑️ เลือกหลายรายการ</button>
-            <button id="add-product-btn" class="btn-primary px-4 py-2 rounded-xl text-sm whitespace-nowrap" data-i18n="add_product_btn">+ เพิ่มสินค้า</button>
+            <div class="relative">
+              <button id="add-entry-btn" class="btn-primary px-4 py-2 rounded-xl text-sm whitespace-nowrap" type="button">+ เพิ่มรายการเพิ่มเติม</button>
+              <div id="add-entry-menu" class="hidden absolute right-0 top-full mt-2 z-30 w-44 glass-card rounded-xl p-1 shadow-xl">
+                <button id="add-product-menu-btn" type="button" class="w-full text-left px-3 py-2 rounded-lg hover:bg-slate-700/60 text-sm">เพิ่มสินค้า</button>
+                <button id="add-farm-menu-btn" type="button" class="w-full text-left px-3 py-2 rounded-lg hover:bg-slate-700/60 text-sm">เพิ่มรายการฟาร์ม</button>
+              </div>
+            </div>
           </div>
+        </div>
+
+        <div class="flex rounded-xl bg-slate-800/50 p-1 border border-slate-700/50 mb-4 max-w-md">
+          <button id="stock-tab-products" type="button" class="seg-btn seg-active flex-1 py-2 rounded-lg text-sm font-semibold">ขายไอเทม</button>
+          <button id="stock-tab-farming" type="button" class="seg-btn flex-1 py-2 rounded-lg text-sm font-semibold">รับฟาร์ม</button>
         </div>
 
         <!-- Bulk selection toolbar -->
@@ -248,14 +247,15 @@
           </div>
         </div>
 
+        <div id="products-toolbar">
         <div class="flex flex-col md:flex-row gap-2 mb-4">
           <input id="product-search" type="text" data-i18n-placeholder="search_placeholder" placeholder="ค้นหาสินค้า หรือ หมวดหมู่..." class="flex-1 px-4 py-2.5 rounded-xl bg-slate-800/50 border border-slate-700/50 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
-          <select id="status-filter" class="px-3 py-2.5 rounded-xl bg-slate-800/50 border border-slate-700/50 text-sm">
-            <option value="all" data-i18n="filter_all_status">ทุกสถานะ</option>
-            <option value="instock" data-i18n="status_instock">มีสินค้า</option>
-            <option value="low" data-i18n="status_low">ใกล้หมด</option>
-            <option value="out" data-i18n="status_out">หมด</option>
-          </select>
+          <div id="status-filter-chips" class="filter-chips" role="group" aria-label="กรองสถานะ">
+            <button type="button" class="filter-chip status-chip-active" data-status-filter="all" data-i18n="filter_all_status">ทุกสถานะ</button>
+            <button type="button" class="filter-chip filter-chip-stock" data-status-filter="instock" data-i18n="status_instock">มีสินค้า</button>
+            <button type="button" class="filter-chip filter-chip-low" data-status-filter="low" data-i18n="status_low">ใกล้หมด</button>
+            <button type="button" class="filter-chip filter-chip-out" data-status-filter="out" data-i18n="status_out">หมด</button>
+          </div>
           <select class="category-filter-select px-3 py-2.5 rounded-xl bg-slate-800/50 border border-slate-700/50 text-sm">
             <option value="all" data-i18n="filter_all_category">ทุกหมวดหมู่</option>
           </select>
@@ -265,6 +265,15 @@
         </div>
 
         <div id="products-grid" class="products-grid gap-3 md:gap-4"></div>
+        </div>
+        <div id="farming-panel" class="hidden">
+          <div class="flex items-center justify-between gap-2 mb-4">
+            <div><p class="font-semibold">รายการรับฟาร์ม</p><p class="text-xs text-slate-400">ตั้งจำนวนที่ต้องฟาร์มต่อราคา และบันทึกงานที่รับแล้ว</p></div>
+            <button id="add-farm-service-btn" class="btn-primary px-3 py-2 rounded-xl text-sm" type="button">+ เพิ่มงานฟาร์ม</button>
+          </div>
+          <div id="farm-services-grid" class="products-grid gap-3 md:gap-4"></div>
+          <div class="mt-6"><p class="font-semibold text-sm mb-3">ประวัติงานฟาร์ม</p><div id="farm-orders-list" class="flex flex-col gap-2"></div></div>
+        </div>
         <button id="products-back-to-top" class="button back-to-top" type="button" aria-label="Back to top" data-i18n-aria="back_to_top">
           <svg class="svgIcon" viewBox="0 0 384 512" aria-hidden="true"><path d="M214.6 41.4c-12.5-12.5-32.8-12.5-45.3 0l-160 160c-12.5 12.5-12.5 32.8 0 45.3s32.8 12.5 45.3 0L160 141.2V448c0 17.7 14.3 32 32 32s32-14.3 32-32V141.2L329.4 246.6c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3l-160-160z"></path></svg>
         </button>
@@ -284,8 +293,8 @@
             </div>
           </div>
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
-            <label class="text-xs text-slate-400"><span data-i18n="date_from">เริ่มวันที่</span><input id="sales-date-from" type="date" class="date-input"></label>
-            <label class="text-xs text-slate-400"><span data-i18n="date_to">ถึงวันที่</span><input id="sales-date-to" type="date" class="date-input"></label>
+            <div class="date-picker" data-date-picker="sales-date-from"><span class="text-xs text-slate-400">เริ่มวันที่</span><input id="sales-date-from" type="date" class="date-input date-native-input"><button type="button" class="date-picker-trigger"><span>เลือกวันที่</span><b>▣</b></button><div class="date-picker-popover"></div></div>
+            <div class="date-picker" data-date-picker="sales-date-to"><span class="text-xs text-slate-400">ถึงวันที่</span><input id="sales-date-to" type="date" class="date-input date-native-input"><button type="button" class="date-picker-trigger"><span>เลือกวันที่</span><b>▣</b></button><div class="date-picker-popover"></div></div>
           </div>
           <button id="sales-clear-date" type="button" class="text-xs text-orange-300 mt-2" data-i18n="clear_date_filter">ล้างตัวกรอง</button>
         </div>
@@ -323,11 +332,6 @@
         </div>
 
         <div class="glass-card rounded-2xl p-4 mb-4">
-          <p class="font-semibold mb-3" data-i18n="update_log_title">มีอะไรอัปเดต</p>
-          <div id="update-log" class="flex flex-col gap-3"></div>
-        </div>
-
-        <div class="glass-card rounded-2xl p-4 mb-4">
           <p class="font-semibold mb-2" data-i18n="settings_language">ภาษา</p>
           <div class="flex rounded-xl bg-slate-800/50 p-1 border border-slate-700/50 w-fit">
             <button class="lang-btn seg-btn seg-active px-5 py-1.5 rounded-lg text-sm font-semibold" data-lang="th">ไทย (TH)</button>
@@ -335,8 +339,15 @@
           </div>
         </div>
 
-        <div class="glass-card rounded-2xl p-4 mt-4">
+        <div id="user-key-settings" class="glass-card rounded-2xl p-4 mb-4">
+          <div class="flex items-center justify-between gap-3 mb-3"><p class="font-semibold">คีย์ที่ใช้งาน</p><div class="flex gap-2"><button id="toggle-key-visibility" type="button" class="px-3 py-1.5 rounded-lg bg-slate-700/60 text-xs">แสดงคีย์</button><button id="copy-current-key" type="button" class="px-3 py-1.5 rounded-lg bg-slate-700/60 text-xs">คัดลอก</button></div></div>
+          <code id="current-key-value" class="block text-xs break-all text-slate-300">••••••••••••••••</code>
+          <p id="current-key-expiry" class="text-xs text-slate-400 mt-2"></p>
+        </div>
+
+        <div class="glass-card rounded-2xl p-4 mb-4">
           <p class="font-semibold mb-3" data-i18n="credits_title">ช่องทางติดต่อแอดมิน</p>
+          <p class="text-xs text-slate-400 mb-3">ประวัติการอัปเดตระบบและฟีเจอร์ที่เพิ่มเข้ามา</p>
           <div class="flex flex-wrap gap-x-4 gap-y-2 text-sm">
             <a class="credit-link" href="https://web.facebook.com/IGH7021" target="_blank" rel="noreferrer" aria-label="Facebook">
               <svg class="icons-social-media" viewBox="0 0 320 512" aria-hidden="true"><path d="M279.14 288l14.22-92.66h-88.91V127.2c0-25.35 12.42-50.06 52.24-50.06H297V6.26S260.43 0 225.36 0c-73.22 0-121.08 44.38-121.08 124.72v70.62H22.89V288h81.39v224h100.17V288z"></path></svg>
@@ -382,11 +393,17 @@
         </div>
       </section>
 
+      <section id="page-updates" class="page hidden">
+        <div class="flex items-center justify-between mb-4 gap-3"><div><h1 class="text-xl md:text-2xl font-bold">มีอะไรอัปเดต</h1><p class="text-xs text-slate-400 mt-1">ประวัติการอัปเดตระบบและฟีเจอร์ทั้งหมด</p></div><span id="updates-page-version" class="text-xs font-semibold text-indigo-300 px-2.5 py-1 rounded-full bg-indigo-500/15 border border-indigo-500/30"></span></div>
+        <div id="updates-page-log" class="flex flex-col gap-3"></div>
+      </section>
+
       <section id="page-admin" class="page hidden admin-only">
         <div class="admin-page-header flex items-center justify-between mb-4 gap-3"><div><p class="text-xs text-orange-300 mb-1">ADMIN CONTROL CENTER</p><h1 class="text-xl md:text-2xl font-bold">Admin Key Manager</h1><p class="text-xs text-slate-400 mt-1">จัดการคีย์ ดูเจ้าของคีย์ และตรวจสอบอายุการใช้งาน</p></div><button id="admin-logout-btn" class="btn-primary px-3 py-2 rounded-xl text-sm">ออกจากบัญชี</button></div>
         <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4" id="admin-key-stats"></div>
-        <div class="glass-card rounded-2xl p-4 mb-4"><form id="admin-key-form" class="flex flex-wrap items-end gap-2"><label class="text-xs text-slate-400">อายุคีย์ (ชั่วโมง)<input id="admin-hours" type="number" min="1" value="24" class="date-input"></label><label class="flex items-center gap-2 text-sm pb-2"><input id="admin-permanent" type="checkbox"> คีย์ถาวร</label><button class="btn-primary px-4 py-2 rounded-xl text-sm" type="submit">สุ่มคีย์</button></form><p id="admin-generated-key" class="generated-key hidden"></p></div>
+        <div class="glass-card rounded-2xl p-4 mb-4"><form id="admin-key-form" class="flex flex-wrap items-end gap-2"><label class="text-xs text-slate-400">อายุคีย์ (ชั่วโมง)<input id="admin-hours" type="number" min="1" value="24" class="date-input"></label><label class="flex items-center gap-2 text-sm pb-2"><input id="admin-permanent" type="checkbox"> คีย์ถาวร</label><label class="flex items-center gap-2 text-sm pb-2"><input id="admin-key-is-admin" type="checkbox"> คีย์แอดมิน</label><button class="btn-primary px-4 py-2 rounded-xl text-sm" type="submit">สุ่มคีย์</button></form><div class="flex items-center gap-2"><p id="admin-generated-key" class="generated-key hidden flex-1"></p><button id="copy-generated-key" type="button" class="hidden px-3 py-1.5 rounded-lg bg-slate-700/60 text-xs">คัดลอก</button></div></div>
         <div class="flex gap-2 mb-3"><button id="admin-export-json" class="btn-primary px-3 py-2 rounded-xl text-sm" type="button">Export JSON</button><button id="admin-export-pdf" class="px-3 py-2 rounded-xl bg-slate-700/60 text-sm" type="button">Export PDF</button></div>
+        <div class="key-filter-chips flex items-center gap-2 mb-3 text-xs"><button type="button" data-key-filter="active" class="key-filter-chip is-selected">ใช้งานได้</button><button type="button" data-key-filter="unlimited" class="key-filter-chip">อันลิมิต</button><button type="button" data-key-filter="limited" class="key-filter-chip">จำกัดเวลา</button><button type="button" data-key-filter="expired" class="key-filter-chip">หมดอายุ</button><button type="button" data-key-filter="all" class="key-filter-chip">ทั้งหมด</button></div>
         <div id="admin-key-list" class="flex flex-col gap-2"></div>
       </section>
 
@@ -400,7 +417,46 @@
     <button data-nav="sales" class="sidebar-link flex flex-col items-center gap-0.5 px-2 py-1 rounded-xl text-[11px]">🧾 <span data-i18n="nav_sales">การขาย</span></button>
     <button data-nav="reports" class="sidebar-link flex flex-col items-center gap-0.5 px-2 py-1 rounded-xl text-[11px]">📈 <span data-i18n="nav_reports">สรุป</span></button>
     <button data-nav="settings" class="sidebar-link flex flex-col items-center gap-0.5 px-2 py-1 rounded-xl text-[11px]">⚙️ <span data-i18n="nav_settings">ตั้งค่า</span></button>
+    <button data-nav="updates" class="sidebar-link flex flex-col items-center gap-0.5 px-2 py-1 rounded-xl text-[11px]">🆕 <span>อัปเดต</span></button>
   </nav>
+</div>
+
+<!-- Farming service modal -->
+<div id="farm-service-modal" class="modal-overlay hidden">
+  <div class="modal-box glass-card w-full max-w-md rounded-2xl p-5 relative">
+    <button data-close-modal class="absolute top-4 right-4 text-slate-400 hover:text-white" aria-label="close">✕</button>
+    <h2 id="farm-service-modal-title" class="font-bold text-lg mb-4">เพิ่มงานรับฟาร์ม</h2>
+    <form id="farm-service-form" class="flex flex-col gap-3">
+      <div>
+        <label class="text-xs text-slate-400">รูปงานฟาร์ม</label>
+        <div id="farm-image-dropzone" class="mt-1 rounded-xl border-2 border-dashed border-slate-600/60 p-4 flex flex-col items-center justify-center gap-1 cursor-pointer transition-colors">
+          <div id="farm-image-placeholder" class="flex flex-col items-center gap-1 text-center"><div class="w-10 h-10 rounded-full bg-emerald-500/15 text-emerald-300 flex items-center justify-center text-2xl font-bold">+</div><p class="text-xs text-slate-300">ลากรูปมาวางที่นี่ หรือคลิกเพื่อเลือกไฟล์</p><p class="text-[10px] text-slate-500">รองรับ PNG, JPG, WEBP</p></div>
+          <div id="farm-image-preview-wrap" class="hidden w-20 h-20 rounded-xl overflow-hidden bg-slate-800/60"><img id="farm-image-preview" class="w-full h-full object-cover"></div>
+        </div>
+        <input id="farm-image-input" type="file" accept="image/png,image/jpeg,image/jpg,image/webp" class="hidden">
+      </div>
+      <input name="name" required placeholder="ชื่อบริการ เช่น ฟาร์มเงิน" class="w-full px-3 py-2 rounded-xl bg-slate-800/50 border border-slate-700/50 text-sm">
+      <div class="grid grid-cols-2 gap-2"><input name="category" required placeholder="หมวดหมู่" class="w-full px-3 py-2 rounded-xl bg-slate-800/50 border border-slate-700/50 text-sm"><select name="rarity" class="rarity-select-input w-full px-3 py-2 rounded-xl bg-slate-800/50 border border-slate-700/50 text-sm"></select></div>
+      <div><label class="text-xs text-slate-400">จำนวนที่ฟาร์ม / ราคา</label><div class="flex items-center gap-2 mt-1"><input name="rateQty" type="number" step="any" min="0.0001" value="1000000" required class="w-full px-3 py-2 rounded-xl bg-slate-800/50 border border-slate-700/50 text-sm"><span class="text-sm text-slate-400">ชิ้น /</span><input name="ratePrice" type="number" step="any" min="0.0001" value="5" required class="w-full px-3 py-2 rounded-xl bg-slate-800/50 border border-slate-700/50 text-sm"><span class="text-sm text-slate-400">บาท</span></div></div>
+      <textarea name="description" rows="2" placeholder="รายละเอียดงาน" class="w-full px-3 py-2 rounded-xl bg-slate-800/50 border border-slate-700/50 text-sm"></textarea>
+      <div class="flex gap-2"><button type="button" data-close-modal class="flex-1 py-2.5 rounded-xl bg-slate-700/50 text-sm">ยกเลิก</button><button type="submit" class="flex-1 btn-primary py-2.5 rounded-xl text-sm">บันทึกงาน</button></div>
+    </form>
+  </div>
+</div>
+
+<!-- Farming order modal -->
+<div id="farm-order-modal" class="modal-overlay hidden">
+  <div class="modal-box glass-card w-full max-w-md rounded-2xl p-5 relative">
+    <button data-close-modal class="absolute top-4 right-4 text-slate-400 hover:text-white" aria-label="close">✕</button>
+    <h2 class="font-bold text-lg mb-4">บันทึกงานฟาร์ม</h2>
+    <form id="farm-order-form" class="flex flex-col gap-3">
+      <select id="farm-order-service" name="service" class="w-full px-3 py-2 rounded-xl bg-slate-800/50 border border-slate-700/50 text-sm"></select>
+      <div class="grid grid-cols-2 gap-2"><label class="text-xs text-slate-400">จำนวนที่ฟาร์ม<input name="quantity" type="number" min="0.0001" step="any" required class="w-full mt-1 px-3 py-2 rounded-xl bg-slate-800/50 border border-slate-700/50 text-sm"></label><label class="text-xs text-slate-400">ราคา (บาท)<input id="farm-order-money" name="money" type="number" min="0.01" step="any" required class="w-full mt-1 px-3 py-2 rounded-xl bg-slate-800/50 border border-slate-700/50 text-sm"></label></div>
+      <input name="customer" placeholder="ชื่อลูกค้า (ถ้ามี)" class="w-full px-3 py-2 rounded-xl bg-slate-800/50 border border-slate-700/50 text-sm">
+      <input name="note" placeholder="หมายเหตุ" class="w-full px-3 py-2 rounded-xl bg-slate-800/50 border border-slate-700/50 text-sm">
+      <div class="flex gap-2"><button type="button" data-close-modal class="flex-1 py-2.5 rounded-xl bg-slate-700/50 text-sm">ยกเลิก</button><button type="submit" class="flex-1 btn-primary py-2.5 rounded-xl text-sm">บันทึกงาน</button></div>
+    </form>
+  </div>
 </div>
 
 <div id="mobile-nav-scrim" class="nav-scrim hidden"></div>
@@ -412,6 +468,7 @@
   <button data-nav="sales" class="drawer-link">🧾 <span data-i18n="nav_sales">การขาย</span></button>
   <button data-nav="reports" class="drawer-link">📈 <span data-i18n="nav_reports">สรุปยอดขาย</span></button>
   <button data-nav="settings" class="drawer-link">⚙️ <span data-i18n="nav_settings">ตั้งค่า</span></button>
+  <button data-nav="updates" class="drawer-link">🆕 <span>อัปเดต</span></button>
   <button data-nav="admin" class="drawer-link admin-only hidden">🔐 Admin</button>
   <button id="mobile-logout-btn" class="drawer-link text-rose-300">↪ ออกจากบัญชี</button>
 </nav>
@@ -634,6 +691,7 @@
 <script src="js/i18n.js"></script>
 <script src="js/utils.js"></script>
 <script src="js/products.js"></script>
+<script src="js/farm.js"></script>
 <script src="js/sales.js"></script>
 <script src="js/dashboard.js"></script>
 <script src="js/backup.js"></script>

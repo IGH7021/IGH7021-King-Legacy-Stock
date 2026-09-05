@@ -1,4 +1,19 @@
-function showPage(pageId) {
+const PAGE_ROUTES = { dashboard: "Dashboard", products: "Products", sales: "Sales", reports: "Reports", settings: "Settings", updates: "Updates", admin: "Admin" };
+
+function pageFromLocation() {
+  const segment = location.pathname.split("/").filter(Boolean)[0] || "Dashboard";
+  const pageId = Object.keys(PAGE_ROUTES).find(key => PAGE_ROUTES[key].toLowerCase() === segment.toLowerCase());
+  return pageId || "dashboard";
+}
+
+function showPage(pageId, updateHistory = true) {
+  if (!PAGE_ROUTES[pageId]) pageId = "dashboard";
+  if (pageId === "admin" && localStorage.getItem("igh_kinglegacy_is_admin") !== "1") {
+    toast("หน้านี้สำหรับ Admin เท่านั้น", "error");
+    pageId = "dashboard";
+    updateHistory = false;
+    if (location.pathname.toLowerCase() === "/admin") history.replaceState({ pageId }, "", "/Dashboard");
+  }
   document.querySelectorAll(".page").forEach(p => p.classList.add("hidden"));
   document.getElementById("page-" + pageId).classList.remove("hidden");
   document.querySelectorAll("[data-nav]").forEach(el => {
@@ -8,7 +23,32 @@ function showPage(pageId) {
   if (pageId === "products") renderProducts();
   if (pageId === "sales") renderSalesHistory();
   if (pageId === "reports") renderReports();
+  if (pageId === "updates") renderUpdatesPage();
+  if (updateHistory && location.pathname.toLowerCase() !== `/${PAGE_ROUTES[pageId].toLowerCase()}`) history.pushState({ pageId }, "", `/${PAGE_ROUTES[pageId]}`);
   window.scrollTo({ top: 0 });
+}
+
+function renderUpdatesPage() {
+  const log = document.getElementById("updates-page-log");
+  const version = document.getElementById("updates-page-version");
+  if (!log) return;
+  if (version) version.textContent = APP_VERSION;
+  log.innerHTML = APP_CHANGELOG.map(entry => `<div class="glass-card rounded-2xl p-4 border-l-2 border-indigo-400/70"><div class="flex items-center justify-between gap-2"><strong class="text-sm">${entry.version}</strong><span class="text-[11px] text-slate-400">${t("update_date_prefix")} ${entry.date}</span></div><ul class="mt-2 text-sm text-slate-300 list-disc list-inside">${entry.changes.map(change => `<li>${change}</li>`).join("")}</ul></div>`).join("");
+}
+
+function updateKeySettings(result = {}) {
+  const panel = document.getElementById("user-key-settings");
+  const value = document.getElementById("current-key-value");
+  const expiry = document.getElementById("current-key-expiry");
+  const toggle = document.getElementById("toggle-key-visibility");
+  if (!panel || !value || !expiry) return;
+  const key = localStorage.getItem(AUTH_KEY_KEY) || pendingAuthKey || "";
+  const isAdmin = result.admin || localStorage.getItem("igh_kinglegacy_is_admin") === "1";
+  panel.classList.toggle("hidden", isAdmin);
+  panel.dataset.key = key;
+  value.textContent = "•".repeat(Math.min(24, Math.max(8, key.length)));
+  expiry.textContent = result.expiresAt ? `กำลังใช้งาน • หมดอายุ ${new Date(result.expiresAt).toLocaleString("th-TH")}` : "กำลังใช้งาน • อันลิมิต";
+  if (toggle) toggle.textContent = "แสดงคีย์";
 }
 
 function applyTheme(theme) {
@@ -28,16 +68,6 @@ function initSkeleton(cb) {
 
 function renderSettings() {
   document.getElementById("app-version").textContent = APP_VERSION;
-  const updateLog = document.getElementById("update-log");
-  updateLog.classList.toggle("update-log-parallax", APP_CHANGELOG.length > 5);
-  updateLog.innerHTML = APP_CHANGELOG.map(entry => `
-    <div class="border-l-2 border-indigo-400/70 pl-3">
-      <div class="flex items-center justify-between gap-2">
-        <strong class="text-sm">${entry.version}</strong>
-        <span class="text-[11px] text-slate-400">${t("update_date_prefix")} ${entry.date}</span>
-      </div>
-      <ul class="mt-1 text-xs text-slate-400 list-disc list-inside">${entry.changes.map(change => `<li>${change}</li>`).join("")}</ul>
-    </div>`).join("");
   document.getElementById("stock-alert-slider").value = state.settings.stockAlert;
   document.getElementById("stock-alert-value").textContent = state.settings.stockAlert;
   const catList = document.getElementById("settings-category-list");
@@ -53,6 +83,19 @@ document.addEventListener("DOMContentLoaded", () => {
   bindModalDismiss();
   applyTheme(localStorage.getItem(THEME_KEY) || "dark");
   applyStaticTranslations();
+  document.getElementById("toggle-key-visibility")?.addEventListener("click", event => {
+    const panel = document.getElementById("user-key-settings");
+    const value = document.getElementById("current-key-value");
+    const key = panel?.dataset.key || localStorage.getItem(AUTH_KEY_KEY) || "";
+    const showing = event.currentTarget.dataset.showing === "true";
+    value.textContent = showing ? "•".repeat(Math.min(24, Math.max(8, key.length))) : key;
+    event.currentTarget.dataset.showing = String(!showing);
+    event.currentTarget.textContent = showing ? "แสดงคีย์" : "ซ่อนคีย์";
+  });
+  document.getElementById("copy-current-key")?.addEventListener("click", async event => {
+    const key = document.getElementById("user-key-settings")?.dataset.key || localStorage.getItem(AUTH_KEY_KEY) || "";
+    if (await copyText(key)) { event.currentTarget.textContent = "คัดลอกแล้ว"; setTimeout(() => { event.currentTarget.textContent = "คัดลอก"; }, 1600); }
+  });
 
   initSkeleton(() => {
     renderProducts();
@@ -60,13 +103,14 @@ document.addEventListener("DOMContentLoaded", () => {
     renderDashboard();
     renderReports();
     renderSettings();
-    showPage("dashboard");
+    showPage(pageFromLocation(), false);
   });
 
   // Navigation (sidebar + bottom nav)
   document.querySelectorAll("[data-nav]").forEach(el => {
     el.addEventListener("click", () => { showPage(el.dataset.nav); closeMobileDrawer(); });
   });
+  window.addEventListener("popstate", () => showPage(pageFromLocation(), false));
 
   const menuButton = document.getElementById("mobile-menu-btn");
   const closeButton = document.getElementById("mobile-menu-close");

@@ -56,12 +56,12 @@ const server = http.createServer(async (request, response) => {
     } catch (error) { return json(response, 400, { error: "Invalid JSON" }); }
   }
   if (url.pathname === "/api/auth/login" && request.method === "POST") {
-    try { const body = await requestBody(request); const value = String(body.key || "").trim(); if (process.env.ADMIN_BOOTSTRAP_KEY && value === process.env.ADMIN_BOOTSTRAP_KEY) { const token = crypto.randomBytes(32).toString("hex"); sessions.set(token, { admin: true }); return json(response, 200, { token, admin: true, permanent: true, expiresAt: null }); } const data = authData(); const key = keyRecord(data, value); const user = data.users.find(item => item.keyId === key?.id); if (!validKey(key) || (!user && !key?.admin)) return json(response, 401, { error: "ACCOUNT_NOT_FOUND_OR_EXPIRED" }); const token = crypto.randomBytes(32).toString("hex"); sessions.set(token, { userId: user?.id, keyId: key.id, admin: !!key.admin }); return json(response, 200, { token, admin: !!key.admin, user: user ? { id: user.id, nickname: user.nickname } : null, expiresAt: key.expiresAt || null }); }
+    try { const body = await requestBody(request); const value = String(body.key || "").trim(); if (process.env.ADMIN_BOOTSTRAP_KEY && value === process.env.ADMIN_BOOTSTRAP_KEY) { const token = crypto.randomBytes(32).toString("hex"); sessions.set(token, { admin: true }); return json(response, 200, { token, admin: true, permanent: true, expiresAt: null }); } const data = authData(); const key = keyRecord(data, value); const user = data.users.find(item => item.keyId === key?.id); if (!validKey(key)) return json(response, 401, { error: "ACCOUNT_NOT_FOUND_OR_EXPIRED" }); const token = crypto.randomBytes(32).toString("hex"); sessions.set(token, { userId: user?.id, keyId: key.id, admin: !!key.admin }); return json(response, 200, { token, admin: !!key.admin, user: user ? { id: user.id, nickname: user.nickname } : null, expiresAt: key.expiresAt || null }); }
     catch (error) { return json(response, 400, { error: "Invalid JSON" }); }
   }
   if (url.pathname === "/api/admin/keys" && request.method === "POST") {
     const session = authUser(request); if (!session?.admin) return json(response, 403, { error: "ADMIN_ONLY" });
-    try { const body = await requestBody(request); const data = authData(); const permanent = Boolean(body.permanent); const key = { id: crypto.randomUUID(), value: makeKey(data, permanent), permanent, admin: false, createdAt: Date.now(), expiresAt: permanent ? null : Date.now() + Math.max(1, Number(body.hours) || 24) * 3600000, revoked: false }; data.keys.push(key); writeData(data); writeKeyFile(key); return json(response, 201, key); } catch (error) { return json(response, 400, { error: "Invalid JSON" }); }
+    try { const body = await requestBody(request); const data = authData(); const isAdmin = Boolean(body.admin); const permanent = isAdmin || Boolean(body.permanent); const key = { id: crypto.randomUUID(), value: makeKey(data, permanent, isAdmin), permanent, admin: isAdmin, createdAt: Date.now(), expiresAt: permanent ? null : Date.now() + Math.max(1, Number(body.hours) || 24) * 3600000, revoked: false }; data.keys.push(key); writeData(data); writeKeyFile(key); return json(response, 201, key); } catch (error) { return json(response, 400, { error: "Invalid JSON" }); }
   }
   if (url.pathname === "/api/admin/keys" && request.method === "GET") {
     const session = authUser(request); if (!session?.admin) return json(response, 403, { error: "ADMIN_ONLY" });
@@ -94,7 +94,8 @@ const server = http.createServer(async (request, response) => {
   }
   if (url.pathname === "/api/community" && request.method === "GET") return json(response, 200, communityStats());
   if (request.method !== "GET" && request.method !== "HEAD") return json(response, 405, { error: "Method not allowed" });
-  const requested = decodeURIComponent(url.pathname === "/" ? "/index.html" : url.pathname);
+  const clientRoutes = new Set(["/dashboard", "/products", "/sales", "/reports", "/settings", "/updates", "/admin"]);
+  const requested = decodeURIComponent(url.pathname === "/" || clientRoutes.has(url.pathname.toLowerCase()) ? "/index.html" : url.pathname);
   const filePath = path.resolve(ROOT, `.${requested}`);
   if (!filePath.startsWith(ROOT) || !fs.existsSync(filePath) || fs.statSync(filePath).isDirectory()) {
     const notFound = path.join(ROOT, "404.html");

@@ -1,8 +1,34 @@
 const STORAGE_KEY = "igh_kinglegacy_state";
 const THEME_KEY = "igh_theme";
 const LANG_KEY = "igh_lang";
-const APP_VERSION = "V.1.4";
+const APP_VERSION = "V.2.1";
 const APP_CHANGELOG = [
+  { version: "V.2.1", date: "2026-09-05", changes: [
+    "จำกัดการเข้าหน้า Admin ให้เฉพาะคีย์ที่มีสิทธิ์ Admin เท่านั้น"
+  ] },
+  { version: "V.2.0", date: "2026-09-05", changes: [
+    "เพิ่ม URL แยกสำหรับทุกหน้า พร้อมรองรับปุ่ม Back/Forward โดยไม่ต้องโหลดหน้าใหม่"
+  ] },
+  { version: "V.1.9", date: "2026-09-05", changes: [
+    "ปรับปฏิทินประวัติการขายเป็นปฏิทินแบบ Custom ที่เลือกวันและเปลี่ยนเดือนได้",
+    "เพิ่มตัวกรองคีย์ Admin แบบกดเลือก และรวมงานฟาร์มในกิจกรรมล่าสุดกับอันดับรายการ"
+  ] },
+  { version: "V.1.8", date: "2026-09-05", changes: [
+    "เพิ่มปุ่มเพิ่มรายการเพิ่มเติมสำหรับสินค้าและรายการฟาร์ม",
+    "จัดกลุ่มคีย์ Admin ตามสถานะและประเภท พร้อมนำหน้าอัปเดตกลับมา"
+  ] },
+  { version: "V.1.7", date: "2026-09-05", changes: [
+    "เพิ่มปุ่มคัดลอกคีย์ในหน้า Settings และหน้า Admin"
+  ] },
+  { version: "V.1.6", date: "2026-09-05", changes: [
+    "เพิ่มรูปภาพให้รายการรับฟาร์มเหมือนรายการสินค้า",
+    "ยกเลิกหน้า Sign Up และให้คีย์ที่ใช้งานได้เข้าสู่ระบบทันที",
+    "เพิ่มการดูคีย์และเวลาคงเหลือใน Settings พร้อมปรับปรุงการแสดงผล Admin"
+  ] },
+  { version: "V.1.5", date: "2026-09-05", changes: [
+    "เพิ่มแถบรับฟาร์มในหน้า Stock พร้อมตั้งเรท บันทึกงาน และประวัติรายการ",
+    "เพิ่ม Backup/Restore ข้อมูลรับฟาร์ม และสร้างคีย์ Admin จากหน้า Admin ได้"
+  ] },
   { version: "V.1.4", date: "2026-09-04", changes: [
     "เพิ่มฟอนต์ Itim และปรับหน้า Admin ให้เห็นส่วนควบคุมชัดเจนขึ้น"
   ] },
@@ -231,6 +257,8 @@ function buildDefaultProducts() {
 function defaultState() {
   return {
     products: buildDefaultProducts(),
+    farmServices: [],
+    farmOrders: [],
     sales: [],
     settings: { stockAlert: 5, categories: Object.keys(CATEGORY_ICONS).filter(c=>c!=="อื่นๆ") },
   };

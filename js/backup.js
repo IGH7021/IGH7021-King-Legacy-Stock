@@ -8,7 +8,8 @@ function downloadFile(filename, content, mime) {
 }
 
 function exportBackup() {
-  downloadFile("IGH7021_KingLegacy_Backup.json", JSON.stringify(state, null, 2), "application/json");
+  const backup = { ...state, backupVersion: 2, exportedAt: new Date().toISOString() };
+  downloadFile("IGH7021_KingLegacy_Backup.json", JSON.stringify(backup, null, 2), "application/json");
   toast(t("toast_backup_exported"));
 }
 
@@ -17,10 +18,12 @@ function importBackup(file) {
   reader.onload = (e) => {
     try {
       const data = JSON.parse(e.target.result);
-      if (!data.products || !data.sales || !data.settings) throw new Error("bad structure");
-      state = data;
+      const source = data.state && typeof data.state === "object" ? data.state : data;
+      if (!Array.isArray(source.products) || !Array.isArray(source.sales) || !source.settings || typeof source.settings !== "object") throw new Error("bad structure");
+      state = { ...source, farmServices: Array.isArray(source.farmServices) ? source.farmServices : [], farmOrders: Array.isArray(source.farmOrders) ? source.farmOrders : [] };
+      if (!Array.isArray(state.settings.categories)) state.settings.categories = Object.keys(CATEGORY_ICONS).filter(c=>c!=="อื่นๆ");
       saveState();
-      renderProducts(); renderSalesHistory(); renderDashboard(); renderReports();
+      renderProducts(); renderFarmServices?.(); renderSalesHistory(); renderDashboard(); renderReports(); renderSettings();
       toast(t("toast_restore_success"));
     } catch (err) {
       toast(t("toast_backup_invalid"), "error");

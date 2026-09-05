@@ -1,6 +1,59 @@
 let currentSaleProductId = null;
 let saleMode = "qty"; // qty | money
 let salesDateRange = { from: "", to: "" };
+const datePickerMonths = new Map();
+
+function dateValueLabel(value) {
+  if (!value) return "เลือกวันที่";
+  return new Date(`${value}T00:00:00`).toLocaleDateString("th-TH", { day: "numeric", month: "short", year: "numeric" });
+}
+
+function renderDatePicker(picker) {
+  const input = document.getElementById(picker.dataset.datePicker);
+  const popover = picker.querySelector(".date-picker-popover");
+  const trigger = picker.querySelector(".date-picker-trigger span");
+  if (!input || !popover) return;
+  const current = datePickerMonths.get(picker) || new Date();
+  const year = current.getFullYear();
+  const month = current.getMonth();
+  const first = new Date(year, month, 1);
+  const start = new Date(year, month, 1 - first.getDay());
+  const monthLabel = current.toLocaleDateString("th-TH", { month: "long", year: "numeric" });
+  const days = ["อา", "จ", "อ", "พ", "พฤ", "ศ", "ส"];
+  let cells = days.map(day => `<span class="calendar-weekday">${day}</span>`).join("");
+  for (let i = 0; i < 42; i++) {
+    const day = new Date(start); day.setDate(start.getDate() + i);
+    const value = `${day.getFullYear()}-${String(day.getMonth() + 1).padStart(2, "0")}-${String(day.getDate()).padStart(2, "0")}`;
+    const muted = day.getMonth() !== month;
+    const selected = input.value === value;
+    const today = new Date().toDateString() === day.toDateString();
+    cells += `<button type="button" class="calendar-day ${muted ? "is-muted" : ""} ${selected ? "is-selected" : ""} ${today ? "is-today" : ""}" data-date-value="${value}">${day.getDate()}</button>`;
+  }
+  popover.innerHTML = `<div class="calendar-header"><button type="button" data-calendar-nav="prev">‹</button><strong>${monthLabel}</strong><button type="button" data-calendar-nav="next">›</button></div><div class="calendar-grid">${cells}</div><div class="calendar-footer"><button type="button" data-calendar-clear>ล้าง</button><button type="button" data-calendar-today>วันนี้</button></div>`;
+  trigger.textContent = dateValueLabel(input.value);
+}
+
+function syncDatePickers() {
+  document.querySelectorAll("[data-date-picker]").forEach(picker => renderDatePicker(picker));
+}
+
+function initializeDatePickers() {
+  document.querySelectorAll("[data-date-picker]").forEach(picker => {
+    const input = document.getElementById(picker.dataset.datePicker);
+    datePickerMonths.set(picker, input?.value ? new Date(`${input.value}T00:00:00`) : new Date());
+    renderDatePicker(picker);
+    picker.querySelector(".date-picker-trigger").addEventListener("click", event => { event.stopPropagation(); document.querySelectorAll(".date-picker.is-open").forEach(item => { if (item !== picker) item.classList.remove("is-open"); }); picker.classList.toggle("is-open"); });
+    picker.querySelector(".date-picker-popover").addEventListener("click", event => {
+      const nav = event.target.closest("[data-calendar-nav]");
+      if (nav) { const month = datePickerMonths.get(picker); month.setMonth(month.getMonth() + (nav.dataset.calendarNav === "next" ? 1 : -1)); renderDatePicker(picker); return; }
+      const day = event.target.closest("[data-date-value]");
+      if (day) { input.value = day.dataset.dateValue; input.dispatchEvent(new Event("change", { bubbles: true })); picker.classList.remove("is-open"); renderDatePicker(picker); return; }
+      if (event.target.closest("[data-calendar-clear]")) { input.value = ""; input.dispatchEvent(new Event("change", { bubbles: true })); renderDatePicker(picker); }
+      if (event.target.closest("[data-calendar-today]")) { const today = new Date(); input.value = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`; input.dispatchEvent(new Event("change", { bubbles: true })); picker.classList.remove("is-open"); renderDatePicker(picker); }
+    });
+  });
+  document.addEventListener("click", event => { if (!event.target.closest(".date-picker")) document.querySelectorAll(".date-picker.is-open").forEach(picker => picker.classList.remove("is-open")); });
+}
 
 function openSaleModal(productId) {
   currentSaleProductId = productId;
@@ -75,6 +128,7 @@ function updateSaleCalculation() {
 }
 
 document.addEventListener("DOMContentLoaded", () => {
+  initializeDatePickers();
   document.getElementById("sale-product-select").addEventListener("change", updateSaleModalInfo);
   document.getElementById("mode-qty-btn").addEventListener("click", () => setSaleMode("qty"));
   document.getElementById("mode-money-btn").addEventListener("click", () => setSaleMode("money"));
@@ -91,6 +145,7 @@ document.addEventListener("DOMContentLoaded", () => {
     salesDateRange = { from: "", to: "" };
     document.getElementById("sales-date-from").value = "";
     document.getElementById("sales-date-to").value = "";
+    syncDatePickers();
     renderSalesHistory();
   });
   document.getElementById("sales-prev-month").addEventListener("click", () => shiftSalesMonth(-1));
@@ -106,6 +161,7 @@ function shiftSalesMonth(offset) {
   salesDateRange = { from: `${year}-${month}-01`, to: `${year}-${month}-${String(lastDay).padStart(2, "0")}` };
   document.getElementById("sales-date-from").value = salesDateRange.from;
   document.getElementById("sales-date-to").value = salesDateRange.to;
+  syncDatePickers();
   renderSalesHistory();
 }
 

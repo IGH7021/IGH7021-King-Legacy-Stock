@@ -86,19 +86,11 @@ function getFilteredProducts() {
     return true;
   });
 
-  // Keep categories together, then sort by rarity before remaining stock.
+  // Sort by rarity according to RARITY_ORDER (higher rarity first), then by name
   filtered.sort((a, b) => {
-    const categoryOrder = state.settings.categories || [];
-    const categoryA = categoryOrder.indexOf(a.category);
-    const categoryB = categoryOrder.indexOf(b.category);
-    const safeCategoryA = categoryA === -1 ? Number.MAX_SAFE_INTEGER : categoryA;
-    const safeCategoryB = categoryB === -1 ? Number.MAX_SAFE_INTEGER : categoryB;
-    if (safeCategoryA !== safeCategoryB) return safeCategoryA - safeCategoryB;
-    const rarityA = RARITY_ORDER.indexOf(a.rarity || "none");
-    const rarityB = RARITY_ORDER.indexOf(b.rarity || "none");
-    if (rarityA !== rarityB) return rarityA - rarityB;
-    const remainingDifference = remaining(b) - remaining(a);
-    if (remainingDifference !== 0) return remainingDifference;
+    const ra = RARITY_ORDER.indexOf(a.rarity || "none");
+    const rb = RARITY_ORDER.indexOf(b.rarity || "none");
+    if (ra !== rb) return ra - rb;
     return (a.name || "").localeCompare(b.name || "");
   });
 
@@ -107,6 +99,7 @@ function getFilteredProducts() {
 
 function renderProducts() {
   const grid = document.getElementById("products-grid");
+  updateStatusFilterButtons();
   const list = getFilteredProducts();
   if (list.length === 0) {
     grid.innerHTML = `<div class="col-span-full flex flex-col items-center justify-center py-16 text-slate-400">
@@ -118,6 +111,12 @@ function renderProducts() {
   }
   grid.innerHTML = list.map(productCard).join("");
   renderCategoryOptions();
+}
+
+function updateStatusFilterButtons() {
+  document.querySelectorAll("[data-status-filter]").forEach(button => {
+    button.classList.toggle("status-chip-active", button.dataset.statusFilter === productFilters.status);
+  });
 }
 
 function renderCategoryOptions() {
@@ -144,6 +143,7 @@ function renderCategoryOptions() {
 }
 
 document.addEventListener("DOMContentLoaded", () => {
+  enhanceCustomSelects();
   document.getElementById("products-grid").addEventListener("click", (e) => {
     const card = e.target.closest("[data-id]");
     if (!card) return;
@@ -170,9 +170,10 @@ document.addEventListener("DOMContentLoaded", () => {
     renderProducts();
   }, 150));
 
-  document.getElementById("status-filter").addEventListener("change", (e) => {
-    productFilters.status = e.target.value; renderProducts();
-  });
+  document.querySelectorAll("[data-status-filter]").forEach(button => button.addEventListener("click", () => {
+    productFilters.status = button.dataset.statusFilter;
+    renderProducts();
+  }));
   document.getElementById("rarity-filter").addEventListener("change", (e) => {
     productFilters.rarity = e.target.value; renderProducts();
   });
@@ -180,7 +181,9 @@ document.addEventListener("DOMContentLoaded", () => {
     sel.addEventListener("change", (e) => { productFilters.category = e.target.value; renderProducts(); });
   });
 
-  document.getElementById("add-product-btn").addEventListener("click", openAddProductModal);
+  document.getElementById("add-entry-btn").addEventListener("click", () => document.getElementById("add-entry-menu").classList.toggle("hidden"));
+  document.getElementById("add-product-menu-btn").addEventListener("click", () => { document.getElementById("add-entry-menu").classList.add("hidden"); openAddProductModal(); });
+  document.getElementById("add-farm-menu-btn").addEventListener("click", () => { document.getElementById("add-entry-menu").classList.add("hidden"); openFarmServiceModal(); });
   document.getElementById("product-form").addEventListener("submit", handleProductFormSubmit);
   document.getElementById("product-image-input").addEventListener("change", (e) => {
     const f = e.target.files[0];
@@ -248,7 +251,7 @@ function toggleSelectMode() {
   selectedIds.clear();
   document.getElementById("bulk-toolbar").classList.toggle("hidden", !selectMode);
   document.getElementById("toggle-select-mode-btn").textContent = selectMode ? t("select_mode_btn_off") : t("select_mode_btn_on");
-  document.getElementById("add-product-btn").classList.toggle("hidden", selectMode);
+  document.getElementById("add-entry-btn").classList.toggle("hidden", selectMode);
   updateBulkCount();
   renderProducts();
 }
