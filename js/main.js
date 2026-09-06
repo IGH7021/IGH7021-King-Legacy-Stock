@@ -67,6 +67,37 @@ function initSkeleton(cb) {
   }, 350);
 }
 
+function initFloatingProducts() {
+  if (window.matchMedia?.("(prefers-reduced-motion: reduce)").matches || window.matchMedia?.("(pointer: coarse)").matches) return;
+  const products = state.products.filter(product => product.image).slice(0, 7);
+  if (!products.length) return;
+  const layer = document.createElement("div");
+  layer.className = "floating-products";
+  layer.setAttribute("aria-hidden", "true");
+  products.forEach((product, index) => {
+    const item = document.createElement("span");
+    item.className = "floating-product";
+    item.style.setProperty("--float-x", `${12 + (index * 13) % 78}%`);
+    item.style.setProperty("--float-y", `${12 + (index * 23) % 72}%`);
+    item.style.setProperty("--float-depth", `${index * 1.7}px`);
+    item.style.setProperty("--float-delay", `${index * -1.2}s`);
+    item.innerHTML = `<img src="${product.image}" alt="">`;
+    layer.appendChild(item);
+  });
+  document.body.appendChild(layer);
+  let frame = 0;
+  document.addEventListener("mousemove", event => {
+    if (frame) return;
+    frame = requestAnimationFrame(() => {
+      const x = (event.clientX / window.innerWidth - 0.5) * 2;
+      const y = (event.clientY / window.innerHeight - 0.5) * 2;
+      layer.style.setProperty("--mouse-x", `${x * 18}px`);
+      layer.style.setProperty("--mouse-y", `${y * 18}px`);
+      frame = 0;
+    });
+  }, { passive: true });
+}
+
 function renderSettings() {
   document.getElementById("app-version").textContent = APP_VERSION;
   document.getElementById("stock-alert-slider").value = state.settings.stockAlert;
@@ -81,6 +112,7 @@ function renderSettings() {
 
 document.addEventListener("DOMContentLoaded", () => {
   loadState();
+  initFloatingProducts();
   bindModalDismiss();
   applyTheme(localStorage.getItem(THEME_KEY) || "dark");
   applyStaticTranslations();

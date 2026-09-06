@@ -1,8 +1,13 @@
 const STORAGE_KEY = "igh_kinglegacy_state";
 const THEME_KEY = "igh_theme";
 const LANG_KEY = "igh_lang";
-const APP_VERSION = "V.2.4";
+const APP_VERSION = "V.2.5";
 const APP_CHANGELOG = [
+  { version: "V.2.5", date: "2026-09-06", changes: [
+    "ปรับรายการรับฟาร์มให้เลือกหมวดหมู่และตั้งราคาได้ทั้งต่อจำนวนหรือรายชั่วโมง พร้อมคำนวณราคาอัตโนมัติเมื่อรับงาน",
+    "เพิ่มกิจกรรมของการสร้าง แก้ไข ลบ และรับงานฟาร์มในกิจกรรมล่าสุด",
+    "เพิ่มอิโมจิให้แท็บรับฟาร์ม ปุ่มปฏิทิน และเมนูที่เกี่ยวข้อง"
+  ] },
   { version: "V.2.4", date: "2026-09-05", changes: [
     "ปรับธีมเว็บใหม่ เพิ่มพื้นหลังมีมิติ animation และลูกเล่น hover ให้ใช้งานสนุกขึ้น"
   ] },
@@ -10,7 +15,7 @@ const APP_CHANGELOG = [
     "แก้การเข้า Admin หลังรีสตาร์ต server โดยสร้าง session ใหม่จากคีย์อัตโนมัติ"
   ] },
   { version: "V.2.2", date: "2026-09-05", changes: [
-    "ปรับระบบคีย์ให้อ่านจากไฟล์ server/keys เท่านั้น และสร้างไฟล์อัตโนมัติหลังสร้างคีย์"
+    "ปรับระบบคีย์ให้อ่านจากไฟล์ ******* เท่านั้น และสร้างไฟล์อัตโนมัติหลังสร้างคีย์"
   ] },
   { version: "V.2.1", date: "2026-09-05", changes: [
     "จำกัดการเข้าหน้า Admin ให้เฉพาะคีย์ที่มีสิทธิ์ Admin เท่านั้น"
@@ -103,7 +108,7 @@ const CATEGORY_ICONS = {
   "อื่นๆ": "📦",
 };
 
-const RARITY_ORDER = ["mythical","legendary","epic","rare","uncommon","common","limited","none"];
+const RARITY_ORDER = ["limited","mythical","legendary","epic","rare","uncommon","common","none"];
 const RARITY_COLORS = {
   limited:   "bg-yellow-500/15 text-yellow-300 border-yellow-500/30",
   mythical:  "bg-fuchsia-500/15 text-fuchsia-300 border-fuchsia-500/30",
@@ -268,6 +273,7 @@ function defaultState() {
     products: buildDefaultProducts(),
     farmServices: [],
     farmOrders: [],
+    activityLog: [],
     sales: [],
     settings: { stockAlert: 5, categories: Object.keys(CATEGORY_ICONS).filter(c=>c!=="อื่นๆ") },
   };

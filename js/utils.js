@@ -9,6 +9,13 @@ function loadState() {
     state = parsed;
     if (!Array.isArray(state.farmServices)) state.farmServices = [];
     if (!Array.isArray(state.farmOrders)) state.farmOrders = [];
+    if (!Array.isArray(state.activityLog)) state.activityLog = [];
+    state.farmServices.forEach(service => {
+      if (!service.pricingMode) service.pricingMode = "unit";
+      if (!service.rateQty) service.rateQty = service.unitsPerBaht || 1;
+      if (!service.ratePrice) service.ratePrice = 1;
+      if (!service.hourRate && service.pricingMode === "hour") service.hourRate = service.ratePrice;
+    });
     if (!state.settings.categories) state.settings.categories = Object.keys(CATEGORY_ICONS).filter(c=>c!=="อื่นๆ");
     return state;
   } catch (e) {

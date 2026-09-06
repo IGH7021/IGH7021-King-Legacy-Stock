@@ -20,7 +20,7 @@ function importBackup(file) {
       const data = JSON.parse(e.target.result);
       const source = data.state && typeof data.state === "object" ? data.state : data;
       if (!Array.isArray(source.products) || !Array.isArray(source.sales) || !source.settings || typeof source.settings !== "object") throw new Error("bad structure");
-      state = { ...source, farmServices: Array.isArray(source.farmServices) ? source.farmServices : [], farmOrders: Array.isArray(source.farmOrders) ? source.farmOrders : [] };
+      state = { ...source, farmServices: Array.isArray(source.farmServices) ? source.farmServices : [], farmOrders: Array.isArray(source.farmOrders) ? source.farmOrders : [], activityLog: Array.isArray(source.activityLog) ? source.activityLog : [] };
       if (!Array.isArray(state.settings.categories)) state.settings.categories = Object.keys(CATEGORY_ICONS).filter(c=>c!=="อื่นๆ");
       saveState();
       renderProducts(); renderFarmServices?.(); renderSalesHistory(); renderDashboard(); renderReports(); renderSettings();

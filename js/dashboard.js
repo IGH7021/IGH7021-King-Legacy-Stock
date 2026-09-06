@@ -45,19 +45,20 @@ function renderSalesChart() {
 
   if (salesChart) { salesChart.destroy(); salesChart = null; }
   salesChart = new Chart(ctx, {
-    type: "bar",
+    type: "line",
     data: { labels, datasets: [{
       label: t("chart_dataset_label"), data: totals,
-      backgroundColor: "rgba(129,140,248,0.75)",
-      borderRadius: 6, maxBarThickness: 36,
+      borderColor: "#5bb79d", backgroundColor: "rgba(91,183,157,.14)",
+      borderWidth: 2.5, pointRadius: 3, pointBackgroundColor: "#5bb79d",
+      pointBorderColor: "#ffffff", pointBorderWidth: 2, tension: .42, fill: true,
     }]},
     options: {
       responsive: true, maintainAspectRatio: false,
       animation: false,
       plugins: { legend: { display: false } },
       scales: {
-        x: { grid: { display: false }, ticks: { color: "#94a3b8" } },
-        y: { beginAtZero: true, grid: { color: "rgba(148,163,184,0.1)" }, ticks: { color: "#94a3b8" } },
+        x: { grid: { display: false }, ticks: { color: "#64748b" } },
+        y: { beginAtZero: true, grid: { color: "rgba(100,116,139,.16)" }, ticks: { color: "#64748b" } },
       },
     },
   });
@@ -67,8 +68,9 @@ function renderTimeline() {
   const box = document.getElementById("activity-timeline");
   if (!box) return;
   const events = [];
+  (state.activityLog || []).forEach(activity => events.push({ ts: activity.ts, text: `🧾 ${activity.text}`, sub: activity.sub || "รายการฟาร์ม", color: "bg-orange-400" }));
   state.sales.slice(0, 8).forEach(s => events.push({ ts: s.date, text: t("timeline_sold", { name: s.productName, qty: fmtNum(s.quantity) }), sub: fmtBaht(s.money), color: "bg-emerald-400" }));
-  (state.farmOrders || []).slice(0, 8).forEach(order => events.push({ ts: order.date, text: `🌾 รับฟาร์ม ${order.serviceName} ${fmtNum(order.quantity)} ${t("pieces_unit")}`, sub: fmtBaht(order.money), color: "bg-orange-400" }));
+  (state.farmOrders || []).slice(0, 8).forEach(order => { if (!(state.activityLog || []).some(activity => activity.ts === order.date && activity.text.includes(order.serviceName))) events.push({ ts: order.date, text: `🌾 รับฟาร์ม ${order.serviceName} ${order.pricingMode === "hour" ? `${fmtNum(order.hours || order.quantity)} ชั่วโมง` : `${fmtNum(order.quantity)} ${t("pieces_unit")}`}`, sub: fmtBaht(order.money), color: "bg-orange-400" }); });
   state.products.forEach(p => (p.restockHistory||[]).forEach(r => events.push({ ts: r.date, text: t("timeline_restocked", { name: p.name }), sub: `+${fmtNum(r.amount)} ${t("pieces_unit")}`, color: "bg-indigo-400" })));
   events.sort((a,b) => b.ts - a.ts);
   const top = events.slice(0, 8);
@@ -105,7 +107,7 @@ function renderBestSellers(elId, limit) {
     <div class="flex items-center gap-3 py-1.5">
       <span class="w-6 text-center font-bold text-sm">${medals[i]||(i+1)}</span>
       <div class="w-8 h-8 rounded-lg overflow-hidden bg-slate-800/60 flex-shrink-0">${p.itemType === "farm" ? (p.image ? `<img src="${p.image}" class="w-full h-full object-cover" alt="${p.name}">` : "🌾") : productImg(p)}</div>
-      <span class="flex-1 text-sm truncate">${p.itemType === "farm" ? "🌾 ฟาร์ม: " : "📦 "}${p.name}</span>
+      <span class="flex-1 text-sm truncate">${p.itemType === "farm" ? "ฟาร์ม: " : ""}${p.name}</span>
       <span class="text-sm font-semibold text-indigo-300">${fmtNum(p.totalQuantity)} ${t("pieces_unit")}</span>
     </div>`).join("");
 }

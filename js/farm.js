@@ -2,8 +2,19 @@ let editingFarmServiceId = null;
 let selectedFarmServiceId = null;
 
 function farmRateLabel(service) {
-  const qty = Number(service.unitsPerBaht) || 1;
-  return `${fmtNum(qty)} ชิ้น / ฿1`;
+  if (service.pricingMode === "hour") return `฿${fmtNum(service.hourPrice || service.ratePrice)} / ชั่วโมง`;
+  return `${fmtNum(service.rateQty || service.unitsPerBaht)} ชิ้น / ฿${fmtNum(service.ratePrice || 1)}`;
+}
+
+function farmCategoryLabel(category) {
+  const icons = { "ของคราฟ": "🛠️", "ของแต่ง": "🎩", "ดาบ": "🗡️", "ผลปีศาจ": "🍇", "ของวัตถุดิบ": "🪵", "อื่นๆ": "📦" };
+  return `${icons[category] || "📦"} ${category}`;
+}
+
+function addFarmActivity(action, text, sub = "") {
+  if (!Array.isArray(state.activityLog)) state.activityLog = [];
+  state.activityLog.unshift({ id: genId("activity"), type: "farm", action, text, sub, ts: Date.now() });
+  state.activityLog = state.activityLog.slice(0, 100);
 }
 
 function farmServiceCard(service) {
@@ -12,8 +23,8 @@ function farmServiceCard(service) {
     <div class="h-32 bg-emerald-900/20 flex items-center justify-center text-4xl">${service.image ? `<img src="${service.image}" loading="lazy" decoding="async" class="w-full h-full object-cover" alt="${service.name}">` : "🌾"}</div>
     <div class="p-3 flex-1 flex flex-col gap-1.5">
       <div class="flex items-center justify-between gap-2"><h4 class="font-semibold text-sm truncate">${service.name}</h4><span class="text-[10px] px-2 py-0.5 rounded-full border ${rarityBadgeClass(rarity)}">${rarityLabel(rarity)}</span></div>
-      <span class="text-[11px] w-fit px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">${service.category}</span>
-      <div class="text-xs text-slate-300 mt-1">เรท ${farmRateLabel(service)}</div>
+      <span class="text-[11px] w-fit px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">${farmCategoryLabel(service.category)}</span>
+      <div class="text-xs text-slate-300 mt-1">💰 เรท ${farmRateLabel(service)}</div>
       <div class="text-xs text-slate-400">${service.description || "ไม่มีรายละเอียด"}</div>
       <div class="flex gap-1.5 mt-auto pt-2"><button data-farm-action="order" class="flex-1 text-xs font-medium py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500">รับงาน</button><button data-farm-action="edit" class="text-xs px-2 py-1.5 rounded-lg bg-slate-700/60">✏️</button><button data-farm-action="delete" class="text-xs px-2 py-1.5 rounded-lg bg-slate-700/60 hover:bg-rose-600/70">🗑️</button></div>
     </div>
@@ -37,7 +48,7 @@ function renderFarmOrders() {
   const orders = state.farmOrders || [];
   if (!orders.length) { box.innerHTML = `<div class="text-xs text-slate-400 py-4">ยังไม่มีประวัติงานฟาร์ม</div>`; return; }
   box.innerHTML = orders.map(order => `<div class="glass-card rounded-xl p-3 flex items-center gap-3">
-    <div class="w-10 h-10 rounded-lg bg-emerald-500/15 flex items-center justify-center">🌾</div><div class="flex-1 min-w-0"><div class="flex justify-between gap-2"><span class="font-medium text-sm truncate">${order.serviceName}</span><span class="font-semibold text-sm text-emerald-400">${fmtBaht(order.money)}</span></div><div class="text-xs text-slate-400">${fmtNum(order.quantity)} ชิ้น • ${fmtDate(order.date)}${order.customer ? ` • ${order.customer}` : ""}${order.note ? ` • ${order.note}` : ""}</div></div><button data-farm-order-delete="${order.id}" class="text-xs px-2 py-1.5 rounded-lg bg-slate-700/60 hover:bg-rose-600/70" aria-label="ลบงาน">🗑️</button>
+    <div class="w-10 h-10 rounded-lg bg-emerald-500/15 flex items-center justify-center">🌾</div><div class="flex-1 min-w-0"><div class="flex justify-between gap-2"><span class="font-medium text-sm truncate">${order.serviceName}</span><span class="font-semibold text-sm text-emerald-400">${fmtBaht(order.money)}</span></div><div class="text-xs text-slate-400">${order.pricingMode === "hour" ? `⏱️ ${fmtNum(order.hours || order.quantity)} ชั่วโมง` : `📦 ${fmtNum(order.quantity)} ชิ้น`} • ${fmtDate(order.date)}${order.customer ? ` • ${order.customer}` : ""}${order.note ? ` • ${order.note}` : ""}</div></div><button data-farm-order-delete="${order.id}" class="text-xs px-2 py-1.5 rounded-lg bg-slate-700/60 hover:bg-rose-600/70" aria-label="ลบงาน">🗑️</button>
   </div>`).join("");
 }
 
@@ -47,12 +58,14 @@ function openFarmServiceModal(id = null) {
   form.reset();
   form.rarity.innerHTML = RARITY_ORDER.map(r => `<option value="${r}">${rarityLabel(r)}</option>`).join("");
   form.rarity.value = "none";
+  form.pricingMode.value = "unit";
   form.dataset.image = "";
   document.getElementById("farm-image-preview-wrap").classList.add("hidden");
   document.getElementById("farm-image-placeholder").classList.remove("hidden");
   document.getElementById("farm-service-modal-title").textContent = id ? "แก้ไขงานรับฟาร์ม" : "เพิ่มงานรับฟาร์ม";
   const service = (state.farmServices || []).find(item => item.id === id);
-  if (service) { form.name.value = service.name; form.category.value = service.category; form.rarity.value = service.rarity || "none"; form.rateQty.value = service.unitsPerBaht || 1; form.ratePrice.value = 1; form.description.value = service.description || ""; form.dataset.image = service.image || ""; if (service.image) { document.getElementById("farm-image-preview").src = service.image; document.getElementById("farm-image-preview-wrap").classList.remove("hidden"); document.getElementById("farm-image-placeholder").classList.add("hidden"); } }
+  if (service) { form.name.value = service.name; form.category.value = service.category; form.rarity.value = service.rarity || "none"; form.pricingMode.value = service.pricingMode || "unit"; form.rateQty.value = service.rateQty || service.unitsPerBaht || 1; form.ratePrice.value = service.ratePrice || 1; form.rateHours.value = service.rateHours || 1; form.hourPrice.value = service.hourPrice || service.ratePrice || 1; form.description.value = service.description || ""; form.dataset.image = service.image || ""; if (service.image) { document.getElementById("farm-image-preview").src = service.image; document.getElementById("farm-image-preview-wrap").classList.remove("hidden"); document.getElementById("farm-image-placeholder").classList.add("hidden"); } }
+  updateFarmServiceRateFields();
   openModal("farm-service-modal");
 }
 
@@ -71,30 +84,53 @@ function updateFarmOrderMoney() {
   const form = document.getElementById("farm-order-form");
   const service = (state.farmServices || []).find(item => item.id === form.service.value);
   if (!service) return;
-  const quantity = Number(form.quantity.value) || 0;
-  document.getElementById("farm-order-money").value = quantity ? (quantity / (Number(service.unitsPerBaht) || 1)).toFixed(2) : "";
+  const isHourly = service.pricingMode === "hour";
+  document.getElementById("farm-order-unit-fields").classList.toggle("hidden", isHourly);
+  document.getElementById("farm-order-hour-fields").classList.toggle("hidden", !isHourly);
+  const quantity = Number(isHourly ? form.hours.value : form.quantity.value) || 0;
+  const money = isHourly ? quantity * (Number(service.hourPrice || service.ratePrice) || 0) : quantity * (Number(service.ratePrice) || 0) / (Number(service.rateQty || service.unitsPerBaht) || 1);
+  document.getElementById("farm-order-money").value = money ? money.toFixed(2) : "";
+}
+
+function updateFarmServiceRateFields() {
+  const form = document.getElementById("farm-service-form");
+  const isHourly = form.pricingMode.value === "hour";
+  document.getElementById("farm-unit-rate-fields").classList.toggle("hidden", isHourly);
+  document.getElementById("farm-hour-rate-fields").classList.toggle("hidden", !isHourly);
+  form.rateQty.required = !isHourly;
+  form.ratePrice.required = !isHourly;
+  form.rateHours.required = isHourly;
+  form.hourPrice.required = isHourly;
 }
 
 function handleFarmServiceSubmit(event) {
   event.preventDefault();
   const form = event.target;
+  const isHourly = form.pricingMode.value === "hour";
   const quantity = Math.max(0.0001, Number(form.rateQty.value) || 0);
   const price = Math.max(0.0001, Number(form.ratePrice.value) || 0);
+  const hours = Math.max(0.01, Number(form.rateHours.value) || 0);
+  const hourPrice = Math.max(0.01, Number(form.hourPrice.value) || 0);
   if (!form.name.value.trim() || !form.category.value.trim()) { toast("กรุณากรอกชื่อและหมวดหมู่", "error"); return; }
-  const payload = { name: form.name.value.trim(), category: form.category.value.trim(), rarity: form.rarity.value, unitsPerBaht: quantity / price, description: form.description.value.trim(), image: form.dataset.image || null, updatedAt: Date.now() };
+  const payload = { name: form.name.value.trim(), category: form.category.value, rarity: form.rarity.value, pricingMode: form.pricingMode.value, rateQty: quantity, ratePrice: price, rateHours: hours, hourPrice, unitsPerBaht: isHourly ? 0 : quantity / price, description: form.description.value.trim(), image: form.dataset.image || null, updatedAt: Date.now() };
+  const action = editingFarmServiceId ? "แก้ไขรายการฟาร์ม" : "เพิ่มรายการฟาร์ม";
   if (editingFarmServiceId) Object.assign(state.farmServices.find(item => item.id === editingFarmServiceId), payload);
   else state.farmServices.unshift({ id: genId("farm"), ...payload, createdAt: Date.now() });
-  saveState(); renderFarmServices(); closeModal("farm-service-modal"); toast("บันทึกงานฟาร์มแล้ว");
+  addFarmActivity(action, `${action}: ${payload.name}`, `หมวดหมู่ ${payload.category} • ${farmRateLabel(payload)}`);
+  saveState(); renderFarmServices(); renderDashboard(); closeModal("farm-service-modal"); toast("บันทึกงานฟาร์มแล้ว");
 }
 
 function handleFarmOrderSubmit(event) {
   event.preventDefault();
   const form = event.target;
   const service = (state.farmServices || []).find(item => item.id === form.service.value);
+  const isHourly = service?.pricingMode === "hour";
   const quantity = Number(form.quantity.value) || 0;
+  const hours = Number(form.hours.value) || 0;
   const money = Number(form.money.value) || 0;
-  if (!service || quantity <= 0 || money <= 0) { toast("กรุณากรอกจำนวนและราคาให้ถูกต้อง", "error"); return; }
-  state.farmOrders.unshift({ id: genId("fo"), serviceId: service.id, serviceName: service.name, quantity, money: Math.round(money * 100) / 100, customer: form.customer.value.trim(), note: form.note.value.trim(), date: Date.now() });
+  if (!service || (isHourly ? hours <= 0 : quantity <= 0) || money <= 0) { toast("กรุณากรอกจำนวนและราคาให้ถูกต้อง", "error"); return; }
+  state.farmOrders.unshift({ id: genId("fo"), serviceId: service.id, serviceName: service.name, pricingMode: service.pricingMode || "unit", quantity, hours, money: Math.round(money * 100) / 100, customer: form.customer.value.trim(), note: form.note.value.trim(), date: Date.now() });
+  addFarmActivity("รับงานฟาร์ม", `รับงานฟาร์ม: ${service.name}`, `${isHourly ? `${fmtNum(hours)} ชั่วโมง` : `${fmtNum(quantity)} ชิ้น`} • ${fmtBaht(money)}`);
   saveState(); renderFarmOrders(); renderDashboard(); closeModal("farm-order-modal"); toast("บันทึกงานฟาร์มแล้ว");
 }
 
@@ -110,6 +146,7 @@ document.addEventListener("DOMContentLoaded", () => {
   farmTab.addEventListener("click", () => setStockTab(true));
   document.getElementById("add-farm-service-btn").addEventListener("click", () => openFarmServiceModal());
   document.getElementById("farm-service-form").addEventListener("submit", handleFarmServiceSubmit);
+  document.getElementById("farm-pricing-mode").addEventListener("change", updateFarmServiceRateFields);
   const farmImageInput = document.getElementById("farm-image-input");
   const farmImageDropzone = document.getElementById("farm-image-dropzone");
   const applyFarmImage = file => handleImageFile(file, dataUrl => { document.getElementById("farm-image-preview").src = dataUrl; document.getElementById("farm-image-preview-wrap").classList.remove("hidden"); document.getElementById("farm-image-placeholder").classList.add("hidden"); document.getElementById("farm-service-form").dataset.image = dataUrl; });
@@ -120,7 +157,8 @@ document.addEventListener("DOMContentLoaded", () => {
   farmImageDropzone.addEventListener("drop", event => { event.preventDefault(); farmImageDropzone.classList.remove("dropzone-active"); if (event.dataTransfer.files[0]) applyFarmImage(event.dataTransfer.files[0]); });
   document.getElementById("farm-order-form").addEventListener("submit", handleFarmOrderSubmit);
   document.getElementById("farm-order-form").quantity.addEventListener("input", updateFarmOrderMoney);
+  document.getElementById("farm-order-form").hours.addEventListener("input", updateFarmOrderMoney);
   document.getElementById("farm-order-form").service.addEventListener("change", updateFarmOrderMoney);
-  document.getElementById("farm-services-grid").addEventListener("click", event => { const card = event.target.closest("[data-farm-id]"); const action = event.target.closest("[data-farm-action]")?.dataset.farmAction; if (!card || !action) return; const id = card.dataset.farmId; if (action === "order") openFarmOrderModal(id); else if (action === "edit") openFarmServiceModal(id); else if (action === "delete") { state.farmServices = state.farmServices.filter(item => item.id !== id); saveState(); renderFarmServices(); toast("ลบงานฟาร์มแล้ว"); } });
-  document.getElementById("farm-orders-list").addEventListener("click", event => { const button = event.target.closest("[data-farm-order-delete]"); if (!button) return; state.farmOrders = state.farmOrders.filter(order => order.id !== button.dataset.farmOrderDelete); saveState(); renderFarmOrders(); toast("ลบประวัติงานแล้ว"); });
+  document.getElementById("farm-services-grid").addEventListener("click", event => { const card = event.target.closest("[data-farm-id]"); const action = event.target.closest("[data-farm-action]")?.dataset.farmAction; if (!card || !action) return; const id = card.dataset.farmId; const service = state.farmServices.find(item => item.id === id); if (action === "order") openFarmOrderModal(id); else if (action === "edit") openFarmServiceModal(id); else if (action === "delete") { state.farmServices = state.farmServices.filter(item => item.id !== id); addFarmActivity("ลบรายการฟาร์ม", `ลบรายการฟาร์ม: ${service?.name || "ไม่ทราบชื่อ"}`); saveState(); renderFarmServices(); renderDashboard(); toast("ลบงานฟาร์มแล้ว"); } });
+  document.getElementById("farm-orders-list").addEventListener("click", event => { const button = event.target.closest("[data-farm-order-delete]"); if (!button) return; const order = state.farmOrders.find(item => item.id === button.dataset.farmOrderDelete); state.farmOrders = state.farmOrders.filter(order => order.id !== button.dataset.farmOrderDelete); addFarmActivity("ลบงานฟาร์ม", `ลบประวัติงานฟาร์ม: ${order?.serviceName || "ไม่ทราบชื่อ"}`); saveState(); renderFarmOrders(); renderDashboard(); toast("ลบประวัติงานแล้ว"); });
 });
