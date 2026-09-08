@@ -34,6 +34,18 @@ function recipeStock(name) {
   return product ? remaining(product) : 0;
 }
 
+function productUnitPrice(product) {
+  return product && Number(product.unitsPerBaht) > 0 ? 1 / Number(product.unitsPerBaht) : 0;
+}
+
+function ingredientUnitPrice(name) {
+  return productUnitPrice(ingredientProduct(name));
+}
+
+function recipePrice(recipe) {
+  return recipe.ingredients.reduce((total, [name, required]) => total + required * ingredientUnitPrice(name), 0);
+}
+
 function recipeCraftable(recipe) {
   return Math.min(...recipe.ingredients.map(([name, required]) => Math.floor(recipeStock(name) / required)));
 }
@@ -41,9 +53,10 @@ function recipeCraftable(recipe) {
 function recipeCard(recipe) {
   const craftable = recipeCraftable(recipe);
   const output = recipeProduct(recipe);
+  const price = recipePrice(recipe);
   return `<div class="recipe-card glass-card rounded-2xl overflow-hidden text-left ${craftable ? "recipe-ready" : "recipe-locked"}" data-recipe="${recipe.name}">
     <button type="button" class="recipe-card-open w-full text-left"><div class="recipe-card-image relative h-36 bg-slate-800/60"><img src="${recipeOutputImage(recipe)}" loading="lazy" decoding="async" class="w-full h-full object-contain p-3" alt="${recipe.name}"><span class="absolute top-2 right-2 text-[11px] px-2 py-0.5 rounded-full border ${craftable ? "bg-emerald-500/15 text-emerald-300 border-emerald-500/30" : "bg-slate-900/75 text-slate-400 border-slate-600/50"}">${craftable ? `คราฟได้ ${fmtNum(craftable)}` : "วัตถุดิบไม่ครบ"}</span></div>
-    <div class="p-3"><div class="flex items-center justify-between gap-2"><strong class="text-sm truncate">${recipe.name}</strong><span class="text-[10px] px-2 py-0.5 rounded-full border ${rarityBadgeClass(recipe.rarity)}">${rarityLabel(recipe.rarity)}</span></div><p class="text-xs text-slate-400 mt-1">${output ? `มีในคลัง ${fmtNum(remaining(output))} ชิ้น` : "ยังไม่มีในคลังสินค้า"}</p></div></button>
+    <div class="p-3"><div class="flex items-center justify-between gap-2"><strong class="text-sm truncate">${recipe.name}</strong><span class="text-[10px] px-2 py-0.5 rounded-full border ${rarityBadgeClass(recipe.rarity)}">${rarityLabel(recipe.rarity)}</span></div><p class="text-xs text-slate-400 mt-1">${output ? `มีในคลัง ${fmtNum(remaining(output))} ชิ้น` : "ยังไม่มีในคลังสินค้า"}</p><p class="text-xs text-orange-300 mt-1">ต้นทุนวัตถุดิบ ${fmtBaht(price)}</p></div></button>
     <div class="px-3 pb-3 flex gap-2"><button type="button" data-recipe-action="edit" class="flex-1 text-xs py-1.5 rounded-lg bg-slate-700/60 hover:bg-slate-700">✏️ แก้ไขสูตร</button><button type="button" data-recipe-action="delete" class="recipe-delete-btn" aria-label="ลบสูตร" title="ลบสูตร">🗑️</button></div>
   </div>`;
 }
@@ -69,6 +82,7 @@ function renderCraftingModal() {
   const container = document.getElementById("crafting-modal-content");
   if (!recipe || !container) return;
   const craftable = recipeCraftable(recipe);
+  const price = recipePrice(recipe);
   const ingredientRows = recipe.ingredients.map(([name, required]) => {
     const available = recipeStock(name);
     const enough = available >= required;
@@ -76,13 +90,14 @@ function renderCraftingModal() {
     const image = product?.image;
     return `<div class="craft-ingredient ${enough ? "craft-ingredient-ok" : "craft-ingredient-missing"}"><div class="craft-ingredient-image">${image ? `<img src="${image}" alt="${name}">` : "🪵"}</div><div class="min-w-0 flex-1"><p class="text-xs font-semibold truncate">${name}</p><p class="text-[11px] ${enough ? "text-emerald-300" : "text-rose-300"}">${fmtNum(available)} / ${fmtNum(required)} ชิ้น${enough ? "" : ` • ขาด ${fmtNum(required - available)}`}</p></div><span class="craft-check">${enough ? "✓" : "!"}</span></div>`;
   }).join("");
-  container.innerHTML = `<div class="crafting-header"><div class="crafting-output-image"><img src="${recipeOutputImage(recipe)}" alt="${recipe.name}"></div><div class="min-w-0"><p class="text-xs text-orange-300 mb-1">สูตรคราฟ</p><h2 class="font-bold text-xl truncate">${recipe.name}</h2><p class="text-xs text-slate-400 mt-1">ภาพสูตรอ้างอิงจากชื่อไอเทม</p></div><button type="button" id="edit-crafting-btn" class="ml-auto flex-shrink-0 px-3 py-2 rounded-lg bg-slate-700/60 hover:bg-slate-700 text-xs">✏️ แก้ไข</button></div><div class="crafting-recipe-preview"><img src="${recipeImage(recipe)}" alt="สูตร ${recipe.name}"></div><div class="crafting-summary"><div><span>คราฟได้สูงสุด</span><strong class="${craftable ? "text-emerald-300" : "text-rose-300"}">${fmtNum(craftable)} ชิ้น</strong></div><div><span>วัตถุดิบ</span><strong>${recipe.ingredients.length} รายการ</strong></div><div><span>สถานะ</span><strong class="${craftable ? "text-emerald-300" : "text-rose-300"}">${craftable ? "พร้อมคราฟ" : "ของไม่ครบ"}</strong></div></div><div class="flex items-center justify-between mt-5 mb-2"><h3 class="font-semibold text-sm">วัตถุดิบที่ต้องใช้</h3><span class="text-xs text-slate-400">ตรวจจากคงเหลือปัจจุบัน</span></div><div class="craft-ingredients-grid">${ingredientRows}</div><div class="flex gap-2 mt-5"><button type="button" data-close-modal class="flex-1 py-2.5 rounded-xl bg-slate-700/50 hover:bg-slate-700 text-sm">ยกเลิก</button><button type="button" id="confirm-craft-btn" class="flex-1 btn-primary py-2.5 rounded-xl text-sm" ${craftable < 1 ? "disabled" : ""}>คราฟ 1 ชิ้น</button></div>`;
+  container.innerHTML = `<div class="crafting-header"><div class="crafting-output-image"><img src="${recipeOutputImage(recipe)}" alt="${recipe.name}"></div><div class="min-w-0"><p class="text-xs text-orange-300 mb-1">สูตรคราฟ</p><h2 class="font-bold text-xl truncate">${recipe.name}</h2><p class="text-xs text-slate-400 mt-1">ราคาคำนวณจากเรทวัตถุดิบในหน้าขายไอเทม</p></div><button type="button" id="edit-crafting-btn" class="ml-auto flex-shrink-0 px-3 py-2 rounded-lg bg-slate-700/60 hover:bg-slate-700 text-xs">✏️ แก้ไข</button></div><div class="crafting-recipe-preview"><img src="${recipeImage(recipe)}" alt="สูตร ${recipe.name}"></div><div class="crafting-summary"><div><span>คราฟได้สูงสุด</span><strong class="${craftable ? "text-emerald-300" : "text-rose-300"}">${fmtNum(craftable)} ชิ้น</strong></div><div><span>ต้นทุนต่อชิ้น</span><strong class="text-orange-300">${fmtBaht(price)}</strong></div><div><span>สถานะ</span><strong class="${craftable ? "text-emerald-300" : "text-rose-300"}">${craftable ? "พร้อมคราฟ" : "ของไม่ครบ"}</strong></div></div><div class="flex items-center justify-between mt-5 mb-2"><h3 class="font-semibold text-sm">วัตถุดิบที่ต้องใช้</h3><span class="text-xs text-slate-400">ตรวจจากคงเหลือปัจจุบัน</span></div><div class="craft-ingredients-grid">${ingredientRows}</div><div class="flex gap-2 mt-5"><button type="button" data-close-modal class="flex-1 py-2.5 rounded-xl bg-slate-700/50 hover:bg-slate-700 text-sm">ยกเลิก</button><button type="button" id="confirm-craft-btn" class="flex-1 btn-primary py-2.5 rounded-xl text-sm" ${craftable < 1 ? "disabled" : ""}>คราฟ 1 ชิ้น</button></div>`;
   document.getElementById("edit-crafting-btn")?.addEventListener("click", () => { closeModal("crafting-modal"); openRecipeEditor(recipe.name); });
   document.getElementById("confirm-craft-btn")?.addEventListener("click", () => craftRecipe(recipe));
 }
 
 function craftRecipe(recipe) {
   if (recipeCraftable(recipe) < 1) { toast("วัตถุดิบไม่เพียงพอ", "error"); return; }
+  const craftPrice = recipePrice(recipe);
   recipe.ingredients.forEach(([name, required]) => {
     const product = state.products.find(item => item.name.toLowerCase() === name.toLowerCase());
     product.stock -= required;
@@ -91,8 +106,9 @@ function craftRecipe(recipe) {
   if (output) {
     output.stock += 1;
     output.crafted = (output.crafted || 0) + 1;
+    if (craftPrice > 0) output.unitsPerBaht = 1 / craftPrice;
   } else {
-    state.products.unshift({ id: genId("p"), name: recipe.name, category: "ของคราฟ", image: recipeOutputImage(recipe), rarity: recipe.rarity, stock: 1, sold: 0, crafted: 1, unitsPerBaht: 1, description: "สินค้าที่คราฟจากสูตร", createdAt: Date.now(), restockHistory: [] });
+    state.products.unshift({ id: genId("p"), name: recipe.name, category: "ของคราฟ", image: recipeOutputImage(recipe), rarity: recipe.rarity, stock: 1, sold: 0, crafted: 1, unitsPerBaht: craftPrice > 0 ? 1 / craftPrice : 1, description: "สินค้าที่คราฟจากสูตร", createdAt: Date.now(), restockHistory: [] });
   }
   if (!Array.isArray(state.activityLog)) state.activityLog = [];
   state.activityLog.unshift({ id: genId("activity"), type: "craft", action: "คราฟสินค้า", text: `คราฟสินค้าเพื่อขาย: ${recipe.name}`, sub: "+1 ชิ้น • พร้อมนำไปขาย", ts: Date.now() });
