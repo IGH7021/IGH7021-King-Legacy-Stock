@@ -132,6 +132,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   initSkeleton(() => {
     renderProducts();
+    renderCrafting();
     renderSalesHistory();
     renderDashboard();
     renderReports();

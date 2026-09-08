@@ -1,8 +1,36 @@
 const STORAGE_KEY = "igh_kinglegacy_state";
 const THEME_KEY = "igh_theme";
 const LANG_KEY = "igh_lang";
-const APP_VERSION = "V.2.6";
+const APP_VERSION = "V.3.2";
 const APP_CHANGELOG = [
+  { version: "V.3.2", date: "2026-09-08", changes: [
+    "เพิ่มปุ่มถังขยะสำหรับลบสูตรคราฟที่ไม่ต้องการ",
+    "เพิ่มหน้าต่างยืนยันก่อนลบ เพื่อป้องกันการกดผิด",
+    "การลบสูตรจะลบเฉพาะสูตรคราฟ ไม่กระทบสินค้าและสต็อกในคลัง"
+  ] },
+  { version: "V.3.1", date: "2026-09-08", changes: [
+    "เพิ่มกิจกรรมล่าสุดเมื่อคราฟสินค้า โดยระบุว่าเป็นสินค้าที่คราฟเพื่อเตรียมนำไปขาย",
+    "เพิ่มจำนวนสินค้าที่คราฟเข้าอันดับสินค้าขายดีโดยไม่ปนกับยอดขายและรายได้จริง",
+    "แยกประเภทกิจกรรมคราฟด้วยไอคอนและสีให้เห็นชัดใน Dashboard"
+  ] },
+  { version: "V.3.0", date: "2026-09-08", changes: [
+    "ตกแต่งรายการวัตถุดิบในหน้าสูตรคราฟใหม่ให้อ่านง่ายและเป็นระเบียบขึ้น",
+    "เพิ่มรูปภาพวัตถุดิบในแต่ละแถว และเปลี่ยนรูปทันทีเมื่อเลือกจากเมนู",
+    "ปรับช่องเลือกวัตถุดิบและจำนวนให้แยกชัดเจน พร้อมปุ่มลบที่ใช้งานง่าย"
+  ] },
+  { version: "V.2.9", date: "2026-09-08", changes: [
+    "ปรับหน้าต่างเพิ่มและแก้ไขสูตรคราฟให้สวยงามและใช้งานง่ายขึ้น",
+    "รวมการเลือกไอเทม รูปไอเทม และภาพสูตรไว้ในเมนูเดียวโดยอิงจากชื่อสินค้า",
+    "เพิ่มตัวอย่างภาพไอเทมและภาพสูตรอัตโนมัติก่อนบันทึกสูตร",
+    "ลดข้อมูลซ้ำซ้อนและปรับสูตรเดิมให้ใช้รูปแบบชื่อไอเทมเดียวกันทั้งหมด"
+  ] },
+  { version: "V.2.8", date: "2026-09-08", changes: [
+    "ปรับการแก้ไขสูตรคราฟให้เลือกวัตถุดิบจากเมนูสินค้าในคลัง ไม่ต้องพิมพ์ชื่อเอง",
+    "เพิ่มปุ่มเพิ่มและลบแถววัตถุดิบ พร้อมระบุจำนวนที่ใช้ต่อการคราฟ 1 ชิ้น",
+    "เพิ่มภาพไอเทมสำหรับการ์ดสูตร และแสดงภาพสูตรคราฟในรายละเอียด",
+    "เพิ่มเมนูเพิ่มสูตรคราฟและปุ่มแก้ไขสูตรในหน้า สินค้า / Stock",
+    "เพิ่มการตรวจวัตถุดิบ คำนวณจำนวนที่คราฟได้ และบันทึกผลลัพธ์ลงคลัง"
+  ] },
   { version: "V.2.6", date: "2026-09-06", changes: [
     "ปรับหน้า Dashboard ให้ใกล้เคียงดีไซน์จาก Figma พร้อมกราฟเส้นและแผงสรุปแบบใหม่",
     "เพิ่มเอฟเฟกต์สินค้าลอยตามเมาส์และปรับหน้า 404 ให้สวยขึ้น พร้อมใช้ฟอนต์ Itim",
@@ -124,6 +152,33 @@ const RARITY_COLORS = {
   common:    "bg-slate-300/15 text-slate-200 border-slate-300/30",
   none:      "bg-slate-600/15 text-slate-400 border-slate-600/30",
 };
+
+const CRAFT_OUTPUT_ITEMS = [
+  "Abyss Stone", "Acrospear", "Aqua Gem", "Blaze Stone", "Bloodthirsty Stone",
+  "Charm Stone", "Dark Stone", "Disillusion Stone", "Eye of Acro", "Gale Stone",
+  "Glacier Stone", "Heart of Sea", "Life Stone", "Light Stone", "Poison Stone",
+  "Spark Stone", "Tempestas Stone",
+];
+
+const RECIPES = [
+  { name: "Abyss Stone", rarity: "mythical", ingredients: [["Twilights Orb", 5], ["Dark Beards Totem", 4], ["Seas Wraith", 3], ["Dragon Scale", 35], ["Pile of Bones", 250]] },
+  { name: "Acrospear", rarity: "legendary", ingredients: [["Eye of Acro", 5], ["Dragon Fang", 25], ["Iron Ingot", 10]] },
+  { name: "Aqua Gem", rarity: "rare", ingredients: [["Coral", 10], ["Pearl", 5], ["Sea Artifact", 2]] },
+  { name: "Blaze Stone", rarity: "mythical", ingredients: [["Essence of Fire", 5], ["Magma Crystal", 10], ["Obsidian", 20]] },
+  { name: "Bloodthirsty Stone", rarity: "mythical", ingredients: [["Sea Kings Blood", 5], ["Sharks Canine", 25], ["Leather", 10]] },
+  { name: "Charm Stone", rarity: "legendary", ingredients: [["Lost Ruby", 5], ["Fortune Tales", 10], ["Pearl", 10]] },
+  { name: "Dark Stone", rarity: "legendary", ingredients: [["Noir Pearl", 5], ["Undeads Ooze", 20], ["Void Core", 5]] },
+  { name: "Disillusion Stone", rarity: "legendary", ingredients: [["Luciduss Totem", 5], ["Trickshard", 10], ["Ice Crystal", 10]] },
+  { name: "Eye of Acro", rarity: "epic", ingredients: [["Eye of Acro", 3], ["Fresh Fish", 10], ["Crab Meat", 10]] },
+  { name: "Gale Stone", rarity: "legendary", ingredients: [["Sea Kings Fin", 15], ["Angelics Feather", 10], ["Voltix", 5]] },
+  { name: "Glacier Stone", rarity: "legendary", ingredients: [["Ice Crystal", 20], ["Hydras Tail", 10], ["Essence Book", 5]] },
+  { name: "Heart of Sea", rarity: "epic", ingredients: [["Heart of Sea", 3], ["Krakens Ink", 10], ["Sea Artifact", 5]] },
+  { name: "Life Stone", rarity: "legendary", ingredients: [["Phoenixs Tear", 10], ["Fresh Fish", 20], ["Angelics Feather", 5]] },
+  { name: "Light Stone", rarity: "legendary", ingredients: [["Light", 5], ["Aqua Gem", 10], ["Essence Book", 5]] },
+  { name: "Poison Stone", rarity: "legendary", ingredients: [["Undeads Ooze", 15], ["Serpent Fin", 10], ["Krakens Ink", 5]] },
+  { name: "Spark Stone", rarity: "legendary", ingredients: [["Voltix", 15], ["Copper Key", 5], ["Gunpowder", 10]] },
+  { name: "Tempestas Stone", rarity: "mythical", ingredients: [["Voltix", 20], ["Sea Kings Fin", 15], ["Heart of Sea", 5]] },
+];
 
 const RAW_CATALOG = [
   ["Angelics Feather","ของวัตถุดิบ",300.0,"assets/products/material/Angelics_Feather.png","none"],
@@ -264,7 +319,7 @@ function buildDefaultProducts() {
       name, category,
       image: image || null,
       rarity: rarity || "none",
-      stock, sold: 0,
+      stock, sold: 0, crafted: 0,
       unitsPerBaht: rate,
       description: "",
       createdAt: Date.now() - (RAW_CATALOG.length - i) * 1000,

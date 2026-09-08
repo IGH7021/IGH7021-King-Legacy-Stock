@@ -68,7 +68,7 @@ function renderTimeline() {
   const box = document.getElementById("activity-timeline");
   if (!box) return;
   const events = [];
-  (state.activityLog || []).forEach(activity => events.push({ ts: activity.ts, text: `🧾 ${activity.text}`, sub: activity.sub || "รายการฟาร์ม", color: "bg-orange-400" }));
+  (state.activityLog || []).forEach(activity => events.push({ ts: activity.ts, text: `${activity.type === "craft" ? "🛠️" : "🧾"} ${activity.text}`, sub: activity.sub || "รายการฟาร์ม", color: activity.type === "craft" ? "bg-amber-400" : "bg-orange-400" }));
   state.sales.slice(0, 8).forEach(s => events.push({ ts: s.date, text: t("timeline_sold", { name: s.productName, qty: fmtNum(s.quantity) }), sub: fmtBaht(s.money), color: "bg-emerald-400" }));
   (state.farmOrders || []).slice(0, 8).forEach(order => { if (!(state.activityLog || []).some(activity => activity.ts === order.date && activity.text.includes(order.serviceName))) events.push({ ts: order.date, text: `🌾 รับฟาร์ม ${order.serviceName} ${order.pricingMode === "hour" ? `${fmtNum(order.hours || order.quantity)} ชั่วโมง` : `${fmtNum(order.quantity)} ${t("pieces_unit")}`}`, sub: fmtBaht(order.money), color: "bg-orange-400" }); });
   state.products.forEach(p => (p.restockHistory||[]).forEach(r => events.push({ ts: r.date, text: t("timeline_restocked", { name: p.name }), sub: `+${fmtNum(r.amount)} ${t("pieces_unit")}`, color: "bg-indigo-400" })));
@@ -89,7 +89,7 @@ function renderTimeline() {
 }
 
 function getBestSellers() {
-  const products = state.products.filter(p => p.sold > 0).map(product => ({ ...product, itemType: "product", totalQuantity: product.sold }));
+  const products = state.products.filter(p => (p.sold || 0) > 0 || (p.crafted || 0) > 0).map(product => ({ ...product, itemType: "product", totalQuantity: (product.sold || 0) + (product.crafted || 0) }));
   const farms = (state.farmServices || []).map(service => {
     const orders = (state.farmOrders || []).filter(order => order.serviceId === service.id);
     return { ...service, itemType: "farm", totalQuantity: orders.reduce((sum, order) => sum + Number(order.quantity || 0), 0) };

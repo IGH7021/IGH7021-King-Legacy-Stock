@@ -137,13 +137,29 @@ function handleFarmOrderSubmit(event) {
 document.addEventListener("DOMContentLoaded", () => {
   const productTab = document.getElementById("stock-tab-products");
   const farmTab = document.getElementById("stock-tab-farming");
+  const craftingTab = document.getElementById("stock-tab-crafting");
   const productToolbar = document.getElementById("products-toolbar");
   const bulkToolbar = document.getElementById("bulk-toolbar");
   const productGrid = document.getElementById("products-grid");
   const farmPanel = document.getElementById("farming-panel");
-  const setStockTab = farming => { productTab.classList.toggle("seg-active", !farming); farmTab.classList.toggle("seg-active", farming); productToolbar.classList.toggle("hidden", farming); bulkToolbar.classList.toggle("hidden", farming || !selectMode); productGrid.classList.toggle("hidden", farming); farmPanel.classList.toggle("hidden", !farming); if (farming) renderFarmServices(); };
-  productTab.addEventListener("click", () => setStockTab(false));
-  farmTab.addEventListener("click", () => setStockTab(true));
+  const craftingPanel = document.getElementById("crafting-panel");
+  const setStockTab = tab => {
+    const farming = tab === "farming";
+    const crafting = tab === "crafting";
+    productTab.classList.toggle("seg-active", !farming && !crafting);
+    farmTab.classList.toggle("seg-active", farming);
+    craftingTab.classList.toggle("seg-active", crafting);
+    productToolbar.classList.toggle("hidden", farming || crafting);
+    bulkToolbar.classList.toggle("hidden", farming || crafting || !selectMode);
+    productGrid.classList.toggle("hidden", farming || crafting);
+    farmPanel.classList.toggle("hidden", !farming);
+    craftingPanel.classList.toggle("hidden", !crafting);
+    if (farming) renderFarmServices();
+    if (crafting) renderCrafting();
+  };
+  productTab.addEventListener("click", () => setStockTab("products"));
+  farmTab.addEventListener("click", () => setStockTab("farming"));
+  craftingTab.addEventListener("click", () => setStockTab("crafting"));
   document.getElementById("add-farm-service-btn").addEventListener("click", () => openFarmServiceModal());
   document.getElementById("farm-service-form").addEventListener("submit", handleFarmServiceSubmit);
   document.getElementById("farm-pricing-mode").addEventListener("change", updateFarmServiceRateFields);

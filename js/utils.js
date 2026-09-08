@@ -7,6 +7,8 @@ function loadState() {
     const parsed = JSON.parse(raw);
     if (!parsed.products || !parsed.sales || !parsed.settings) throw new Error("invalid");
     state = parsed;
+    state.products.forEach(product => { if (!Number.isFinite(product.crafted)) product.crafted = 0; });
+    if (!Array.isArray(state.recipes)) state.recipes = RECIPES.map(recipe => ({ ...recipe, ingredients: recipe.ingredients.map(item => [...item]) }));
     if (!Array.isArray(state.farmServices)) state.farmServices = [];
     if (!Array.isArray(state.farmOrders)) state.farmOrders = [];
     if (!Array.isArray(state.activityLog)) state.activityLog = [];

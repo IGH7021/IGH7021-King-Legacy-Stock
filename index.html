@@ -226,6 +226,7 @@
               <div id="add-entry-menu" class="hidden absolute right-0 top-full mt-2 z-30 w-44 glass-card rounded-xl p-1 shadow-xl">
                 <button id="add-product-menu-btn" type="button" class="w-full text-left px-3 py-2 rounded-lg hover:bg-slate-700/60 text-sm">📦 เพิ่มสินค้า</button>
                 <button id="add-farm-menu-btn" type="button" class="w-full text-left px-3 py-2 rounded-lg hover:bg-slate-700/60 text-sm">🌾 เพิ่มรายการฟาร์ม</button>
+                <button id="add-recipe-menu-btn" type="button" class="w-full text-left px-3 py-2 rounded-lg hover:bg-slate-700/60 text-sm">🛠️ เพิ่มสูตรคราฟ</button>
               </div>
             </div>
           </div>
@@ -234,6 +235,7 @@
         <div class="flex rounded-xl bg-slate-800/50 p-1 border border-slate-700/50 mb-4 max-w-md">
           <button id="stock-tab-products" type="button" class="seg-btn seg-active flex-1 py-2 rounded-lg text-sm font-semibold">🛒 ขายไอเทม</button>
           <button id="stock-tab-farming" type="button" class="seg-btn flex-1 py-2 rounded-lg text-sm font-semibold">🌾 รับฟาร์ม</button>
+          <button id="stock-tab-crafting" type="button" class="seg-btn flex-1 py-2 rounded-lg text-sm font-semibold">🛠️ คราฟของ</button>
         </div>
 
         <!-- Bulk selection toolbar -->
@@ -273,6 +275,13 @@
           </div>
           <div id="farm-services-grid" class="products-grid gap-3 md:gap-4"></div>
           <div class="mt-6"><p class="font-semibold text-sm mb-3">ประวัติงานฟาร์ม</p><div id="farm-orders-list" class="flex flex-col gap-2"></div></div>
+        </div>
+        <div id="crafting-panel" class="hidden">
+          <div class="flex items-center justify-between gap-2 mb-4">
+            <div><p class="font-semibold">🛠️ สูตรคราฟของ</p><p class="text-xs text-slate-400">กดที่สูตรเพื่อดูวัตถุดิบจากคลังและจำนวนที่คราฟได้</p></div>
+            <span id="crafting-ready-count" class="text-xs px-2.5 py-1 rounded-full bg-emerald-500/15 text-emerald-300 border border-emerald-500/30"></span>
+          </div>
+          <div id="crafting-grid" class="products-grid gap-3 md:gap-4"></div>
         </div>
         <button id="products-back-to-top" class="button back-to-top" type="button" aria-label="Back to top" data-i18n-aria="back_to_top">
           <svg class="svgIcon" viewBox="0 0 384 512" aria-hidden="true"><path d="M214.6 41.4c-12.5-12.5-32.8-12.5-45.3 0l-160 160c-12.5 12.5-12.5 32.8 0 45.3s32.8 12.5 45.3 0L160 141.2V448c0 17.7 14.3 32 32 32s32-14.3 32-32V141.2L329.4 246.6c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3l-160-160z"></path></svg>
@@ -419,6 +428,29 @@
     <button data-nav="settings" class="sidebar-link flex flex-col items-center gap-0.5 px-2 py-1 rounded-xl text-[11px]">⚙️ <span data-i18n="nav_settings">ตั้งค่า</span></button>
     <button data-nav="updates" class="sidebar-link flex flex-col items-center gap-0.5 px-2 py-1 rounded-xl text-[11px]">🆕 <span>อัปเดต</span></button>
   </nav>
+</div>
+
+<!-- Crafting recipe modal -->
+<div id="crafting-modal" class="modal-overlay hidden">
+  <div class="modal-box glass-card w-full max-w-2xl rounded-2xl p-5 relative">
+    <button data-close-modal class="absolute top-4 right-4 text-slate-400 hover:text-white" aria-label="close">✕</button>
+    <div id="crafting-modal-content"></div>
+  </div>
+</div>
+
+<div id="crafting-editor-modal" class="modal-overlay hidden">
+  <div class="modal-box glass-card w-full max-w-md rounded-2xl p-5 relative">
+    <button data-close-modal class="absolute top-4 right-4 text-slate-400 hover:text-white" aria-label="close">✕</button>
+    <h2 id="crafting-editor-title" class="font-bold text-lg mb-4">เพิ่มสูตรคราฟ</h2>
+    <form id="crafting-editor-form" class="flex flex-col gap-3">
+      <label class="text-xs text-slate-400">ไอเทมผลลัพธ์<select name="name" required class="w-full mt-1 px-3 py-2 rounded-xl bg-slate-800/50 border border-slate-700/50 text-sm"></select></label>
+      <div id="recipe-image-preview" class="recipe-image-preview"><div><img data-preview-product alt="ตัวอย่างไอเทม"><span>ไอคอนไอเทม</span></div><div><img data-preview-recipe alt="ตัวอย่างสูตร"><span>ภาพรวมสูตร</span></div></div>
+      <label class="text-xs text-slate-400">ระดับ<select name="rarity" class="rarity-select-input w-full mt-1 px-3 py-2 rounded-xl bg-slate-800/50 border border-slate-700/50 text-sm"></select></label>
+      <div><div class="flex items-center justify-between gap-2"><label class="text-xs text-slate-400">วัตถุดิบที่ใช้</label><button type="button" id="add-ingredient-row-btn" class="text-xs text-orange-300 hover:text-orange-200">+ เพิ่มวัตถุดิบ</button></div><div id="recipe-ingredients-editor" class="flex flex-col gap-2 mt-2"></div></div>
+      <p class="text-[11px] text-slate-500">รูปไอเทมและภาพสูตรจะเลือกจากชื่อไอเทมให้อัตโนมัติ</p>
+      <div class="flex gap-2"><button type="button" data-close-modal class="flex-1 py-2.5 rounded-xl bg-slate-700/50 text-sm">ยกเลิก</button><button type="submit" class="flex-1 btn-primary py-2.5 rounded-xl text-sm">บันทึกสูตร</button></div>
+    </form>
+  </div>
 </div>
 
 <!-- Farming service modal -->
@@ -696,6 +728,7 @@
 <script src="js/utils.js"></script>
 <script src="js/products.js"></script>
 <script src="js/farm.js"></script>
+<script src="js/crafting.js"></script>
 <script src="js/sales.js"></script>
 <script src="js/dashboard.js"></script>
 <script src="js/backup.js"></script>
