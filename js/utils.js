@@ -13,6 +13,12 @@ function loadState() {
     else defaultRecipes.forEach(recipe => {
       if (!state.recipes.some(existing => existing.name.toLowerCase() === recipe.name.toLowerCase())) state.recipes.push(recipe);
     });
+    const catalogProducts = buildDefaultProducts();
+    catalogProducts.forEach(product => {
+      if (!state.products.some(existing => existing.name.toLowerCase() === product.name.toLowerCase())) {
+        state.products.push({ ...product, id: genId("p"), createdAt: Date.now() });
+      }
+    });
     if (!Array.isArray(state.farmServices)) state.farmServices = [];
     if (!Array.isArray(state.farmOrders)) state.farmOrders = [];
     if (!Array.isArray(state.activityLog)) state.activityLog = [];

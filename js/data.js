@@ -1,8 +1,11 @@
 const STORAGE_KEY = "igh_kinglegacy_state";
 const THEME_KEY = "igh_theme";
 const LANG_KEY = "igh_lang";
-const APP_VERSION = "V.3.7";
+const APP_VERSION = "V.3.8";
 const APP_CHANGELOG = [
+  { version: "V.3.8", date: "2026-09-10", time: "06:16", changes: [
+    "เพิ่ม Noir Pearl เข้าในคลังอัตโนมัติสำหรับข้อมูลเดิมที่ยังไม่มีรายการนี้"
+  ] },
   { version: "V.3.7", date: "2026-09-10", time: "05:04", changes: [
     "เพิ่มสูตรคราฟ Chronicles Lore, Essence Book, Fate Book และ Fortune Tales",
     "เพิ่มภาพไอคอนและภาพสูตรของไอเทมใหม่ให้เลือกและแสดงผลในหน้าคราฟ"
