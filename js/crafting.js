@@ -148,13 +148,17 @@ function updateRecipeImagePreview(name) {
 function renderRecipeIngredientEditor(ingredients) {
   const container = document.getElementById("recipe-ingredients-editor");
   if (!container) return;
-  const options = state.products.filter(product => product.category === "ของวัตถุดิบ").map(product => `<option value="${product.name}">${product.name}</option>`).join("");
-  container.innerHTML = ingredients.map(([name, amount], index) => `<div class="recipe-ingredient-editor-row"><div class="ingredient-row-icon">${ingredientImage(name) ? `<img src="${ingredientImage(name)}" alt="${name}">` : "🪵"}</div><div class="ingredient-row-fields"><label>วัตถุดิบ<select name="ingredientProduct"><option value="">เลือกวัตถุดิบ</option>${options}</select></label><label class="ingredient-amount-field">จำนวน<input name="ingredientAmount" type="number" min="0.0001" step="any" value="${amount || 1}"></label></div><button type="button" data-remove-ingredient class="ingredient-remove-btn" aria-label="ลบวัตถุดิบ">✕</button></div>`).join("");
-  container.querySelectorAll("select[name=ingredientProduct]").forEach((select, index) => { select.value = ingredients[index][0] || ""; });
+  const products = state.products.filter(product => product.category === "ของวัตถุดิบ").sort((a, b) => a.name.localeCompare(b.name));
+  container.innerHTML = ingredients.map(([name, amount]) => {
+    const selected = products.find(product => product.name.toLowerCase() === String(name || "").toLowerCase());
+    const selectedName = selected?.name || "";
+    const options = products.map(product => `<button type="button" class="ingredient-option ${product.name === selectedName ? "is-selected" : ""}" data-ingredient-value="${product.name}" role="option">${product.image ? `<img src="${product.image}" alt="">` : "🪵"}<span>${product.name}</span></button>`).join("");
+    return `<div class="recipe-ingredient-editor-row"><div class="ingredient-row-icon">${ingredientImage(selectedName) ? `<img src="${ingredientImage(selectedName)}" alt="${selectedName}">` : "🪵"}</div><div class="ingredient-row-fields"><label>วัตถุดิบ<div class="ingredient-picker" data-ingredient-picker><input type="text" class="ingredient-search-input" data-ingredient-search value="${selectedName}" placeholder="พิมพ์เพื่อค้นหาวัตถุดิบ..." autocomplete="off" aria-label="ค้นหาวัตถุดิบ"><input type="hidden" name="ingredientProduct" value="${selectedName}"><div class="ingredient-picker-menu" data-ingredient-menu role="listbox">${options}</div></div></label><label class="ingredient-amount-field">จำนวน<input name="ingredientAmount" type="number" min="0.0001" step="any" value="${amount || 1}"></label></div><button type="button" data-remove-ingredient class="ingredient-remove-btn" aria-label="ลบวัตถุดิบ">✕</button></div>`;
+  }).join("");
 }
 
 function collectRecipeIngredients() {
-  return Array.from(document.querySelectorAll(".recipe-ingredient-editor-row")).map(row => [row.querySelector("select").value, Number(row.querySelector("input").value)]).filter(([name, amount]) => name && Number.isFinite(amount) && amount > 0);
+  return Array.from(document.querySelectorAll(".recipe-ingredient-editor-row")).map(row => [row.querySelector("input[name=ingredientProduct]").value, Number(row.querySelector("input[name=ingredientAmount]").value)]).filter(([name, amount]) => name && Number.isFinite(amount) && amount > 0);
 }
 
 function handleRecipeEditorSubmit(event) {
@@ -205,22 +209,43 @@ document.addEventListener("DOMContentLoaded", () => {
   document.getElementById("crafting-editor-form")?.addEventListener("submit", handleRecipeEditorSubmit);
   document.getElementById("crafting-editor-form")?.elements.name.addEventListener("change", event => updateRecipeImagePreview(event.target.value));
   document.getElementById("add-ingredient-row-btn")?.addEventListener("click", () => {
-    const rows = Array.from(document.querySelectorAll(".recipe-ingredient-editor-row")).map(row => [row.querySelector("select").value, Number(row.querySelector("input").value) || 1]);
+    const rows = Array.from(document.querySelectorAll(".recipe-ingredient-editor-row")).map(row => [row.querySelector("input[name=ingredientProduct]").value, Number(row.querySelector("input[name=ingredientAmount]").value) || 1]);
     rows.push(["", 1]);
     renderRecipeIngredientEditor(rows);
   });
   document.getElementById("recipe-ingredients-editor")?.addEventListener("click", event => {
+    const option = event.target.closest("[data-ingredient-value]");
+    if (option) {
+      const picker = option.closest("[data-ingredient-picker]");
+      const row = option.closest(".recipe-ingredient-editor-row");
+      const value = option.dataset.ingredientValue;
+      picker.querySelector("[data-ingredient-search]").value = value;
+      picker.querySelector("input[name=ingredientProduct]").value = value;
+      picker.querySelector("[data-ingredient-menu]").classList.remove("is-open");
+      row.querySelector(".ingredient-row-icon").innerHTML = ingredientImage(value) ? `<img src="${ingredientImage(value)}" alt="${value}">` : "🪵";
+      picker.querySelectorAll("[data-ingredient-value]").forEach(item => item.classList.toggle("is-selected", item === option));
+      return;
+    }
     const removeButton = event.target.closest("[data-remove-ingredient]");
     if (!removeButton) return;
-    const rows = Array.from(document.querySelectorAll(".recipe-ingredient-editor-row")).map(row => [row.querySelector("select").value, Number(row.querySelector("input").value) || 1]);
+    const rows = Array.from(document.querySelectorAll(".recipe-ingredient-editor-row")).map(row => [row.querySelector("input[name=ingredientProduct]").value, Number(row.querySelector("input[name=ingredientAmount]").value) || 1]);
     if (rows.length <= 1) return;
     rows.splice(Array.from(document.querySelectorAll(".recipe-ingredient-editor-row")).indexOf(removeButton.closest(".recipe-ingredient-editor-row")), 1);
     renderRecipeIngredientEditor(rows);
   });
-  document.getElementById("recipe-ingredients-editor")?.addEventListener("change", event => {
-    const select = event.target.closest("select[name=ingredientProduct]");
-    if (!select) return;
-    const image = select.closest(".recipe-ingredient-editor-row")?.querySelector(".ingredient-row-icon");
-    if (image) image.innerHTML = ingredientImage(select.value) ? `<img src="${ingredientImage(select.value)}" alt="${select.value}">` : "🪵";
+  document.getElementById("recipe-ingredients-editor")?.addEventListener("focusin", event => {
+    const input = event.target.closest("[data-ingredient-search]");
+    if (input) input.closest("[data-ingredient-picker]").querySelector("[data-ingredient-menu]").classList.add("is-open");
   });
+  document.getElementById("recipe-ingredients-editor")?.addEventListener("input", event => {
+    const input = event.target.closest("[data-ingredient-search]");
+    if (!input) return;
+    const picker = input.closest("[data-ingredient-picker]");
+    const menu = picker.querySelector("[data-ingredient-menu]");
+    const query = input.value.trim().toLowerCase();
+    menu.classList.add("is-open");
+    menu.querySelectorAll("[data-ingredient-value]").forEach(option => option.classList.toggle("hidden", !option.dataset.ingredientValue.toLowerCase().includes(query)));
+    picker.querySelector("input[name=ingredientProduct]").value = "";
+  });
+  document.addEventListener("click", event => { if (!event.target.closest("[data-ingredient-picker]")) document.querySelectorAll("[data-ingredient-menu].is-open").forEach(menu => menu.classList.remove("is-open")); });
 });

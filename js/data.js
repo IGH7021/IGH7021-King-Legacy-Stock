@@ -1,8 +1,12 @@
 const STORAGE_KEY = "igh_kinglegacy_state";
 const THEME_KEY = "igh_theme";
 const LANG_KEY = "igh_lang";
-const APP_VERSION = "V.3.8";
+const APP_VERSION = "V.3.9";
 const APP_CHANGELOG = [
+  { version: "V.3.9", date: "2026-09-10", time: "06:29", changes: [
+    "ปรับเมนูเลือกวัตถุดิบในสูตรคราฟให้ค้นหาด้วยการพิมพ์ชื่อได้",
+    "เพิ่มรายการตัวเลือกแบบค้นหาได้ในแต่ละแถว พร้อมแสดงภาพวัตถุดิบที่เลือก"
+  ] },
   { version: "V.3.8", date: "2026-09-10", time: "06:16", changes: [
     "เพิ่ม Noir Pearl เข้าในคลังอัตโนมัติสำหรับข้อมูลเดิมที่ยังไม่มีรายการนี้"
   ] },
