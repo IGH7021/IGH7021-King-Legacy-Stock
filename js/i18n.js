@@ -48,7 +48,7 @@ const I18N = {
     report_sale_count_label: "รายการขาย", report_bestseller_title: "อันดับสินค้าขายดี",
     no_sales_data: "ยังไม่มีข้อมูลการขาย",
 
-    settings_title: "ตั้งค่า", update_log_title: "มีอะไรอัปเดต", update_date_prefix: "วันที่", credits_title: "ช่องทางติดต่อแอดมิน", back_to_top: "กลับด้านบน",
+    settings_title: "ตั้งค่า", update_log_title: "มีอะไรอัปเดต", update_date_prefix: "วันที่", update_time_prefix: "เวลา", update_time_unknown: "ไม่ระบุเวลา", credits_title: "ช่องทางติดต่อแอดมิน", back_to_top: "กลับด้านบน",
     settings_language: "ภาษา",
     settings_stock_alert_title: "แจ้งเตือนเมื่อเหลือไม่เกิน",
     settings_category_title: "หมวดหมู่สินค้า", new_category_placeholder: "ชื่อหมวดหมู่ใหม่",
@@ -154,7 +154,7 @@ const I18N = {
     report_sale_count_label: "Sale Transactions", report_bestseller_title: "Best Sellers Ranking",
     no_sales_data: "No sales data yet",
 
-    settings_title: "Settings", update_log_title: "What’s new", update_date_prefix: "Date", credits_title: "Contact admin", back_to_top: "Back to top",
+    settings_title: "Settings", update_log_title: "What’s new", update_date_prefix: "Date", update_time_prefix: "Time", update_time_unknown: "Time unavailable", credits_title: "Contact admin", back_to_top: "Back to top",
     settings_language: "Language",
     settings_stock_alert_title: "Alert when stock is below",
     settings_category_title: "Product Categories", new_category_placeholder: "New category name",
