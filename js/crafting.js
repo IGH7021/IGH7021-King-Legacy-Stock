@@ -50,13 +50,18 @@ function recipeCraftable(recipe) {
   return Math.min(...recipe.ingredients.map(([name, required]) => Math.floor(recipeStock(name) / required)));
 }
 
+function recipeCategory(recipe) {
+  return recipeProduct(recipe)?.category || "อื่นๆ";
+}
+
 function recipeCard(recipe) {
   const craftable = recipeCraftable(recipe);
   const output = recipeProduct(recipe);
+  const category = recipeCategory(recipe);
   const price = recipePrice(recipe);
   return `<div class="recipe-card glass-card rounded-2xl overflow-hidden text-left ${craftable ? "recipe-ready" : "recipe-locked"}" data-recipe="${recipe.name}">
     <button type="button" class="recipe-card-open w-full text-left"><div class="recipe-card-image relative h-36 bg-slate-800/60"><img src="${recipeOutputImage(recipe)}" loading="lazy" decoding="async" class="w-full h-full object-contain p-3" alt="${recipe.name}"><span class="absolute top-2 right-2 text-[11px] px-2 py-0.5 rounded-full border ${craftable ? "bg-emerald-500/15 text-emerald-300 border-emerald-500/30" : "bg-slate-900/75 text-slate-400 border-slate-600/50"}">${craftable ? `คราฟได้ ${fmtNum(craftable)}` : "วัตถุดิบไม่ครบ"}</span></div>
-    <div class="p-3"><div class="flex items-center justify-between gap-2"><strong class="text-sm truncate">${recipe.name}</strong><span class="text-[10px] px-2 py-0.5 rounded-full border ${rarityBadgeClass(recipe.rarity)}">${rarityLabel(recipe.rarity)}</span></div><p class="text-xs text-slate-400 mt-1">${output ? `มีในคลัง ${fmtNum(remaining(output))} ชิ้น` : "ยังไม่มีในคลังสินค้า"}</p><p class="text-xs text-orange-300 mt-1">ต้นทุนวัตถุดิบ ${fmtBaht(price)}</p></div></button>
+    <div class="p-3"><div class="flex items-center justify-between gap-2"><strong class="text-sm truncate">${recipe.name}</strong><div class="flex items-center gap-1"><span class="text-[10px] px-2 py-0.5 rounded-full border border-slate-600/50 text-slate-400">${category}</span><span class="text-[10px] px-2 py-0.5 rounded-full border ${rarityBadgeClass(recipe.rarity)}">${rarityLabel(recipe.rarity)}</span></div></div><p class="text-xs text-slate-400 mt-1">${output ? `มีในคลัง ${fmtNum(remaining(output))} ชิ้น` : "ยังไม่มีในคลังสินค้า"}</p><p class="text-xs text-orange-300 mt-1">ต้นทุนวัตถุดิบ ${fmtBaht(price)}</p></div></button>
     <div class="px-3 pb-3 flex gap-2"><button type="button" data-recipe-action="edit" class="flex-1 text-xs py-1.5 rounded-lg bg-slate-700/60 hover:bg-slate-700">✏️ แก้ไขสูตร</button><button type="button" data-recipe-action="delete" class="recipe-delete-btn" aria-label="ลบสูตร" title="ลบสูตร">🗑️</button></div>
   </div>`;
 }
@@ -64,12 +69,18 @@ function recipeCard(recipe) {
 function renderCrafting() {
   const grid = document.getElementById("crafting-grid");
   if (!grid) return;
+  const categoryOrder = ["ดาบ", "ผลปีศาจ", "ของวัตถุดิบ", "ของแต่ง", "อื่นๆ"];
   const recipes = [...getRecipes()].sort((first, second) => {
-    const craftableDifference = recipeCraftable(second) - recipeCraftable(first);
-    if (craftableDifference !== 0) return craftableDifference;
+    const firstCategoryIndex = categoryOrder.indexOf(recipeCategory(first));
+    const secondCategoryIndex = categoryOrder.indexOf(recipeCategory(second));
+    const firstCategory = firstCategoryIndex < 0 ? categoryOrder.length : firstCategoryIndex;
+    const secondCategory = secondCategoryIndex < 0 ? categoryOrder.length : secondCategoryIndex;
+    if (firstCategory !== secondCategory) return firstCategory - secondCategory;
     const firstRarity = RARITY_ORDER.indexOf(first.rarity);
     const secondRarity = RARITY_ORDER.indexOf(second.rarity);
     if (firstRarity !== secondRarity) return firstRarity - secondRarity;
+    const craftableDifference = recipeCraftable(second) - recipeCraftable(first);
+    if (craftableDifference !== 0) return craftableDifference;
     return first.name.localeCompare(second.name);
   });
   const ready = recipes.filter(recipe => recipeCraftable(recipe) > 0).length;
