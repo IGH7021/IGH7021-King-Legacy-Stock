@@ -1,8 +1,12 @@
 const STORAGE_KEY = "igh_kinglegacy_state";
 const THEME_KEY = "igh_theme";
 const LANG_KEY = "igh_lang";
-const APP_VERSION = "V.3.6";
+const APP_VERSION = "V.3.7";
 const APP_CHANGELOG = [
+  { version: "V.3.7", date: "2026-09-10", time: "05:04", changes: [
+    "เพิ่มสูตรคราฟ Chronicles Lore, Essence Book, Fate Book และ Fortune Tales",
+    "เพิ่มภาพไอคอนและภาพสูตรของไอเทมใหม่ให้เลือกและแสดงผลในหน้าคราฟ"
+  ] },
   { version: "V.3.6", date: "2026-09-09", time: "19:05", changes: [
     "เพิ่มเวลาอัปเดตในหน้าอัปเดต เพื่อให้ตรวจสอบได้ว่าแต่ละเวอร์ชันอัปเดตเมื่อเวลาใด"
   ] },
@@ -169,7 +173,7 @@ const CRAFT_OUTPUT_ITEMS = [
   "Abyss Stone", "Acrospear", "Aqua Gem", "Blaze Stone", "Bloodthirsty Stone",
   "Charm Stone", "Dark Stone", "Disillusion Stone", "Eye of Acro", "Gale Stone",
   "Glacier Stone", "Heart of Sea", "Life Stone", "Light Stone", "Poison Stone",
-  "Spark Stone", "Tempestas Stone",
+  "Spark Stone", "Tempestas Stone", "Chronicles Lore", "Essence Book", "Fate Book", "Fortune Tales",
 ];
 
 const RECIPES = [
@@ -190,6 +194,10 @@ const RECIPES = [
   { name: "Poison Stone", rarity: "legendary", ingredients: [["Undeads Ooze", 15], ["Serpent Fin", 10], ["Krakens Ink", 5]] },
   { name: "Spark Stone", rarity: "legendary", ingredients: [["Voltix", 15], ["Copper Key", 5], ["Gunpowder", 10]] },
   { name: "Tempestas Stone", rarity: "mythical", ingredients: [["Voltix", 20], ["Sea Kings Fin", 15], ["Heart of Sea", 5]] },
+  { name: "Chronicles Lore", rarity: "legendary", ingredients: [["Fortune Tales", 1], ["Hydras Tail", 1], ["Heart of Sea", 1], ["Aqua Gem", 1], ["Sea Artifact", 10]] },
+  { name: "Essence Book", rarity: "mythical", ingredients: [["Sharks Canine", 1], ["Fate Book", 1], ["Gunpowder", 2], ["Fresh Fish", 10], ["Leather", 15]] },
+  { name: "Fate Book", rarity: "rare", ingredients: [["Gunpowder", 1], ["Log", 15], ["Angelics Feather", 10]] },
+  { name: "Fortune Tales", rarity: "legendary", ingredients: [["Seas Wraith", 1], ["Essence Book", 1], ["Dragon Scale", 1], ["Fresh Fish", 10], ["Carrot", 15]] },
 ];
 
 const RAW_CATALOG = [
