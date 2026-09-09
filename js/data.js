@@ -1,8 +1,12 @@
 const STORAGE_KEY = "igh_kinglegacy_state";
 const THEME_KEY = "igh_theme";
 const LANG_KEY = "igh_lang";
-const APP_VERSION = "V.4.1";
+const APP_VERSION = "V.4.2";
 const APP_CHANGELOG = [
+  { version: "V.4.2", date: "2026-09-10", time: "06:50", changes: [
+    "เพิ่มช่องเลือกหมวดหมู่ในฟอร์มเพิ่มและแก้ไขสูตรคราฟ",
+    "ปรับการเรียงหน้าไอเทมและรายการฟาร์มให้แยกตามหมวด ระดับ และจำนวนให้เหมือนหน้าคราฟ"
+  ] },
   { version: "V.4.1", date: "2026-09-10", time: "06:42", changes: [
     "แยกกลุ่มสูตรคราฟตามหมวดดาบ ผลปีศาจ วัตถุดิบ ของแต่ง และอื่นๆ",
     "เรียงระดับความหายากจากสูงไปต่ำ แล้วเรียงจำนวนที่คราฟได้ภายในระดับเดียวกัน"
@@ -171,6 +175,8 @@ const CATEGORY_ICONS = {
   "ของแต่ง": "🎩",
   "อื่นๆ": "📦",
 };
+
+const CATEGORY_ORDER = ["ดาบ", "ผลปีศาจ", "ของวัตถุดิบ", "ของแต่ง", "อื่นๆ"];
 
 const RARITY_ORDER = ["limited","mythical","legendary","epic","rare","uncommon","common","none"];
 const RARITY_COLORS = {

@@ -51,7 +51,7 @@ function recipeCraftable(recipe) {
 }
 
 function recipeCategory(recipe) {
-  return recipeProduct(recipe)?.category || "อื่นๆ";
+  return recipe.category || recipeProduct(recipe)?.category || "อื่นๆ";
 }
 
 function recipeCard(recipe) {
@@ -69,12 +69,9 @@ function recipeCard(recipe) {
 function renderCrafting() {
   const grid = document.getElementById("crafting-grid");
   if (!grid) return;
-  const categoryOrder = ["ดาบ", "ผลปีศาจ", "ของวัตถุดิบ", "ของแต่ง", "อื่นๆ"];
   const recipes = [...getRecipes()].sort((first, second) => {
-    const firstCategoryIndex = categoryOrder.indexOf(recipeCategory(first));
-    const secondCategoryIndex = categoryOrder.indexOf(recipeCategory(second));
-    const firstCategory = firstCategoryIndex < 0 ? categoryOrder.length : firstCategoryIndex;
-    const secondCategory = secondCategoryIndex < 0 ? categoryOrder.length : secondCategoryIndex;
+    const firstCategory = categorySortIndex(recipeCategory(first));
+    const secondCategory = categorySortIndex(recipeCategory(second));
     if (firstCategory !== secondCategory) return firstCategory - secondCategory;
     const firstRarity = RARITY_ORDER.indexOf(first.rarity);
     const secondRarity = RARITY_ORDER.indexOf(second.rarity);
@@ -145,7 +142,10 @@ function openRecipeEditor(recipeName = null) {
   const outputNames = [...CRAFT_OUTPUT_ITEMS].sort((a, b) => a.localeCompare(b));
   form.name.innerHTML = `<option value="">เลือกไอเทมผลลัพธ์</option>` + outputNames.map(name => `<option value="${name}">${name}</option>`).join("");
   form.rarity.innerHTML = RARITY_ORDER.map(rarity => `<option value="${rarity}">${rarityLabel(rarity)}</option>`).join("");
+  const recipeCategories = [...new Set([...(state.settings.categories || CATEGORY_ORDER), "อื่นๆ", recipe?.category].filter(Boolean))];
+  form.category.innerHTML = recipeCategories.map(category => `<option value="${category}">${category}</option>`).join("");
   form.rarity.value = recipe?.rarity || "none";
+  form.category.value = recipe?.category || recipeProduct(recipe || {})?.category || "ของวัตถุดิบ";
   document.getElementById("crafting-editor-title").textContent = recipe ? "แก้ไขสูตรคราฟ" : "เพิ่มสูตรคราฟ";
   renderRecipeIngredientEditor(recipe?.ingredients || [["", 1]]);
   if (recipe) {
@@ -187,7 +187,7 @@ function handleRecipeEditorSubmit(event) {
     toast("กรุณากรอกข้อมูลสูตรและวัตถุดิบให้ครบ", "error");
     return;
   }
-  const payload = { name: form.name.value.trim(), rarity: form.rarity.value, ingredients };
+  const payload = { name: form.name.value.trim(), category: form.category.value, rarity: form.rarity.value, ingredients };
   const recipes = getRecipes();
   if (editingRecipeName) {
     const index = recipes.findIndex(recipe => recipe.name === editingRecipeName);

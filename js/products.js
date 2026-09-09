@@ -86,11 +86,15 @@ function getFilteredProducts() {
     return true;
   });
 
-  // Sort by rarity according to RARITY_ORDER (higher rarity first), then by name
+  // Keep product groups consistent with the crafting and farming pages.
   filtered.sort((a, b) => {
+    const categoryDifference = categorySortIndex(a.category) - categorySortIndex(b.category);
+    if (categoryDifference !== 0) return categoryDifference;
     const ra = RARITY_ORDER.indexOf(a.rarity || "none");
     const rb = RARITY_ORDER.indexOf(b.rarity || "none");
     if (ra !== rb) return ra - rb;
+    const stockDifference = remaining(b) - remaining(a);
+    if (stockDifference !== 0) return stockDifference;
     return (a.name || "").localeCompare(b.name || "");
   });
 

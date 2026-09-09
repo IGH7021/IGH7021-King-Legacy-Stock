@@ -49,6 +49,11 @@ function saveState() {
   }
 }
 
+function categorySortIndex(category) {
+  const index = CATEGORY_ORDER.indexOf(category);
+  return index < 0 ? CATEGORY_ORDER.length : index;
+}
+
 function genId(prefix) { return prefix + "_" + Date.now().toString(36) + Math.random().toString(36).slice(2,7); }
 
 async function copyText(text) {

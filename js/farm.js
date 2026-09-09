@@ -34,7 +34,15 @@ function farmServiceCard(service) {
 function renderFarmServices() {
   const grid = document.getElementById("farm-services-grid");
   if (!grid) return;
-  const services = state.farmServices || [];
+  const services = [...(state.farmServices || [])].sort((a, b) => {
+    const categoryDifference = categorySortIndex(a.category) - categorySortIndex(b.category);
+    if (categoryDifference !== 0) return categoryDifference;
+    const rarityDifference = RARITY_ORDER.indexOf(a.rarity || "none") - RARITY_ORDER.indexOf(b.rarity || "none");
+    if (rarityDifference !== 0) return rarityDifference;
+    const quantityDifference = Number(b.rateQty || b.unitsPerBaht || 0) - Number(a.rateQty || a.unitsPerBaht || 0);
+    if (quantityDifference !== 0) return quantityDifference;
+    return (a.name || "").localeCompare(b.name || "");
+  });
   grid.innerHTML = services.length ? services.map(farmServiceCard).join("") : `<div class="col-span-full text-center py-12 text-slate-400"><div class="text-4xl mb-2">🌾</div><p>ยังไม่มีรายการรับฟาร์ม</p></div>`;
   renderFarmOrders();
   document.querySelectorAll(".rarity-select-input").forEach(select => {
