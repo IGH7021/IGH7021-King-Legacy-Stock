@@ -64,7 +64,14 @@ function recipeCard(recipe) {
 function renderCrafting() {
   const grid = document.getElementById("crafting-grid");
   if (!grid) return;
-  const recipes = getRecipes();
+  const recipes = [...getRecipes()].sort((first, second) => {
+    const craftableDifference = recipeCraftable(second) - recipeCraftable(first);
+    if (craftableDifference !== 0) return craftableDifference;
+    const firstRarity = RARITY_ORDER.indexOf(first.rarity);
+    const secondRarity = RARITY_ORDER.indexOf(second.rarity);
+    if (firstRarity !== secondRarity) return firstRarity - secondRarity;
+    return first.name.localeCompare(second.name);
+  });
   const ready = recipes.filter(recipe => recipeCraftable(recipe) > 0).length;
   const count = document.getElementById("crafting-ready-count");
   if (count) count.textContent = `พร้อมคราฟ ${ready}/${recipes.length} สูตร`;
