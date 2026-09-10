@@ -43,15 +43,23 @@ function renderSalesChart() {
     return state.sales.filter(s => s.date >= dayStart && s.date < dayEnd).reduce((a,s) => a+s.money, 0);
   });
 
-  if (salesChart) { salesChart.destroy(); salesChart = null; }
-  salesChart = new Chart(ctx, {
-    type: "line",
-    data: { labels, datasets: [{
+  const chartData = {
+    labels,
+    datasets: [{
       label: t("chart_dataset_label"), data: totals,
       borderColor: "#5bb79d", backgroundColor: "rgba(91,183,157,.14)",
       borderWidth: 2.5, pointRadius: 3, pointBackgroundColor: "#5bb79d",
       pointBorderColor: "#ffffff", pointBorderWidth: 2, tension: .42, fill: true,
-    }]},
+    }],
+  };
+  if (salesChart) {
+    salesChart.data = chartData;
+    salesChart.update("none");
+    return;
+  }
+  salesChart = new Chart(ctx, {
+    type: "line",
+    data: chartData,
     options: {
       responsive: true, maintainAspectRatio: false,
       animation: false,
