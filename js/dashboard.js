@@ -1,12 +1,18 @@
 let salesChart = null;
 
-function totalSales() { return state.sales.reduce((a,s) => a + s.money, 0); }
-function totalSoldQty() { return state.sales.reduce((a,s) => a + s.quantity, 0); }
+function totalSales() { return state.sales.reduce((a,s) => a + Number(s.money || 0), 0) + (state.farmOrders || []).reduce((a,o) => a + Number(o.money || 0), 0); }
+function totalSoldQty() { return state.sales.reduce((a,s) => a + Number(s.quantity || 0), 0) + (state.farmOrders || []).reduce((a,o) => a + Number(o.pricingMode === "hour" ? o.hours || 0 : o.quantity || 0), 0); }
 function totalRemainingStock() { return state.products.reduce((a,p) => a + remaining(p), 0); }
 function todaySales() {
   const start = new Date();
   start.setHours(0, 0, 0, 0);
   return state.sales.filter(s => s.date >= start.getTime());
+}
+
+function todayFarmOrders() {
+  const start = new Date();
+  start.setHours(0, 0, 0, 0);
+  return (state.farmOrders || []).filter(order => order.date >= start.getTime());
 }
 
 function renderDashboard() {
@@ -15,11 +21,13 @@ function renderDashboard() {
   document.getElementById("stat-sale-count").textContent = fmtNum(state.sales.length);
   document.getElementById("stat-remaining").textContent = fmtNum(totalRemainingStock()) + " " + t("pieces_unit");
   const salesToday = todaySales();
-  const todayMoney = salesToday.reduce((sum, sale) => sum + sale.money, 0);
+  const farmOrdersToday = todayFarmOrders();
+  const todayMoney = salesToday.reduce((sum, sale) => sum + Number(sale.money || 0), 0) + farmOrdersToday.reduce((sum, order) => sum + Number(order.money || 0), 0);
+  const todayQty = salesToday.reduce((sum, sale) => sum + Number(sale.quantity || 0), 0) + farmOrdersToday.reduce((sum, order) => sum + Number(order.pricingMode === "hour" ? order.hours || 0 : order.quantity || 0), 0);
   document.getElementById("stat-today-sales").textContent = fmtBaht(Math.round(todayMoney * 100) / 100);
-  document.getElementById("stat-today-qty").textContent = fmtNum(salesToday.reduce((sum, sale) => sum + sale.quantity, 0));
-  document.getElementById("stat-today-orders").textContent = fmtNum(salesToday.length);
-  document.getElementById("stat-average-order").textContent = fmtBaht(salesToday.length ? Math.round(todayMoney / salesToday.length * 100) / 100 : 0);
+  document.getElementById("stat-today-qty").textContent = fmtNum(todayQty);
+  document.getElementById("stat-today-orders").textContent = fmtNum(salesToday.length + farmOrdersToday.length);
+  document.getElementById("stat-average-order").textContent = fmtBaht(salesToday.length + farmOrdersToday.length ? Math.round(todayMoney / (salesToday.length + farmOrdersToday.length) * 100) / 100 : 0);
   renderSalesChart();
   renderTimeline();
   renderBestSellers("dashboard-best-sellers", 5);
@@ -40,7 +48,9 @@ function renderSalesChart() {
   }
   const totals = days.map(dayStart => {
     const dayEnd = dayStart + 86400000;
-    return state.sales.filter(s => s.date >= dayStart && s.date < dayEnd).reduce((a,s) => a+s.money, 0);
+    const sales = state.sales.filter(s => s.date >= dayStart && s.date < dayEnd).reduce((a,s) => a + Number(s.money || 0), 0);
+    const farms = (state.farmOrders || []).filter(order => order.date >= dayStart && order.date < dayEnd).reduce((a, order) => a + Number(order.money || 0), 0);
+    return sales + farms;
   });
 
   const chartData = {
@@ -125,6 +135,6 @@ function renderReports() {
   if (!el) return;
   document.getElementById("report-total-sales").textContent = fmtBaht(Math.round(totalSales()*100)/100);
   document.getElementById("report-sold-qty").textContent = fmtNum(totalSoldQty());
-  document.getElementById("report-sale-count").textContent = fmtNum(state.sales.length);
+  document.getElementById("report-sale-count").textContent = fmtNum(state.sales.length + (state.farmOrders || []).length);
   renderBestSellers("report-best-sellers", 10);
 }
