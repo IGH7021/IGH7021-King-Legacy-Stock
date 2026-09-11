@@ -47,8 +47,25 @@ function recipePrice(recipe) {
 }
 
 function recipeSalePrice(recipe) {
+  if (Number(recipe.salePrice) > 0) return Number(recipe.salePrice);
   const output = recipeProduct(recipe);
   return output ? productUnitPrice(output) : recipePrice(recipe);
+}
+
+function saveRecipeSalePrice(recipe) {
+  const input = document.getElementById("craft-sale-price-input");
+  const salePrice = Number(input?.value);
+  if (!Number.isFinite(salePrice) || salePrice <= 0) { toast("กรุณากรอกราคาขายให้ถูกต้อง", "error"); return; }
+  recipe.salePrice = Math.round(salePrice * 100) / 100;
+  const output = recipeProduct(recipe);
+  if (output) output.unitsPerBaht = 1 / recipe.salePrice;
+  state.recipes = getRecipes();
+  saveState();
+  renderCrafting();
+  renderProducts();
+  renderDashboard();
+  renderCraftingModal();
+  toast("บันทึกราคาขายแล้ว");
 }
 
 function recipeCraftable(recipe) {
@@ -111,8 +128,9 @@ function renderCraftingModal() {
     const image = product?.image;
     return `<div class="craft-ingredient ${enough ? "craft-ingredient-ok" : "craft-ingredient-missing"}"><div class="craft-ingredient-image">${image ? `<img src="${image}" alt="${name}">` : "🪵"}</div><div class="min-w-0 flex-1"><p class="text-xs font-semibold truncate">${name}</p><p class="text-[11px] ${enough ? "text-emerald-300" : "text-rose-300"}">${fmtNum(available)} / ${fmtNum(required)} ชิ้น${enough ? "" : ` • ขาด ${fmtNum(required - available)}`}</p></div><span class="craft-check">${enough ? "✓" : "!"}</span></div>`;
   }).join("");
-  container.innerHTML = `<div class="crafting-header"><div class="crafting-output-image"><img src="${recipeOutputImage(recipe)}" alt="${recipe.name}"></div><div class="min-w-0"><p class="text-xs text-orange-300 mb-1">สูตรคราฟ</p><h2 class="font-bold text-xl truncate">${recipe.name}</h2><p class="text-xs text-slate-400 mt-1">ต้นทุนจากวัตถุดิบ • ราคาขายอิงเรทสินค้า</p></div><button type="button" id="edit-crafting-btn" class="ml-auto flex-shrink-0 px-3 py-2 rounded-lg bg-slate-700/60 hover:bg-slate-700 text-xs">✏️ แก้ไข</button></div><div class="crafting-recipe-preview"><img src="${recipeImage(recipe)}" alt="สูตร ${recipe.name}"></div><div class="crafting-summary"><div><span>คราฟได้สูงสุด</span><strong class="${craftable ? "text-emerald-300" : "text-rose-300"}">${fmtNum(craftable)} ชิ้น</strong></div><div><span>ต้นทุนต่อชิ้น</span><strong class="text-orange-300">${fmtBaht(price)}</strong></div><div><span>ราคาขายต่อชิ้น</span><strong class="text-cyan-300">${fmtBaht(salePrice)}</strong></div></div><div class="flex items-center gap-3 mt-5 mb-2"><h3 class="font-semibold text-sm">จำนวนที่คราฟ</h3><input id="craft-quantity-input" type="number" min="1" max="${Math.max(1, craftable)}" value="${craftable ? 1 : 0}" class="w-24 rounded-lg bg-slate-800 border border-slate-600 px-3 py-2 text-sm" ${craftable < 1 ? "disabled" : ""}><span class="text-xs text-slate-400">วัตถุดิบจะถูกหักตามจำนวนนี้</span></div><div class="flex items-center justify-between mt-5 mb-2"><h3 class="font-semibold text-sm">วัตถุดิบที่ต้องใช้ต่อ 1 ชิ้น</h3><span class="text-xs text-slate-400">ตรวจจากคงเหลือปัจจุบัน</span></div><div class="craft-ingredients-grid">${ingredientRows}</div><div class="flex gap-2 mt-5"><button type="button" data-close-modal class="flex-1 py-2.5 rounded-xl bg-slate-700/50 hover:bg-slate-700 text-sm">ยกเลิก</button><button type="button" id="confirm-craft-btn" class="flex-1 btn-primary py-2.5 rounded-xl text-sm" ${craftable < 1 ? "disabled" : ""}>คราฟ 1 ชิ้น</button></div>`;
+  container.innerHTML = `<div class="crafting-header"><div class="crafting-output-image"><img src="${recipeOutputImage(recipe)}" alt="${recipe.name}"></div><div class="min-w-0"><p class="text-xs text-orange-300 mb-1">สูตรคราฟ</p><h2 class="font-bold text-xl truncate">${recipe.name}</h2><p class="text-xs text-slate-400 mt-1">ต้นทุนจากวัตถุดิบ • ราคาขายอิงเรทสินค้า</p></div><button type="button" id="edit-crafting-btn" class="ml-auto flex-shrink-0 px-3 py-2 rounded-lg bg-slate-700/60 hover:bg-slate-700 text-xs">✏️ แก้ไข</button></div><div class="crafting-recipe-preview"><img src="${recipeImage(recipe)}" alt="สูตร ${recipe.name}"></div><div class="crafting-summary"><div><span>คราฟได้สูงสุด</span><strong class="${craftable ? "text-emerald-300" : "text-rose-300"}">${fmtNum(craftable)} ชิ้น</strong></div><div><span>ต้นทุนต่อชิ้น</span><strong class="text-orange-300">${fmtBaht(price)}</strong></div><div><span>ราคาขายต่อชิ้น</span><strong class="text-cyan-300">${fmtBaht(salePrice)}</strong></div></div><div class="flex items-end gap-2 mt-5"><label class="flex-1 text-xs text-slate-400">ราคาขายต่อชิ้น<input id="craft-sale-price-input" type="number" min="0.01" step="0.01" value="${salePrice.toFixed(2)}" class="w-full mt-1 rounded-lg bg-slate-800 border border-slate-600 px-3 py-2 text-sm text-slate-100"></label><button type="button" id="save-craft-price-btn" class="px-3 py-2 rounded-lg bg-cyan-600 hover:bg-cyan-500 text-sm">บันทึกราคา</button></div><div class="flex items-center gap-3 mt-5 mb-2"><h3 class="font-semibold text-sm">จำนวนที่คราฟ</h3><input id="craft-quantity-input" type="number" min="1" max="${Math.max(1, craftable)}" value="${craftable ? 1 : 0}" class="w-24 rounded-lg bg-slate-800 border border-slate-600 px-3 py-2 text-sm" ${craftable < 1 ? "disabled" : ""}><span class="text-xs text-slate-400">วัตถุดิบจะถูกหักตามจำนวนนี้</span></div><div class="flex items-center justify-between mt-5 mb-2"><h3 class="font-semibold text-sm">วัตถุดิบที่ต้องใช้ต่อ 1 ชิ้น</h3><span class="text-xs text-slate-400">ตรวจจากคงเหลือปัจจุบัน</span></div><div class="craft-ingredients-grid">${ingredientRows}</div><div class="flex gap-2 mt-5"><button type="button" data-close-modal class="flex-1 py-2.5 rounded-xl bg-slate-700/50 hover:bg-slate-700 text-sm">ยกเลิก</button><button type="button" id="confirm-craft-btn" class="flex-1 btn-primary py-2.5 rounded-xl text-sm" ${craftable < 1 ? "disabled" : ""}>คราฟ 1 ชิ้น</button></div>`;
   document.getElementById("edit-crafting-btn")?.addEventListener("click", () => { closeModal("crafting-modal"); openRecipeEditor(recipe.name); });
+  document.getElementById("save-craft-price-btn")?.addEventListener("click", () => saveRecipeSalePrice(recipe));
   const craftQuantityInput = document.getElementById("craft-quantity-input");
   craftQuantityInput?.addEventListener("input", () => { const quantity = Math.min(craftable, Math.max(1, Number(craftQuantityInput.value) || 1)); document.getElementById("confirm-craft-btn").textContent = `คราฟ ${fmtNum(quantity)} ชิ้น`; });
   document.getElementById("confirm-craft-btn")?.addEventListener("click", () => craftRecipe(recipe, Number(craftQuantityInput?.value) || 1));
@@ -131,7 +149,7 @@ function craftRecipe(recipe, quantity = 1) {
     output.stock += quantity;
     output.crafted = (output.crafted || 0) + quantity;
   } else {
-    state.products.unshift({ id: genId("p"), name: recipe.name, category: "ของคราฟ", image: recipeOutputImage(recipe), rarity: recipe.rarity, stock: quantity, sold: 0, crafted: quantity, unitsPerBaht: recipePrice(recipe) ? 1 / recipePrice(recipe) : 1, description: "สินค้าที่คราฟจากสูตร", createdAt: Date.now(), restockHistory: [] });
+    state.products.unshift({ id: genId("p"), name: recipe.name, category: "ของคราฟ", image: recipeOutputImage(recipe), rarity: recipe.rarity, stock: quantity, sold: 0, crafted: quantity, unitsPerBaht: recipeSalePrice(recipe) ? 1 / recipeSalePrice(recipe) : 1, description: "สินค้าที่คราฟจากสูตร", createdAt: Date.now(), restockHistory: [] });
   }
   if (!Array.isArray(state.activityLog)) state.activityLog = [];
   state.activityLog.unshift({ id: genId("activity"), type: "craft", action: "คราฟสินค้า", text: `คราฟสินค้าเพื่อขาย: ${recipe.name}`, sub: `+${fmtNum(quantity)} ชิ้น • พร้อมนำไปขาย`, ts: Date.now() });
@@ -197,8 +215,9 @@ function handleRecipeEditorSubmit(event) {
     toast("กรุณากรอกข้อมูลสูตรและวัตถุดิบให้ครบ", "error");
     return;
   }
-  const payload = { name: form.name.value.trim(), category: form.category.value, rarity: form.rarity.value, ingredients };
   const recipes = getRecipes();
+  const existingRecipe = editingRecipeName ? recipes.find(recipe => recipe.name === editingRecipeName) : null;
+  const payload = { name: form.name.value.trim(), category: form.category.value, rarity: form.rarity.value, ingredients, ...(existingRecipe?.salePrice ? { salePrice: existingRecipe.salePrice } : {}) };
   if (editingRecipeName) {
     const index = recipes.findIndex(recipe => recipe.name === editingRecipeName);
     if (index >= 0) recipes[index] = payload;
