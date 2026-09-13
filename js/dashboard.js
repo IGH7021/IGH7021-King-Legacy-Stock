@@ -107,7 +107,7 @@ function renderTimeline() {
 }
 
 function getBestSellers() {
-  const products = state.products.filter(p => (p.sold || 0) > 0 || (p.crafted || 0) > 0).map(product => ({ ...product, itemType: "product", totalQuantity: (product.sold || 0) + (product.crafted || 0) }));
+  const products = state.products.filter(p => (p.sold || 0) > 0 || (p.crafted || 0) > 0).map(product => ({ ...product, itemType: "product", totalQuantity: (product.sold || 0) > 0 ? product.sold : product.crafted }));
   const farms = (state.farmServices || []).map(service => {
     const orders = (state.farmOrders || []).filter(order => order.serviceId === service.id);
     return { ...service, itemType: "farm", totalQuantity: orders.reduce((sum, order) => sum + Number(order.quantity || 0), 0) };

@@ -140,26 +140,40 @@ function craftRecipe(recipe, quantity = 1) {
   const craftable = recipeCraftable(recipe);
   quantity = Math.floor(Number(quantity));
   if (!Number.isFinite(quantity) || quantity < 1 || quantity > craftable) { toast("วัตถุดิบไม่เพียงพอ", "error"); return; }
+  const salePrice = recipeSalePrice(recipe);
+  const craftedAt = Date.now();
+  const deductedIngredients = recipe.ingredients.map(([name, required]) => `${name} -${fmtNum(required * quantity)}`).join(", ");
   recipe.ingredients.forEach(([name, required]) => {
     const product = state.products.find(item => item.name.toLowerCase() === name.toLowerCase());
     product.stock -= required * quantity;
   });
   const output = recipeProduct(recipe);
   if (output) {
-    output.stock += quantity;
+    if (salePrice > 0) output.unitsPerBaht = 1 / salePrice;
+    output.sold = (output.sold || 0) + quantity;
     output.crafted = (output.crafted || 0) + quantity;
   } else {
-    state.products.unshift({ id: genId("p"), name: recipe.name, category: "ของคราฟ", image: recipeOutputImage(recipe), rarity: recipe.rarity, stock: quantity, sold: 0, crafted: quantity, unitsPerBaht: recipeSalePrice(recipe) ? 1 / recipeSalePrice(recipe) : 1, description: "สินค้าที่คราฟจากสูตร", createdAt: Date.now(), restockHistory: [] });
+    state.products.unshift({ id: genId("p"), name: recipe.name, category: "ของคราฟ", image: recipeOutputImage(recipe), rarity: recipe.rarity, stock: 0, sold: quantity, crafted: quantity, unitsPerBaht: salePrice ? 1 / salePrice : 1, description: "สินค้าที่คราฟและขายจากสูตร", createdAt: craftedAt, restockHistory: [] });
   }
+  const outputProduct = recipeProduct(recipe) || state.products[0];
+  state.sales.unshift({
+    id: genId("s"), productId: outputProduct.id, productName: recipe.name,
+    quantity, money: Math.round(salePrice * quantity * 100) / 100,
+    rate: outputProduct.unitsPerBaht, date: craftedAt,
+    note: `คราฟ ${fmtNum(quantity)} ชุด • หักวัตถุดิบ: ${deductedIngredients}`,
+    source: "craft",
+  });
   if (!Array.isArray(state.activityLog)) state.activityLog = [];
-  state.activityLog.unshift({ id: genId("activity"), type: "craft", action: "คราฟสินค้า", text: `คราฟสินค้าเพื่อขาย: ${recipe.name}`, sub: `+${fmtNum(quantity)} ชิ้น • พร้อมนำไปขาย`, ts: Date.now() });
+  state.activityLog.unshift({ id: genId("activity"), type: "craft", action: "คราฟและขายสินค้า", text: `คราฟและขาย: ${recipe.name}`, sub: `${fmtNum(quantity)} ชุด • ${fmtBaht(salePrice * quantity)} • หัก: ${deductedIngredients}`, ts: craftedAt });
   state.activityLog = state.activityLog.slice(0, 100);
   saveState();
   renderCrafting();
   renderProducts();
+  renderSalesHistory();
   renderDashboard();
+  renderReports();
   closeModal("crafting-modal");
-  toast(`คราฟ ${recipe.name} สำเร็จ`);
+  toast(`คราฟและขาย ${recipe.name} สำเร็จ`);
 }
 
 function openRecipeEditor(recipeName = null) {
