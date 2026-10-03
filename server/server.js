@@ -3,11 +3,14 @@ const fs = require("fs");
 const path = require("path");
 const crypto = require("crypto");
 
-const ENV_FILE = path.resolve(__dirname, "../.env");
-if (fs.existsSync(ENV_FILE)) fs.readFileSync(ENV_FILE, "utf8").split(/\r?\n/).forEach(line => {
-  const match = line.match(/^\s*([A-Z0-9_]+)\s*=\s*(.*)\s*$/);
-  if (match && !Object.hasOwn(process.env, match[1])) process.env[match[1]] = match[2].replace(/^(['"])(.*)\1$/, "$2");
-});
+const ENV_FILES = [path.resolve(__dirname, "../.env"), process.env.RENDER_ENV_FILE].filter(Boolean);
+for (const envFile of ENV_FILES) {
+  if (!fs.existsSync(envFile)) continue;
+  fs.readFileSync(envFile, "utf8").split(/\r?\n/).forEach(line => {
+    const match = line.match(/^\s*([A-Z0-9_]+)\s*=\s*(.*)\s*$/);
+    if (match && !Object.hasOwn(process.env, match[1])) process.env[match[1]] = match[2].replace(/^(['"])(.*)\1$/, "$2");
+  });
+}
 
 const PORT = Number(process.env.PORT) || 3000;
 const ROOT = path.resolve(__dirname, "..");

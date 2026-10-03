@@ -41,6 +41,8 @@ Set `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `DISCORD_CLIENT_ID`, and `DISCOR
 
 The Google OAuth client and Discord OAuth application are configured for both `http://localhost:3000` and the Render site origin, with matching callback URLs. The Google consent screen is currently in Testing mode, so only accounts listed as test users can verify; add testers in Google Auth Platform → Audience, or complete any remaining verification requirements and publish the app before allowing general users. The public homepage and `/privacy.html` must be reachable before publishing. Do not use a localhost callback for a public deployment.
 
+The Render Blueprint sets `RENDER_ENV_FILE=/etc/secrets/app.env`. Upload an `app.env` Secret File containing the required Supabase and OAuth variables in the Web Service's Environment settings; the Node server loads it at startup without exposing credentials in the repository or build logs. Keep `APP_ORIGIN` out of this production file so callback URLs use Render's HTTPS `RENDER_EXTERNAL_URL`.
+
 ## Timed access-key policy
 
 The Admin key list provides `+1 hour` and `-1 hour` controls for non-permanent keys, including keys that have expired. Expired keys can be extended only during the seven days after their expiration. At seven days they are removed from active keys and retained in the key archive for historical reference; archived keys cannot be used or extended.

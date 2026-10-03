@@ -1,8 +1,11 @@
 const STORAGE_KEY = "igh_kinglegacy_state";
 const THEME_KEY = "igh_theme";
 const LANG_KEY = "igh_lang";
-const APP_VERSION = "V.4.23";
+const APP_VERSION = "V.4.24";
 const APP_CHANGELOG = [
+  { version: "V.4.24", updatedAt: "2026-10-04T02:51:00.000Z", changes: [
+    "รองรับโหลดค่า Supabase และ OAuth จาก Render Secret File เพื่อใช้งาน production โดยไม่บันทึก credentials ใน Git"
+  ] },
   { version: "V.4.23", updatedAt: "2026-10-03T18:39:00.000Z", changes: [
     "ตั้งค่า Discord OAuth callback สำหรับ localhost และ Render พร้อมเปิดใช้งานการยืนยันบัญชีเมื่อกำหนด credentials ครบ"
   ] },
