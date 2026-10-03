@@ -20,6 +20,7 @@
     <div id="auth-key-step">
       <h1>Access key</h1><p class="auth-help">กรอกคีย์เพื่อเข้าสู่ระบบ</p>
       <form id="auth-key-form" class="auth-form"><div class="inputContainer"><label for="auth-key">Access key <b>*</b></label><input id="auth-key" required autocomplete="off" placeholder="เช่น IGH000001..."><small id="auth-key-hint">ใช้คีย์ที่ได้รับจากแอดมิน</small><span id="auth-key-error" class="field-error" role="alert"></span></div><button class="enter" type="submit">Continue</button></form>
+      <button id="github-admin-login" class="hidden mt-3 w-full rounded-xl bg-slate-700/70 px-4 py-2.5 text-sm font-semibold hover:bg-slate-600" type="button">เข้าสู่ระบบผู้ดูแลด้วย GitHub</button>
     </div>
     <p id="auth-message" class="auth-message" role="alert"></p>
   </div>
@@ -354,6 +355,15 @@
           <p id="current-key-expiry" class="text-xs text-slate-400 mt-2"></p>
         </div>
 
+        <section id="identity-verification-settings" class="glass-card rounded-2xl p-4 mb-4 hidden" aria-labelledby="identity-verification-title">
+          <div class="mb-3"><h2 id="identity-verification-title" class="font-semibold">ยืนยันตัวตนเพิ่มเติม (ไม่บังคับ)</h2><p class="text-xs text-slate-400 mt-1">ชื่อบัญชีที่ยืนยันจะแสดงเป็นเจ้าของคีย์ในหน้า Admin</p></div>
+          <p id="identity-verification-result" class="hidden rounded-xl bg-slate-800/60 px-3 py-2 text-sm mb-3" role="status"></p>
+          <div class="flex flex-col gap-2">
+            <div class="identity-provider-row"><div class="min-w-0"><strong>Google</strong><p id="google-identity-status" class="text-xs text-slate-400 mt-0.5">กำลังตรวจสอบการตั้งค่า...</p></div><div class="flex gap-2"><button type="button" data-identity-verify="google" disabled class="px-3 py-1.5 rounded-lg bg-slate-700/60 text-xs disabled:cursor-not-allowed disabled:opacity-50">ยืนยัน Google</button><button type="button" data-identity-unlink="google" class="hidden px-3 py-1.5 rounded-lg bg-slate-700/60 text-xs">ยกเลิกการยืนยัน</button></div></div>
+            <div class="identity-provider-row"><div class="min-w-0"><strong>Discord</strong><p id="discord-identity-status" class="text-xs text-slate-400 mt-0.5">กำลังตรวจสอบการตั้งค่า...</p></div><div class="flex gap-2"><button type="button" data-identity-verify="discord" disabled class="px-3 py-1.5 rounded-lg bg-slate-700/60 text-xs disabled:cursor-not-allowed disabled:opacity-50">ยืนยัน Discord</button><button type="button" data-identity-unlink="discord" class="hidden px-3 py-1.5 rounded-lg bg-slate-700/60 text-xs">ยกเลิกการยืนยัน</button></div></div>
+          </div>
+        </section>
+
         <div class="glass-card rounded-2xl p-4 mb-4">
           <p class="font-semibold mb-3" data-i18n="credits_title">ช่องทางติดต่อแอดมิน</p>
           <p class="text-xs text-slate-400 mb-3">ประวัติการอัปเดตระบบและฟีเจอร์ที่เพิ่มเข้ามา</p>
@@ -410,9 +420,9 @@
       <section id="page-admin" class="page hidden admin-only">
         <div class="admin-page-header flex items-center justify-between mb-4 gap-3"><div><p class="text-xs text-orange-300 mb-1">ADMIN CONTROL CENTER</p><h1 class="text-xl md:text-2xl font-bold">Admin Key Manager</h1><p class="text-xs text-slate-400 mt-1">จัดการคีย์ ดูเจ้าของคีย์ และตรวจสอบอายุการใช้งาน</p></div><button id="admin-logout-btn" class="btn-primary px-3 py-2 rounded-xl text-sm">ออกจากบัญชี</button></div>
         <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4" id="admin-key-stats"></div>
-        <div class="glass-card rounded-2xl p-4 mb-4"><form id="admin-key-form" class="flex flex-wrap items-end gap-2"><label class="text-xs text-slate-400">อายุคีย์ (ชั่วโมง)<input id="admin-hours" type="number" min="1" value="24" class="date-input"></label><label class="flex items-center gap-2 text-sm pb-2"><input id="admin-permanent" type="checkbox"> คีย์ถาวร</label><label class="flex items-center gap-2 text-sm pb-2"><input id="admin-key-is-admin" type="checkbox"> คีย์แอดมิน</label><button class="btn-primary px-4 py-2 rounded-xl text-sm" type="submit">สุ่มคีย์</button></form><div class="flex items-center gap-2"><p id="admin-generated-key" class="generated-key hidden flex-1"></p><button id="copy-generated-key" type="button" class="hidden px-3 py-1.5 rounded-lg bg-slate-700/60 text-xs">คัดลอก</button></div></div>
+        <div class="glass-card rounded-2xl p-4 mb-4"><form id="admin-key-form" class="admin-key-create-form"><label class="admin-hours-field text-xs text-slate-400">อายุคีย์ (ชั่วโมง)<input id="admin-hours" type="number" min="1" value="24" class="date-input w-full"></label><label class="admin-key-toggle"><input id="admin-permanent" type="checkbox"> คีย์ถาวร</label><label class="admin-key-toggle"><input id="admin-key-is-admin" type="checkbox"> คีย์แอดมิน</label><button class="admin-key-submit btn-primary px-4 py-2 rounded-xl text-sm" type="submit">สุ่มคีย์</button></form><div class="flex items-center gap-2"><p id="admin-generated-key" class="generated-key hidden flex-1"></p><button id="copy-generated-key" type="button" class="hidden px-3 py-1.5 rounded-lg bg-slate-700/60 text-xs">คัดลอก</button></div></div>
         <div class="flex gap-2 mb-3"><button id="admin-export-json" class="btn-primary px-3 py-2 rounded-xl text-sm" type="button">Export JSON</button><button id="admin-export-pdf" class="px-3 py-2 rounded-xl bg-slate-700/60 text-sm" type="button">Export PDF</button></div>
-        <div class="key-filter-chips flex items-center gap-2 mb-3 text-xs"><button type="button" data-key-filter="active" class="key-filter-chip is-selected">ใช้งานได้</button><button type="button" data-key-filter="unlimited" class="key-filter-chip">อันลิมิต</button><button type="button" data-key-filter="limited" class="key-filter-chip">จำกัดเวลา</button><button type="button" data-key-filter="expired" class="key-filter-chip">หมดอายุ</button><button type="button" data-key-filter="all" class="key-filter-chip">ทั้งหมด</button></div>
+        <div class="key-filter-chips flex items-center gap-2 mb-3 text-xs"><button type="button" data-key-filter="active" class="key-filter-chip is-selected">ใช้งานได้</button><button type="button" data-key-filter="unlimited" class="key-filter-chip">อันลิมิต</button><button type="button" data-key-filter="limited" class="key-filter-chip">จำกัดเวลา</button><button type="button" data-key-filter="expired" class="key-filter-chip">หมดอายุ</button><button type="button" data-key-filter="archived" class="key-filter-chip">เก็บถาวร</button><button type="button" data-key-filter="all" class="key-filter-chip">ทั้งหมด</button></div>
         <div id="admin-key-list" class="flex flex-col gap-2"></div>
       </section>
 

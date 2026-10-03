@@ -37,5 +37,14 @@ function renderUpdatesPage() {
   const version = document.getElementById("updates-page-version");
   if (!log) return;
   if (version) version.textContent = APP_VERSION;
-  log.innerHTML = APP_CHANGELOG.map(entry => `<div class="glass-card rounded-2xl p-4 border-l-2 border-indigo-400/70"><div class="flex items-center justify-between gap-2"><strong class="text-sm">${entry.version}</strong><span class="text-[11px] text-slate-400">${t("update_date_prefix")} ${entry.date} • ${t("update_time_prefix")} ${entry.time || t("update_time_unknown")}</span></div><ul class="mt-2 text-sm text-slate-300 list-disc list-inside">${entry.changes.map(change => `<li>${change}</li>`).join("")}</ul></div>`).join("");
+  log.innerHTML = APP_CHANGELOG.map(entry => `<div class="glass-card rounded-2xl p-4 border-l-2 border-indigo-400/70"><div class="flex items-center justify-between gap-2"><strong class="text-sm">${entry.version}</strong><span class="text-[11px] text-slate-400">${formatUpdateDateTime(entry)}</span></div><ul class="mt-2 text-sm text-slate-300 list-disc list-inside">${entry.changes.map(change => `<li>${change}</li>`).join("")}</ul></div>`).join("");
+}
+
+function formatUpdateDateTime(entry) {
+  if (!entry.updatedAt) return `${t("update_date_prefix")} ${entry.date} • ${t("update_time_prefix")} ${entry.time || t("update_time_unknown")}`;
+  const timestamp = new Date(entry.updatedAt);
+  if (!Number.isFinite(timestamp.getTime())) return `${t("update_date_prefix")} ${t("update_time_unknown")}`;
+  const date = new Intl.DateTimeFormat("sv-SE", { timeZone: "Asia/Bangkok", year: "numeric", month: "2-digit", day: "2-digit" }).format(timestamp);
+  const time = new Intl.DateTimeFormat("en-GB", { timeZone: "Asia/Bangkok", hour: "2-digit", minute: "2-digit", hourCycle: "h23" }).format(timestamp);
+  return `${t("update_date_prefix")} ${date} • ${t("update_time_prefix")} ${time}`;
 }

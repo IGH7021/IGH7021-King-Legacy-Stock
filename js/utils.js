@@ -1,4 +1,7 @@
 let state = null;
+let stateOwnerId = null;
+let stateSyncReady = false;
+let stateSyncTimer = null;
 
 function loadState() {
   try {
@@ -41,6 +44,11 @@ function loadState() {
 function saveState() {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    if (stateOwnerId) localStorage.setItem(`${STORAGE_KEY}_${encodeURIComponent(stateOwnerId)}`, JSON.stringify(state));
+    if (stateOwnerId && stateSyncReady) {
+      clearTimeout(stateSyncTimer);
+      stateSyncTimer = setTimeout(() => fetch("/api/state", { method: "PUT", headers: { "Content-Type": "application/json", Authorization: `Bearer ${localStorage.getItem(AUTH_TOKEN_KEY) || ""}` }, body: JSON.stringify(state) }).catch(() => {}), 350);
+    }
     return true;
   } catch (e) {
     console.error("saveState error", e);
@@ -48,6 +56,31 @@ function saveState() {
     return false;
   }
 }
+
+async function activateUserState(ownerId) {
+  stateSyncReady = false;
+  stateOwnerId = ownerId;
+  const personalKey = `${STORAGE_KEY}_${encodeURIComponent(ownerId)}`;
+  const localState = localStorage.getItem(personalKey);
+  if (localState) {
+    try { state = JSON.parse(localState); } catch (error) { localStorage.removeItem(personalKey); }
+  } else if (!localStorage.getItem("igh_kinglegacy_legacy_owner")) {
+    try { state = JSON.parse(localStorage.getItem(STORAGE_KEY)) || defaultState(); } catch (error) { state = defaultState(); }
+    localStorage.setItem("igh_kinglegacy_legacy_owner", ownerId);
+  } else {
+    state = defaultState();
+  }
+  try {
+    const response = await fetch("/api/state", { headers: { Authorization: `Bearer ${localStorage.getItem(AUTH_TOKEN_KEY) || ""}` } });
+    if (response.ok) state = await response.json();
+    else if (response.status !== 404 && response.status !== 503) throw new Error("Could not load account data");
+  } catch (error) { console.warn("Account state sync unavailable; using this browser's local state."); }
+  if (!state || !state.products || !state.sales || !state.settings) state = defaultState();
+  stateSyncReady = true;
+  saveState();
+  renderProducts(); renderCrafting(); renderSalesHistory(); renderDashboard(); renderReports(); renderSettings();
+}
+window.activateUserState = activateUserState;
 
 function categorySortIndex(category) {
   const index = CATEGORY_ORDER.indexOf(category);
@@ -126,6 +159,76 @@ function buildCustomSelect(select) {
 
 function enhanceCustomSelects() {
   document.querySelectorAll("select").forEach(buildCustomSelect);
+}
+
+function enhanceNumberInput(input) {
+  if (input.closest(".number-stepper") || input.readOnly) return;
+  const wrapper = document.createElement("div");
+  wrapper.className = "number-stepper";
+  if (input.classList.contains("w-full")) wrapper.classList.add("number-stepper-full");
+  if (input.classList.contains("flex-1")) wrapper.classList.add("flex-1");
+  if (input.classList.contains("mt-1")) {
+    wrapper.classList.add("mt-1");
+    input.classList.remove("mt-1");
+  }
+  input.classList.remove("w-full");
+  input.parentNode.insertBefore(wrapper, input);
+  wrapper.appendChild(input);
+  [
+    [-1, "∨", "ลด 1"],
+    [1, "∧", "เพิ่ม 1"],
+  ].forEach(([delta, symbol, label]) => {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "number-stepper-btn";
+    button.dataset.numberStep = delta;
+    button.textContent = symbol;
+    button.setAttribute("aria-label", label);
+    button.title = label;
+    wrapper.appendChild(button);
+  });
+  syncNumberStepper(input);
+}
+
+function syncNumberStepper(input) {
+  const wrapper = input.closest(".number-stepper");
+  if (!wrapper) return;
+  const min = input.min === "" ? -Infinity : Number(input.min);
+  const max = input.max === "" ? Infinity : Number(input.max);
+  const value = input.value === "" ? 0 : Number(input.value);
+  wrapper.querySelectorAll("[data-number-step]").forEach(button => {
+    const delta = Number(button.dataset.numberStep);
+    button.disabled = input.disabled || (delta < 0 ? value <= min : value >= max);
+  });
+}
+
+function enhanceNumberSteppers(root = document) {
+  if (root.matches?.('input[type="number"]')) enhanceNumberInput(root);
+  root.querySelectorAll?.('input[type="number"]').forEach(enhanceNumberInput);
+}
+
+function initializeNumberSteppers() {
+  enhanceNumberSteppers();
+  new MutationObserver(records => records.forEach(record => record.addedNodes.forEach(node => {
+    if (node.nodeType === Node.ELEMENT_NODE) enhanceNumberSteppers(node);
+  }))).observe(document.body, { childList: true, subtree: true });
+  document.addEventListener("input", event => {
+    if (event.target.matches?.('input[type="number"]')) syncNumberStepper(event.target);
+  });
+
+  document.addEventListener("click", event => {
+    const button = event.target.closest("[data-number-step]");
+    if (!button) return;
+    const input = button.closest(".number-stepper")?.querySelector('input[type="number"]');
+    if (!input || input.disabled || input.readOnly) return;
+    const min = input.min === "" ? -Infinity : Number(input.min);
+    const max = input.max === "" ? Infinity : Number(input.max);
+    const current = input.value === "" ? 0 : Number(input.value);
+    const next = Math.min(max, Math.max(min, current + Number(button.dataset.numberStep)));
+    input.value = String(Number(next.toFixed(10)));
+    input.dispatchEvent(new Event("input", { bubbles: true }));
+    input.dispatchEvent(new Event("change", { bubbles: true }));
+  });
 }
 
 document.addEventListener("click", event => {

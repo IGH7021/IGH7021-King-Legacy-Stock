@@ -1,6 +1,11 @@
 # Local runtime data and access credentials
 server/keys/*.json
+server/key-archive/*.json
 server/data.json
+.env
+.env.*
+!.env.example
+node_modules/
 
 # Local editor and OS files
 .vscode/*.log

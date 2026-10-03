@@ -72,6 +72,7 @@ function renderSettings() {
 }
 
 document.addEventListener("DOMContentLoaded", () => {
+  initializeNumberSteppers();
   loadState();
   initFloatingProducts();
   bindModalDismiss();
