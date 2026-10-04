@@ -412,6 +412,7 @@ html.light .nav-active { color: #312e81; }
 .dashboard-bento-hero #stat-total-sales { font-size: clamp(1.75rem, 5vw, 2.75rem); }
 .profile-avatar-wrap { position: relative; width: 4.5rem; height: 4.5rem; flex: 0 0 auto; overflow: visible; border-radius: 50%; }
 #user-profile-section, #admin-inbox-panel .glass-card { background: var(--bg); }
+.profile-avatar-wrap.header-profile-avatar-wrap { width: 2.4rem; height: 2.4rem; }
 .profile-avatar, .profile-avatar-fallback { width: 100%; height: 100%; border: 1px solid var(--border); border-radius: 50%; object-fit: cover; background: rgba(148,163,184,.12); }
 .profile-avatar-fallback { display: grid; place-items: center; font-size: 1.7rem; }
 .profile-file-input { min-height: 2.8rem; padding: .35rem; border: 1px solid var(--border); border-radius: .75rem; background: linear-gradient(145deg, rgba(30,35,60,.92), rgba(15,23,42,.78)); box-shadow: inset 0 1px rgba(255,255,255,.06), 0 8px 20px rgba(0,0,0,.16); color: var(--text); }
