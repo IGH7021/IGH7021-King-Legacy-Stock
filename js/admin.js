@@ -3,11 +3,12 @@ function enableAdminUi() {
   document.querySelectorAll(".admin-only").forEach(el => el.classList.remove("hidden"));
   bindAdminKeyFilters();
   loadAdminKeys().catch(error => { if (error.message === t("admin_access_denied")) { document.querySelectorAll(".admin-only").forEach(el => el.classList.add("hidden")); } else toast(error.message, "error"); });
-  loadAdminRequests().catch(error => { console.error("Could not load admin requests:", error); adminRequestsLoadError = true; renderAdminRequests(); });
   if (!adminRequestsTimer) adminRequestsTimer = setInterval(() => {
     if (document.visibilityState !== "visible") return;
-    loadAdminRequests().catch(error => { console.error("Could not refresh admin requests:", error); adminRequestsLoadError = true; renderAdminRequests(); });
-    if (!document.getElementById("admin-suggestions-panel")?.classList.contains("hidden")) loadAdminSuggestions().catch(error => console.error("Could not refresh site suggestions:", error));
+    if (!document.getElementById("admin-suggestions-panel")?.classList.contains("hidden")) {
+      loadAdminSuggestions().catch(error => console.error("Could not refresh site suggestions:", error));
+      loadAdminRequests().catch(error => { console.error("Could not refresh admin requests:", error); adminRequestsLoadError = true; renderAdminRequests(); });
+    }
   }, 20000);
 }
 window.renderAdminRequests = renderAdminRequests;
@@ -222,7 +223,10 @@ document.addEventListener("DOMContentLoaded", () => {
       tab.classList.toggle("is-active", selected);
       tab.setAttribute("aria-selected", String(selected));
     });
-    if (suggestionsSelected) loadAdminSuggestions().catch(error => console.error("Could not load site suggestions:", error));
+    if (suggestionsSelected) {
+      loadAdminSuggestions().catch(error => console.error("Could not load site suggestions:", error));
+      loadAdminRequests().catch(error => { console.error("Could not load admin requests:", error); adminRequestsLoadError = true; renderAdminRequests(); });
+    }
   }));
   document.getElementById("admin-key-form")?.addEventListener("submit", async event => { event.preventDefault(); try { const response = await fetch("/api/admin/keys", { method: "POST", headers: adminHeaders(), body: JSON.stringify({ hours: Number(document.getElementById("admin-hours").value), permanent: document.getElementById("admin-permanent").checked, admin: document.getElementById("admin-key-is-admin").checked }) }); const result = await readApiResponse(response); if (!response.ok) throw new Error(result.error); const output = document.getElementById("admin-generated-key"); const copyButton = document.getElementById("copy-generated-key"); output.textContent = result.value; output.classList.remove("hidden"); copyButton.dataset.copyKey = result.value; copyButton.classList.remove("hidden"); refresh(); } catch (error) { toast(`${t("admin_key_create_failed")}: ${error.message}`, "error"); } });
   document.getElementById("copy-generated-key")?.addEventListener("click", async event => { if (await copyText(event.currentTarget.dataset.copyKey)) { event.currentTarget.textContent = t("admin_copied"); setTimeout(() => { event.currentTarget.textContent = t("admin_copy"); }, 1600); } });

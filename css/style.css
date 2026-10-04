@@ -381,6 +381,8 @@ html.light .nav-active { color: #312e81; }
 .update-log-parallax::before { content: ""; display: block; position: sticky; top: 0; height: 1px; background: linear-gradient(90deg, transparent, var(--accent), transparent); transform: translateZ(-1px) scale(2); opacity: .45; }
 
 .app-header { min-height: 4.25rem; }
+.header-brand-home { padding: 0; border: 0; background: transparent; color: inherit; cursor: pointer; text-align: left; }
+.header-brand-home:focus-visible { outline: 2px solid var(--accent); outline-offset: 4px; border-radius: .5rem; }
 .hamburger-btn { display: flex; width: 2.75rem; height: 2.75rem; flex-shrink: 0; align-items: center; justify-content: center; gap: 5px; flex-direction: column; border: 1px solid var(--border); border-radius: .8rem; background: var(--bg-card); }
 .hamburger-btn span { display: block; width: 20px; height: 2px; background: var(--accent); border-radius: 2px; transition: transform .2s ease, opacity .2s ease; }
 .hamburger-btn[aria-expanded="true"] span:first-child { transform: translateY(7px) rotate(45deg); }

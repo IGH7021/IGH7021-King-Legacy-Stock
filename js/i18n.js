@@ -1,7 +1,7 @@
 const I18N = {
   th: {
     nav_dashboard: "Dashboard", nav_products: "สินค้า / Stock", nav_sales: "การขาย",
-    nav_reports: "สรุปยอดขาย", nav_settings: "ตั้งค่า", nav_updates: "อัปเดต", admin_nav: "Admin", auth_logout: "ออกจากบัญชี",
+    nav_reports: "สรุปยอดขาย", nav_settings: "ตั้งค่า", nav_updates: "อัปเดต", admin_nav: "Admin", nav_home: "กลับหน้า Dashboard", auth_logout: "ออกจากบัญชี",
     theme_toggle: "สลับธีม", nav_open: "เปิดเมนูนำทาง", nav_close: "ปิดเมนูนำทาง",
     main_nav_aria: "เมนูนำทางหลัก",
     settings_tabs_aria: "หมวดหมู่การตั้งค่า",
@@ -104,7 +104,7 @@ const I18N = {
     report_sale_count_label: "รายการขาย", report_bestseller_title: "อันดับสินค้าขายดี",
     no_sales_data: "ยังไม่มีข้อมูลการขาย",
 
-    settings_title: "ตั้งค่า", settings_tab_general: "ทั่วไป", settings_tab_messages: "ข้อความและข้อเสนอแนะ",
+    settings_title: "ตั้งค่า", settings_tab_general: "ทั่วไป", settings_tab_messages: "ข้อเสนอ",
     update_log_title: "มีอะไรอัปเดต", update_date_prefix: "วันที่", update_time_prefix: "เวลา", update_time_unknown: "ไม่ระบุเวลา", credits_title: "ช่องทางติดต่อแอดมิน", back_to_top: "กลับด้านบน",
     request_title: "ส่งคำขอถึงแอดมิน", request_description: "ส่งคำขอหรือแจ้งปัญหาได้วันละ 1 ครั้ง (เวลาไทย)",
     request_placeholder: "พิมพ์คำขอของคุณ...", request_submit: "ส่งคำขอ", request_char_count: "{count} / 1000",
@@ -217,7 +217,7 @@ const I18N = {
   },
   en: {
     nav_dashboard: "Dashboard", nav_products: "Products / Stock", nav_sales: "Sales",
-    nav_reports: "Reports", nav_settings: "Settings", nav_updates: "Updates", admin_nav: "Admin", auth_logout: "Log out",
+    nav_reports: "Reports", nav_settings: "Settings", nav_updates: "Updates", admin_nav: "Admin", nav_home: "Back to Dashboard", auth_logout: "Log out",
     theme_toggle: "Toggle theme", nav_open: "Open navigation menu", nav_close: "Close navigation menu",
     main_nav_aria: "Main navigation",
     settings_tabs_aria: "Settings sections",
@@ -320,7 +320,7 @@ const I18N = {
     report_sale_count_label: "Sale Transactions", report_bestseller_title: "Best Sellers Ranking",
     no_sales_data: "No sales data yet",
 
-    settings_title: "Settings", settings_tab_general: "General", settings_tab_messages: "Messages & suggestions",
+    settings_title: "Settings", settings_tab_general: "General", settings_tab_messages: "Feedback",
     update_log_title: "What’s new", update_date_prefix: "Date", update_time_prefix: "Time", update_time_unknown: "Time unavailable", credits_title: "Contact admin", back_to_top: "Back to top",
     request_title: "Send a request to the admin", request_description: "You can send one request per day (Bangkok time).",
     request_placeholder: "Type your request...", request_submit: "Send request", request_char_count: "{count} / 1000",

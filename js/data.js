@@ -1,8 +1,13 @@
 const STORAGE_KEY = "igh_kinglegacy_state";
 const THEME_KEY = "igh_theme";
 const LANG_KEY = "igh_lang";
-const APP_VERSION = "V.4.35";
+const APP_VERSION = "V.4.36";
 const APP_CHANGELOG = [
+  { version: "V.4.36", updatedAt: "2026-10-04T19:01:10.202Z", changes: [
+    "ย่อชื่อแท็บข้อเสนอแนะในหน้าตั้งค่า เพิ่มปุ่มโลโก้กลับ Dashboard และย้ายคำขอลูกค้าไปไว้ในแท็บข้อเสนอแนะของ Admin"
+  ], changesEn: [
+    "Shortened the Settings feedback tab label, made the header logo return to Dashboard, and moved customer requests into the Admin feedback tab"
+  ] },
   { version: "V.4.35", updatedAt: "2026-10-04T18:42:09.000Z", changes: [
     "แก้ไขหน้าต่างข้อเสนอแนะที่ปิดแล้วให้ไม่แสดงหรือบังการใช้งานหน้าเว็บ พร้อมคงฉากหลังและการปิดหน้าต่างตามปกติ"
   ], changesEn: [
