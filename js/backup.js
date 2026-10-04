@@ -4,13 +4,59 @@ function downloadFile(filename, content, mime) {
   const a = document.createElement("a");
   a.href = url; a.download = filename;
   document.body.appendChild(a); a.click(); a.remove();
-  URL.revokeObjectURL(url);
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
-function exportBackup() {
-  const backup = { ...state, backupVersion: 2, exportedAt: new Date().toISOString() };
-  downloadFile("IGH7021_KingLegacy_Backup.json", JSON.stringify(backup, null, 2), "application/json");
-  toast(t("toast_backup_exported"));
+function normalizeBackupIdentities(identities) {
+  if (!Array.isArray(identities)) return [];
+  return identities.filter(identity =>
+    identity && ["google", "discord"].includes(identity.provider) &&
+    typeof identity.displayName === "string" && identity.displayName.trim()
+  ).map(identity => ({
+    provider: identity.provider,
+    displayName: identity.displayName.trim(),
+    email: typeof identity.email === "string" ? identity.email : null,
+    linkedAt: typeof identity.linkedAt === "string" ? identity.linkedAt : null,
+  }));
+}
+
+async function exportBackup() {
+  try {
+    let linkedIdentities = [];
+    if (localStorage.getItem(AUTH_KEY_KEY)) {
+      const response = await fetch("/api/auth/identities", {
+        headers: { Authorization: `Bearer ${localStorage.getItem(AUTH_TOKEN_KEY) || ""}` },
+      });
+      if (!response.ok) throw new Error("Could not load verified account details");
+      linkedIdentities = normalizeBackupIdentities(await response.json());
+    }
+    const previousIdentities = normalizeBackupIdentities(state.portableAccount?.identityProfiles);
+    const identityProfiles = [...previousIdentities];
+    linkedIdentities.forEach(identity => {
+      if (!identityProfiles.some(existing =>
+        existing.provider === identity.provider && existing.displayName === identity.displayName && existing.email === identity.email
+      )) identityProfiles.push(identity);
+    });
+    const backup = {
+      format: "igh7021-kinglegacy-backup",
+      backupVersion: 3,
+      exportedAt: new Date().toISOString(),
+      state: { ...state },
+      preferences: {
+        theme: localStorage.getItem(THEME_KEY) === "light" ? "light" : "dark",
+        language: localStorage.getItem(LANG_KEY) === "en" ? "en" : "th",
+      },
+      account: {
+        identityProfiles,
+        requiresReverification: identityProfiles.length > 0,
+      },
+    };
+    downloadFile("IGH7021_KingLegacy_Backup.json", JSON.stringify(backup, null, 2), "application/json");
+    toast(t("toast_backup_exported"));
+  } catch (error) {
+    console.error("exportBackup error:", error);
+    toast(t("toast_backup_export_failed"), "error");
+  }
 }
 
 function importBackup(file) {
@@ -20,12 +66,21 @@ function importBackup(file) {
       const data = JSON.parse(e.target.result);
       const source = data.state && typeof data.state === "object" ? data.state : data;
       if (!Array.isArray(source.products) || !Array.isArray(source.sales) || !source.settings || typeof source.settings !== "object") throw new Error("bad structure");
-      state = { ...source, farmServices: Array.isArray(source.farmServices) ? source.farmServices : [], farmOrders: Array.isArray(source.farmOrders) ? source.farmOrders : [], activityLog: Array.isArray(source.activityLog) ? source.activityLog : [] };
+      const { backupVersion, exportedAt, format, preferences, account, ...restoredState } = source;
+      state = { ...restoredState, farmServices: Array.isArray(source.farmServices) ? source.farmServices : [], farmOrders: Array.isArray(source.farmOrders) ? source.farmOrders : [], activityLog: Array.isArray(source.activityLog) ? source.activityLog : [] };
+      const importedIdentities = normalizeBackupIdentities(data.account?.identityProfiles || data.account?.verifiedIdentities);
+      state.portableAccount = {
+        identityProfiles: importedIdentities.length ? importedIdentities : normalizeBackupIdentities(source.portableAccount?.identityProfiles),
+      };
       if (!Array.isArray(state.settings.categories)) state.settings.categories = Object.keys(CATEGORY_ICONS).filter(c=>c!=="อื่นๆ");
       saveState();
+      if (data.preferences?.theme === "light" || data.preferences?.theme === "dark") applyTheme(data.preferences.theme);
+      if (data.preferences?.language === "th" || data.preferences?.language === "en") setLang(data.preferences.language);
       renderProducts(); renderFarmServices?.(); renderSalesHistory(); renderDashboard(); renderReports(); renderSettings();
-      toast(t("toast_restore_success"));
+      const needsReverification = state.portableAccount.identityProfiles.length > 0;
+      toast(needsReverification ? t("toast_restore_success_reverify") : t("toast_restore_success"));
     } catch (err) {
+      console.error("importBackup error:", err);
       toast(t("toast_backup_invalid"), "error");
     }
   };

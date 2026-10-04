@@ -1,8 +1,11 @@
 const STORAGE_KEY = "igh_kinglegacy_state";
 const THEME_KEY = "igh_theme";
 const LANG_KEY = "igh_lang";
-const APP_VERSION = "V.4.24";
+const APP_VERSION = "V.4.25";
 const APP_CHANGELOG = [
+  { version: "V.4.25", updatedAt: "2026-10-04T06:48:00.000Z", changes: [
+    "เพิ่มข้อมูลการตั้งค่า ธีม ภาษา ชื่อและอีเมลบัญชีที่ยืนยันไว้ในไฟล์ Backup พร้อมแจ้งให้ยืนยัน OAuth อีกครั้งหลัง Restore"
+  ] },
   { version: "V.4.24", updatedAt: "2026-10-04T02:51:00.000Z", changes: [
     "รองรับโหลดค่า Supabase และ OAuth จาก Render Secret File เพื่อใช้งาน production โดยไม่บันทึก credentials ใน Git"
   ] },

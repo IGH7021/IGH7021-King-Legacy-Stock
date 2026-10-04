@@ -32,6 +32,10 @@ For a public deployment, set `APP_ORIGIN` to the HTTPS site origin and register 
 
 Access keys remain required to enter the app. After logging in with a key, users may optionally verify a Google or Discord account in Settings and attach its display name to that key. This is identity verification, not an alternative login method. When Supabase is enabled, the provider ID, display name, and email are saved in `public.user_identities`; the linked name appears in Admin and can be unlinked from Settings. Apply `supabase/schema.sql` to create this table if it does not exist yet.
 
+## Backup and restore
+
+The JSON backup includes the account's application data and settings, theme, language, and a snapshot of verified Google/Discord account names and email addresses. Restoring a backup does not transfer OAuth verification to a different access key; users must verify those accounts again in Settings. Access keys, session tokens, and OAuth/Supabase credentials are never included in the backup.
+
 Create a Google OAuth Web application and/or a Discord application with OAuth2 enabled. Register these local redirect URLs:
 
 - Google: `http://localhost:3000/api/auth/google/callback`
