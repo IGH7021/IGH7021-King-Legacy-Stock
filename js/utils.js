@@ -162,7 +162,17 @@ function enhanceCustomSelects() {
 }
 
 function enhanceNumberInput(input) {
-  if (input.closest(".number-stepper") || input.readOnly) return;
+  if (!input.parentNode || input.closest(".number-stepper") || input.readOnly) return;
+  input.type = "text";
+  input.inputMode = input.step === "any" || Number(input.step) < 1 ? "decimal" : "numeric";
+  input.dataset.compactNumber = "true";
+  input.autocomplete = "off";
+  if (!input.placeholder) {
+    input.placeholder = t("compact_number_placeholder");
+    input.dataset.compactPlaceholder = "true";
+  }
+  input.title = t("compact_number_hint");
+  input.setAttribute("aria-description", t("compact_number_hint"));
   const wrapper = document.createElement("div");
   wrapper.className = "number-stepper";
   if (input.classList.contains("w-full")) wrapper.classList.add("number-stepper-full");
@@ -203,9 +213,57 @@ function syncNumberStepper(input) {
   });
 }
 
+function parseCompactNumber(value) {
+  const match = String(value).trim().match(/^([+-]?(?:(?:\d+|\d{1,3}(?:,\d{3})+)(?:\.\d*)?|\.\d+)(?:e[+-]?\d+)?)\s*([kmbt])?$/i);
+  if (!match) return null;
+  const number = Number(match[1].replace(/,/g, ""));
+  const multiplier = { k: 1e3, m: 1e6, b: 1e9, t: 1e12 }[match[2]?.toLowerCase()] || 1;
+  const result = number * multiplier;
+  return Number.isFinite(result) ? result : null;
+}
+
+function validateCompactNumberInput(input) {
+  const rawValue = input.value.trim();
+  if (!rawValue) {
+    input.setCustomValidity("");
+    return;
+  }
+  const value = parseCompactNumber(rawValue);
+  if (value === null) {
+    input.setCustomValidity(t("compact_number_invalid"));
+    return;
+  }
+  const min = input.getAttribute("min") === null ? -Infinity : Number(input.getAttribute("min"));
+  const max = input.getAttribute("max") === null ? Infinity : Number(input.getAttribute("max"));
+  if (value < min) {
+    input.setCustomValidity(t("compact_number_below_min", { min: fmtNum(min) }));
+    return;
+  }
+  if (value > max) {
+    input.setCustomValidity(t("compact_number_above_max", { max: fmtNum(max) }));
+    return;
+  }
+  const step = input.getAttribute("step") || "1";
+  const base = Number.isFinite(min) ? min : 0;
+  if (step !== "any" && Number(step) > 0 && Math.abs((value - base) / Number(step) - Math.round((value - base) / Number(step))) > 1e-9) {
+    input.setCustomValidity(t("compact_number_step_invalid", { step }));
+    return;
+  }
+  input.setCustomValidity("");
+}
+
+function refreshCompactNumberInputs() {
+  document.querySelectorAll("input[data-compact-number]").forEach(input => {
+    if (input.dataset.compactPlaceholder === "true") input.placeholder = t("compact_number_placeholder");
+    input.title = t("compact_number_hint");
+    input.setAttribute("aria-description", t("compact_number_hint"));
+    validateCompactNumberInput(input);
+  });
+}
+
 function enhanceNumberSteppers(root = document) {
-  if (root.matches?.('input[type="number"]')) enhanceNumberInput(root);
-  root.querySelectorAll?.('input[type="number"]').forEach(enhanceNumberInput);
+  if (root.matches?.('input[type="number"], input[data-compact-number]')) enhanceNumberInput(root);
+  root.querySelectorAll?.('input[type="number"], input[data-compact-number]').forEach(enhanceNumberInput);
 }
 
 function initializeNumberSteppers() {
@@ -214,13 +272,26 @@ function initializeNumberSteppers() {
     if (node.nodeType === Node.ELEMENT_NODE) enhanceNumberSteppers(node);
   }))).observe(document.body, { childList: true, subtree: true });
   document.addEventListener("input", event => {
-    if (event.target.matches?.('input[type="number"]')) syncNumberStepper(event.target);
+    const input = event.target;
+    if (!input.matches?.('input[data-compact-number]')) return;
+    const compactValue = input.value.trim();
+    if (/[kmbt]$/i.test(compactValue)) {
+      const parsed = parseCompactNumber(compactValue);
+      if (parsed !== null) {
+        input.value = String(parsed);
+        input.setCustomValidity("");
+        input.dispatchEvent(new Event("input", { bubbles: true }));
+        return;
+      }
+    }
+    validateCompactNumberInput(input);
+    syncNumberStepper(input);
   });
 
   document.addEventListener("click", event => {
     const button = event.target.closest("[data-number-step]");
     if (!button) return;
-    const input = button.closest(".number-stepper")?.querySelector('input[type="number"]');
+    const input = button.closest(".number-stepper")?.querySelector('input[data-compact-number]');
     if (!input || input.disabled || input.readOnly) return;
     const min = input.min === "" ? -Infinity : Number(input.min);
     const max = input.max === "" ? Infinity : Number(input.max);

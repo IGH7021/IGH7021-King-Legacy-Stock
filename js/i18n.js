@@ -54,6 +54,12 @@ const I18N = {
     settings_category_title: "หมวดหมู่สินค้า", new_category_placeholder: "ชื่อหมวดหมู่ใหม่",
     add_btn: "+ เพิ่ม", backup_section_title: "Backup / Restore / Export",
     backup_details: "Backup รวมสินค้า ยอดขาย การตั้งค่า ธีม ภาษา ชื่อและอีเมลบัญชีที่ยืนยันไว้ หลัง Restore ต้องยืนยัน OAuth อีกครั้ง",
+    compact_number_placeholder: "เช่น 1.5K",
+    compact_number_hint: "ใส่ K (Kilo)=พัน (1,000), M (Million)=ล้าน (1,000,000), B (Billion)=พันล้าน (1,000,000,000), T (Trillion)=ล้านล้าน (1,000,000,000,000) ได้ เช่น 1.5M",
+    compact_number_invalid: "กรุณาใส่ตัวเลข หรือใช้ตัวย่อ K, M, B, T เช่น 1.5K",
+    compact_number_below_min: "ค่าต้องไม่น้อยกว่า {min}",
+    compact_number_above_max: "ค่าต้องไม่เกิน {max}",
+    compact_number_step_invalid: "รูปแบบจำนวนไม่ถูกต้อง (เพิ่ม/ลดครั้งละ {step})",
     export_backup_btn: "⬇️ Export Backup (.json)", restore_backup_btn: "⬆️ Restore Backup",
     export_products_csv_btn: "📄 Export Products CSV", export_sales_csv_btn: "📄 Export Sales CSV",
 
@@ -162,6 +168,12 @@ const I18N = {
     settings_category_title: "Product Categories", new_category_placeholder: "New category name",
     add_btn: "+ Add", backup_section_title: "Backup / Restore / Export",
     backup_details: "Backup includes products, sales, app settings, theme, language, and verified account names/emails. OAuth accounts must be verified again after restore.",
+    compact_number_placeholder: "e.g. 1.5K",
+    compact_number_hint: "Use K=Kilo (thousand, 1,000), M=Million (1,000,000), B=Billion (1,000,000,000), T=Trillion (1,000,000,000,000); for example, 1.5M",
+    compact_number_invalid: "Enter a number or use K, M, B, or T (for example, 1.5K)",
+    compact_number_below_min: "Value must be at least {min}",
+    compact_number_above_max: "Value must not exceed {max}",
+    compact_number_step_invalid: "Invalid increment (use steps of {step})",
     export_backup_btn: "⬇️ Export Backup (.json)", restore_backup_btn: "⬆️ Restore Backup",
     export_products_csv_btn: "📄 Export Products CSV", export_sales_csv_btn: "📄 Export Sales CSV",
 
@@ -228,6 +240,7 @@ function t(key, vars) {
 function setLang(lang) {
   currentLang = lang;
   localStorage.setItem(LANG_KEY, lang);
+  if (typeof refreshCompactNumberInputs === "function") refreshCompactNumberInputs();
   applyStaticTranslations();
   if (typeof renderProducts === "function") renderProducts();
   if (typeof renderSalesHistory === "function") renderSalesHistory();

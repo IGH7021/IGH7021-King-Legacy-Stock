@@ -1,8 +1,11 @@
 const STORAGE_KEY = "igh_kinglegacy_state";
 const THEME_KEY = "igh_theme";
 const LANG_KEY = "igh_lang";
-const APP_VERSION = "V.4.26";
+const APP_VERSION = "V.4.27";
 const APP_CHANGELOG = [
+  { version: "V.4.27", updatedAt: "2026-10-04T07:09:00.000Z", changes: [
+    "รองรับพิมพ์จำนวนย่อ K, M, B และ T ในช่องตัวเลข พร้อมคำแนะนำและตรวจสอบค่าตามภาษาไทย/อังกฤษ"
+  ] },
   { version: "V.4.26", updatedAt: "2026-10-04T06:57:00.000Z", changes: [
     "จัดระยะช่องกรอกจำนวนและปุ่มเพิ่ม/ลดใหม่ ป้องกันปุ่มเบียดช่องกรอกบนมือถือและหน้าจอแคบ"
   ] },
