@@ -1,8 +1,13 @@
 const STORAGE_KEY = "igh_kinglegacy_state";
 const THEME_KEY = "igh_theme";
 const LANG_KEY = "igh_lang";
-const APP_VERSION = "V.4.34";
+const APP_VERSION = "V.4.35";
 const APP_CHANGELOG = [
+  { version: "V.4.35", updatedAt: "2026-10-04T18:42:09.000Z", changes: [
+    "แก้ไขหน้าต่างข้อเสนอแนะที่ปิดแล้วให้ไม่แสดงหรือบังการใช้งานหน้าเว็บ พร้อมคงฉากหลังและการปิดหน้าต่างตามปกติ"
+  ], changesEn: [
+    "Fixed closed suggestion dialogs remaining visible or blocking the page while preserving normal backdrop and dismissal behavior"
+  ] },
   { version: "V.4.34", updatedAt: "2026-10-04T10:27:59.240Z", changes: [
     "เพิ่มเมนูนำทางแบบ Drawer ที่ใช้ได้ทุกขนาดหน้าจอ พร้อมปิดด้วยปุ่ม ฉากหลัง หรือ Escape และคืนโฟกัสอย่างถูกต้อง",
     "จัดสถิติ Dashboard เป็น Bento Grid และเพิ่มหน้าโปรไฟล์พร้อมรูปสถานะออนไลน์/ออฟไลน์",
