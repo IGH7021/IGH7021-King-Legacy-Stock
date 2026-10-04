@@ -1,7 +1,7 @@
 const STORAGE_KEY = "igh_kinglegacy_state";
 const THEME_KEY = "igh_theme";
 const LANG_KEY = "igh_lang";
-const APP_VERSION = "V.4.43";
+const APP_VERSION = "V.4.44";
 
 const CATEGORY_ICONS = {
   "ดาบ": "🗡️",

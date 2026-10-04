@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Itim&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/style.css?v=4.45">
+<link rel="stylesheet" href="css/style.css?v=4.46">
 </head>
 <body class="min-h-screen itim-regular">
 
@@ -433,6 +433,7 @@
         <div class="admin-section-tabs flex flex-wrap gap-2 mb-4" role="tablist" data-i18n-aria="admin_tabs_aria" aria-label="Admin">
           <button id="admin-keys-tab" type="button" role="tab" aria-selected="true" aria-controls="admin-keys-panel" class="admin-section-tab is-active" data-admin-tab="keys" data-i18n="admin_tab_keys">จัดการคีย์</button>
           <button id="admin-inbox-tab" type="button" role="tab" aria-selected="false" aria-controls="admin-inbox-panel" class="admin-section-tab" data-admin-tab="inbox" data-i18n="admin_tab_inbox">กล่องข้อความ</button>
+          <button id="admin-updates-tab" type="button" role="tab" aria-selected="false" aria-controls="admin-updates-panel" class="admin-section-tab" data-admin-tab="updates" data-i18n="admin_tab_updates">อัปเดต</button>
         </div>
         <div id="admin-keys-panel" role="tabpanel" aria-labelledby="admin-keys-tab">
         <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4" id="admin-key-stats" aria-busy="true"></div>
@@ -445,6 +446,12 @@
           <div class="glass-card rounded-2xl p-4">
             <div class="flex items-center justify-between gap-3 mb-3"><div><h2 class="font-semibold" data-i18n="admin_inbox_title">ข้อเสนอแนะและคำขอ</h2><p class="text-xs text-slate-400 mt-1" data-i18n="admin_inbox_help">ข้อความข้อเสนอแนะและคำขอจากลูกค้า</p></div><span id="admin-inbox-count" class="text-xs text-slate-400"></span></div>
             <div id="admin-inbox-list" class="flex flex-col gap-3" aria-live="polite" aria-busy="true"></div>
+          </div>
+        </section>
+        <section id="admin-updates-panel" class="hidden" role="tabpanel" aria-labelledby="admin-updates-tab">
+          <div class="glass-card rounded-2xl p-4">
+            <div class="flex items-center justify-between gap-3 mb-3"><div><h2 class="font-semibold" data-i18n="admin_updates_title">ประวัติการอัปเดต</h2><p class="text-xs text-slate-400 mt-1" data-i18n="admin_updates_help">แสดงเฉพาะในส่วนผู้ดูแล</p></div><span id="admin-updates-version" class="text-xs font-semibold text-indigo-300 px-2.5 py-1 rounded-full bg-indigo-500/15 border border-indigo-500/30"></span></div>
+            <div id="admin-updates-list" class="flex flex-col gap-3" aria-live="polite" aria-busy="true"></div>
           </div>
         </section>
       </section>
@@ -758,8 +765,8 @@
   </div>
 </div>
 
-<script defer src="js/data.js?v=4.43"></script>
-<script defer src="js/i18n.js?v=4.43"></script>
+<script defer src="js/data.js?v=4.44"></script>
+<script defer src="js/i18n.js?v=4.44"></script>
 <script defer src="js/utils.js?v=4.34"></script>
 <script defer src="js/products.js?v=4.34"></script>
 <script defer src="js/farm.js?v=4.34"></script>
@@ -771,9 +778,9 @@
 <script defer src="js/auth.js?v=4.37"></script>
 <script defer src="js/profile.js?v=4.40"></script>
 <script defer src="js/requests.js?v=4.40"></script>
-<script defer src="js/admin.js?v=4.42"></script>
+<script defer src="js/admin.js?v=4.44"></script>
 <script defer src="js/cookie.js?v=4.34"></script>
-<script defer src="js/navigation.js?v=4.43"></script>
+<script defer src="js/navigation.js?v=4.44"></script>
 <script defer src="js/main.js?v=4.40"></script>
 </body>
 </html>

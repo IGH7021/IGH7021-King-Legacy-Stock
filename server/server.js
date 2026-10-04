@@ -2,6 +2,7 @@ const http = require("http");
 const fs = require("fs");
 const path = require("path");
 const crypto = require("crypto");
+const UPDATE_HISTORY = require("./update-history.json");
 
 const ENV_FILES = [path.resolve(__dirname, "../.env"), process.env.RENDER_ENV_FILE].filter(Boolean);
 for (const envFile of ENV_FILES) {
@@ -503,6 +504,11 @@ const server = http.createServer(async (request, response) => {
         message: item.message, createdAt: item.created_at || item.createdAt,
       })));
     } catch (error) { console.error("Could not load site suggestions:", error.message); return json(response, 503, { error: "SUGGESTION_STORAGE_UNAVAILABLE" }); }
+  }
+  if (url.pathname === "/api/admin/updates" && request.method === "GET") {
+    const session = sessionFromRequest(request);
+    if (!session?.admin) return json(response, 403, { error: "ADMIN_ONLY" });
+    return json(response, 200, UPDATE_HISTORY, { "Cache-Control": "private, no-store" });
   }
   const adminSuggestionRoute = url.pathname.match(/^\/api\/admin\/suggestions\/([0-9a-f-]+)$/i);
   if (adminSuggestionRoute && request.method === "DELETE") {

@@ -35,6 +35,9 @@ let adminKeysLoadError = false;
 let adminSuggestions = [];
 let adminInboxLoaded = false;
 let adminSuggestionsError = false;
+let adminUpdatesLoaded = false;
+let adminUpdatesError = false;
+let adminUpdates = [];
 function beginAdminSkeleton(element, count, isStats = false) {
   if (!element) return () => {};
   element.setAttribute("aria-busy", "true");
@@ -111,6 +114,55 @@ async function loadAdminInbox() {
     renderAdminInbox();
   }
 }
+function renderAdminUpdates() {
+  const list = document.getElementById("admin-updates-list");
+  if (!list) return;
+  if (adminUpdatesError) {
+    list.innerHTML = `<p class="text-sm text-rose-300">${t("admin_updates_load_failed")}</p>`;
+    return;
+  }
+  if (!adminUpdates.length) {
+    list.innerHTML = `<p class="text-sm text-slate-400">${t("admin_updates_empty")}</p>`;
+    return;
+  }
+  const locale = currentLang === "th" ? "th-TH" : "en-US";
+  list.innerHTML = adminUpdates.map(entry => {
+    const changes = currentLang === "en" && Array.isArray(entry.changesEn) ? entry.changesEn : entry.changes;
+    const rawDate = entry.updatedAt || entry.date;
+    const parsedDate = rawDate ? new Date(rawDate) : null;
+    const date = parsedDate && Number.isFinite(parsedDate.getTime())
+      ? parsedDate.toLocaleString(locale, { timeZone: "Asia/Bangkok", dateStyle: "medium", ...(entry.updatedAt ? { timeStyle: "short" } : {}) })
+      : "";
+    const items = Array.isArray(changes) ? changes : [];
+    return `<article class="glass-card rounded-2xl p-4 border-l-2 border-indigo-400/70"><div class="flex items-center justify-between gap-2"><strong class="text-sm">${escapeAdminRequestText(entry.version)}</strong><time class="text-[11px] text-slate-400">${escapeAdminRequestText(date)}</time></div><ul class="mt-2 text-sm text-slate-300 list-disc list-inside">${items.map(change => `<li>${escapeAdminRequestText(change)}</li>`).join("")}</ul></article>`;
+  }).join("");
+}
+async function loadAdminUpdates() {
+  const list = document.getElementById("admin-updates-list");
+  if (!list) return;
+  if (!adminUpdatesLoaded) {
+    list.setAttribute("aria-busy", "true");
+    list.innerHTML = `<article class="admin-skeleton-card" aria-hidden="true"><span class="skeleton admin-skeleton-line"></span><span class="skeleton admin-skeleton-line admin-skeleton-line-short"></span></article>`;
+  }
+  try {
+    const response = await fetch("/api/admin/updates", { headers: adminHeaders() });
+    const result = await readApiResponse(response);
+    if (!response.ok) throw new Error(result.error || "ADMIN_UPDATES_LOAD_FAILED");
+    if (!Array.isArray(result)) throw new Error("INVALID_ADMIN_UPDATES_RESPONSE");
+    adminUpdates = result;
+    adminUpdatesError = false;
+    const version = document.getElementById("admin-updates-version");
+    if (version) version.textContent = APP_VERSION;
+  } catch (error) {
+    adminUpdatesError = true;
+    console.error("Could not load Admin update history:", error);
+  } finally {
+    adminUpdatesLoaded = true;
+    list.setAttribute("aria-busy", "false");
+    renderAdminUpdates();
+  }
+}
+window.refreshAdminUpdateTranslations = renderAdminUpdates;
 function bindAdminKeyFilters() {
   if (adminFiltersBound) return;
   adminFiltersBound = true;
@@ -203,19 +255,21 @@ function printKeyReport(keys) {
   popup.document.close(); popup.focus(); popup.print();
 }
 document.addEventListener("DOMContentLoaded", () => {
-  if (localStorage.getItem("igh_kinglegacy_is_admin") !== "1") return;
-  enableAdminUi();
+  const isAdmin = localStorage.getItem("igh_kinglegacy_is_admin") === "1";
+  if (isAdmin) enableAdminUi();
   const refresh = () => loadAdminKeys().catch(error => toast(error.message, "error"));
   document.querySelectorAll("[data-admin-tab]").forEach(button => button.addEventListener("click", () => {
-    const inboxSelected = button.dataset.adminTab === "inbox";
-    document.getElementById("admin-keys-panel")?.classList.toggle("hidden", inboxSelected);
-    document.getElementById("admin-inbox-panel")?.classList.toggle("hidden", !inboxSelected);
+    const selectedTab = button.dataset.adminTab;
+    document.getElementById("admin-keys-panel")?.classList.toggle("hidden", selectedTab !== "keys");
+    document.getElementById("admin-inbox-panel")?.classList.toggle("hidden", selectedTab !== "inbox");
+    document.getElementById("admin-updates-panel")?.classList.toggle("hidden", selectedTab !== "updates");
     document.querySelectorAll("[data-admin-tab]").forEach(tab => {
       const selected = tab === button;
       tab.classList.toggle("is-active", selected);
       tab.setAttribute("aria-selected", String(selected));
     });
-    if (inboxSelected) loadAdminInbox().catch(error => console.error("Could not load Admin inbox:", error));
+    if (selectedTab === "inbox") loadAdminInbox().catch(error => console.error("Could not load Admin inbox:", error));
+    if (selectedTab === "updates") loadAdminUpdates();
   }));
   document.getElementById("admin-key-form")?.addEventListener("submit", async event => { event.preventDefault(); try { const response = await fetch("/api/admin/keys", { method: "POST", headers: adminHeaders(), body: JSON.stringify({ hours: Number(document.getElementById("admin-hours").value), permanent: document.getElementById("admin-permanent").checked, admin: document.getElementById("admin-key-is-admin").checked }) }); const result = await readApiResponse(response); if (!response.ok) throw new Error(result.error); const output = document.getElementById("admin-generated-key"); const copyButton = document.getElementById("copy-generated-key"); output.textContent = result.value; output.classList.remove("hidden"); copyButton.dataset.copyKey = result.value; copyButton.classList.remove("hidden"); refresh(); } catch (error) { toast(`${t("admin_key_create_failed")}: ${error.message}`, "error"); } });
   document.getElementById("copy-generated-key")?.addEventListener("click", async event => { if (await copyText(event.currentTarget.dataset.copyKey)) { event.currentTarget.textContent = t("admin_copied"); setTimeout(() => { event.currentTarget.textContent = t("admin_copy"); }, 1600); } });
@@ -260,5 +314,5 @@ document.addEventListener("DOMContentLoaded", () => {
   document.getElementById("admin-export-json")?.addEventListener("click", async () => { const result = await loadAdminKeys(); downloadKeyReport(result.keys); });
   document.getElementById("admin-export-pdf")?.addEventListener("click", async () => { const result = await loadAdminKeys(); printKeyReport(result.keys); });
   document.getElementById("admin-logout-btn")?.addEventListener("click", async () => { await fetch("/api/auth/logout", { method: "POST", credentials: "same-origin" }).catch(() => {}); localStorage.removeItem(AUTH_TOKEN_KEY); localStorage.removeItem(AUTH_KEY_KEY); localStorage.removeItem("igh_kinglegacy_is_admin"); localStorage.removeItem("igh_kinglegacy_owner_id"); localStorage.removeItem("igh_kinglegacy_auth_method"); location.reload(); });
-  refresh();
+  if (isAdmin) refresh();
 });

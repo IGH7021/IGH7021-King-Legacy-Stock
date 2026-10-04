@@ -118,7 +118,8 @@ const I18N = {
     request_submit_failed: "ส่งคำขอไม่สำเร็จ กรุณาลองใหม่อีกครั้ง",
     state_sync_failed: "ซิงก์ข้อมูลบัญชีไม่สำเร็จ กำลังเก็บข้อมูลไว้ในเบราว์เซอร์และจะลองอีกครั้ง",
     admin_control_center: "ศูนย์ควบคุมผู้ดูแล", admin_key_manager: "จัดการคีย์", admin_key_description: "จัดการคีย์ ดูเจ้าของคีย์ และตรวจสอบอายุการใช้งาน",
-    admin_tabs_aria: "แท็บผู้ดูแล", admin_logout: "ออกจากบัญชี", admin_tab_keys: "จัดการคีย์", admin_tab_inbox: "กล่องข้อความ",
+    admin_tabs_aria: "แท็บผู้ดูแล", admin_logout: "ออกจากบัญชี", admin_tab_keys: "จัดการคีย์", admin_tab_inbox: "กล่องข้อความ", admin_tab_updates: "อัปเดต",
+    admin_updates_title: "ประวัติการอัปเดต", admin_updates_help: "แสดงเฉพาะในส่วนผู้ดูแล", admin_updates_empty: "ยังไม่มีข้อมูลอัปเดต", admin_updates_load_failed: "โหลดประวัติการอัปเดตไม่สำเร็จ กรุณาลองใหม่",
     admin_inbox_title: "ข้อเสนอแนะและคำขอ", admin_inbox_help: "ข้อความข้อเสนอแนะและคำขอจากลูกค้า",
     admin_inbox_count: "{count} ข้อความ", admin_inbox_empty: "ยังไม่มีข้อความ",
     admin_inbox_suggestion: "ข้อเสนอแนะเว็บไซต์", admin_inbox_request: "คำขอลูกค้า",
@@ -339,7 +340,8 @@ const I18N = {
     request_submit_failed: "Could not send your request. Please try again.",
     state_sync_failed: "Account sync failed. Your changes remain in this browser and will be retried.",
     admin_control_center: "ADMIN CONTROL CENTER", admin_key_manager: "Admin Key Manager", admin_key_description: "Manage keys, review key owners, and check expiry.",
-    admin_tabs_aria: "Admin tabs", admin_logout: "Log out", admin_tab_keys: "Manage keys", admin_tab_inbox: "Inbox",
+    admin_tabs_aria: "Admin tabs", admin_logout: "Log out", admin_tab_keys: "Manage keys", admin_tab_inbox: "Inbox", admin_tab_updates: "Updates",
+    admin_updates_title: "Update history", admin_updates_help: "Visible only in the Admin area", admin_updates_empty: "No update history is available.", admin_updates_load_failed: "Could not load update history. Please try again.",
     admin_inbox_title: "Suggestions and requests", admin_inbox_help: "Website suggestions and customer requests",
     admin_inbox_count: "{count} message(s)", admin_inbox_empty: "There are no messages yet.",
     admin_inbox_suggestion: "Website suggestion", admin_inbox_request: "Customer request",
@@ -464,6 +466,7 @@ function setLang(lang) {
   if (typeof window.refreshCommunityTranslations === "function") window.refreshCommunityTranslations();
   if (typeof window.refreshSupportRequestUi === "function") window.refreshSupportRequestUi();
   if (typeof window.refreshAdminKeyTranslations === "function") window.refreshAdminKeyTranslations();
+  if (typeof window.refreshAdminUpdateTranslations === "function") window.refreshAdminUpdateTranslations();
   if (typeof window.refreshProfileTranslations === "function") window.refreshProfileTranslations();
   if (typeof window.refreshAuthTranslations === "function") window.refreshAuthTranslations();
 }
