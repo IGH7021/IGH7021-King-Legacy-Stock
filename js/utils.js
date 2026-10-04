@@ -16,12 +16,6 @@ function loadState() {
     else defaultRecipes.forEach(recipe => {
       if (!state.recipes.some(existing => existing.name.toLowerCase() === recipe.name.toLowerCase())) state.recipes.push(recipe);
     });
-    const catalogProducts = buildDefaultProducts();
-    catalogProducts.forEach(product => {
-      if (!state.products.some(existing => existing.name.toLowerCase() === product.name.toLowerCase())) {
-        state.products.push({ ...product, id: genId("p"), createdAt: Date.now() });
-      }
-    });
     if (!Array.isArray(state.farmServices)) state.farmServices = [];
     if (!Array.isArray(state.farmOrders)) state.farmOrders = [];
     if (!Array.isArray(state.activityLog)) state.activityLog = [];
@@ -64,23 +58,68 @@ async function activateUserState(ownerId) {
   const localState = localStorage.getItem(personalKey);
   if (localState) {
     try { state = JSON.parse(localState); } catch (error) { localStorage.removeItem(personalKey); }
-  } else if (!localStorage.getItem("igh_kinglegacy_legacy_owner")) {
-    try { state = JSON.parse(localStorage.getItem(STORAGE_KEY)) || defaultState(); } catch (error) { state = defaultState(); }
-    localStorage.setItem("igh_kinglegacy_legacy_owner", ownerId);
+  } else if (localStorage.getItem("igh_kinglegacy_legacy_owner") === ownerId) {
+    try { state = JSON.parse(localStorage.getItem(STORAGE_KEY)) || defaultState({ emptyWorkspace: true }); } catch (error) { state = defaultState({ emptyWorkspace: true }); }
   } else {
-    state = defaultState();
+    state = defaultState({ emptyWorkspace: true });
   }
+  renderProducts(); renderCrafting(); renderSalesHistory(); renderDashboard(); renderReports(); renderSettings();
   try {
     const response = await fetch("/api/state", { headers: { Authorization: `Bearer ${localStorage.getItem(AUTH_TOKEN_KEY) || ""}` } });
     if (response.ok) state = await response.json();
-    else if (response.status !== 404 && response.status !== 503) throw new Error("Could not load account data");
+    else if (response.status === 404) state = defaultState({ emptyWorkspace: true });
+    else if (response.status !== 503) throw new Error("Could not load account data");
   } catch (error) { console.warn("Account state sync unavailable; using this browser's local state."); }
-  if (!state || !state.products || !state.sales || !state.settings) state = defaultState();
+  if (!state || !Array.isArray(state.products) || !Array.isArray(state.sales) || !state.settings) state = defaultState({ emptyWorkspace: true });
   stateSyncReady = true;
   saveState();
   renderProducts(); renderCrafting(); renderSalesHistory(); renderDashboard(); renderReports(); renderSettings();
 }
 window.activateUserState = activateUserState;
+
+async function clearAccountData() {
+  const previousState = state;
+  const emptyState = defaultState({ emptyWorkspace: true });
+  const ownerId = stateOwnerId;
+  let serverCleared = false;
+  clearTimeout(stateSyncTimer);
+  stateSyncReady = false;
+  try {
+    const authToken = localStorage.getItem(AUTH_TOKEN_KEY);
+    if (ownerId && authToken && authToken !== "demo") {
+      const response = await fetch("/api/state", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${localStorage.getItem(AUTH_TOKEN_KEY) || ""}` },
+        body: JSON.stringify(emptyState),
+      });
+      if (!response.ok) throw new Error(t("clear_account_server_failed"));
+      serverCleared = true;
+    }
+    state = emptyState;
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    if (ownerId) localStorage.setItem(`${STORAGE_KEY}_${encodeURIComponent(ownerId)}`, JSON.stringify(state));
+    applyTheme("dark");
+    setLang("th");
+    stateSyncReady = Boolean(ownerId);
+    renderProducts(); renderCrafting(); renderSalesHistory(); renderDashboard(); renderReports(); renderSettings();
+    toast(t("clear_account_success"));
+    return true;
+  } catch (error) {
+    if (!serverCleared) state = previousState;
+    else {
+      state = emptyState;
+      try {
+        localStorage.removeItem(STORAGE_KEY);
+        if (ownerId) localStorage.removeItem(`${STORAGE_KEY}_${encodeURIComponent(ownerId)}`);
+      } catch (storageError) { console.error("Could not clear local account state:", storageError); }
+      renderProducts(); renderCrafting(); renderSalesHistory(); renderDashboard(); renderReports(); renderSettings();
+    }
+    stateSyncReady = Boolean(ownerId);
+    console.error("clearAccountData error:", error);
+    toast(serverCleared ? t("clear_account_local_failed") : error.message || t("clear_account_failed"), "error");
+    return false;
+  }
+}
 
 function categorySortIndex(category) {
   const index = CATEGORY_ORDER.indexOf(category);

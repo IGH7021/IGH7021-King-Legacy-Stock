@@ -1,8 +1,13 @@
 const STORAGE_KEY = "igh_kinglegacy_state";
 const THEME_KEY = "igh_theme";
 const LANG_KEY = "igh_lang";
-const APP_VERSION = "V.4.27";
+const APP_VERSION = "V.4.28";
 const APP_CHANGELOG = [
+  { version: "V.4.28", updatedAt: "2026-10-04T07:48:00.000Z", changes: [
+    "บัญชีที่เริ่มใช้คีย์ใหม่เริ่มต้นโดยไม่มีสินค้า และเพิ่มปุ่มล้างข้อมูลบัญชีพร้อมคืนค่าตั้งต้นโดยซิงก์ไปยัง Supabase"
+  ], changesEn: [
+    "New key accounts start with an empty workspace; added an account-data reset that syncs the defaults to Supabase"
+  ] },
   { version: "V.4.27", updatedAt: "2026-10-04T07:09:00.000Z", changes: [
     "รองรับพิมพ์จำนวนย่อ K, M, B และ T ในช่องตัวเลข พร้อมคำแนะนำและตรวจสอบค่าตามภาษาไทย/อังกฤษ"
   ] },
@@ -448,13 +453,14 @@ function buildDefaultProducts() {
   });
 }
 
-function defaultState() {
+function defaultState({ emptyWorkspace = false } = {}) {
   return {
-    products: buildDefaultProducts(),
+    products: emptyWorkspace ? [] : buildDefaultProducts(),
     farmServices: [],
     farmOrders: [],
     activityLog: [],
     sales: [],
     settings: { stockAlert: 5, categories: Object.keys(CATEGORY_ICONS).filter(c=>c!=="อื่นๆ") },
+    ...(emptyWorkspace ? { recipes: RECIPES.map(recipe => ({ ...recipe, ingredients: recipe.ingredients.map(item => [...item]) })) } : {}),
   };
 }

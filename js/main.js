@@ -173,6 +173,13 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // Backup / Restore / CSV
   document.getElementById("export-backup-btn").addEventListener("click", exportBackup);
+  document.getElementById("clear-account-data-btn")?.addEventListener("click", async event => {
+    if (!window.confirm(t("confirm_clear_account_data"))) return;
+    const button = event.currentTarget;
+    button.disabled = true;
+    try { await clearAccountData(); }
+    finally { button.disabled = false; }
+  });
   document.getElementById("import-backup-input").addEventListener("change", (e) => {
     const f = e.target.files[0];
     if (f) importBackup(f);

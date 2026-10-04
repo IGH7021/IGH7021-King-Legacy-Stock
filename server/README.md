@@ -36,6 +36,8 @@ Access keys remain required to enter the app. After logging in with a key, users
 
 The JSON backup includes the account's application data and settings, theme, language, and a snapshot of verified Google/Discord account names and email addresses. Restoring a backup does not transfer OAuth verification to a different access key; users must verify those accounts again in Settings. Access keys, session tokens, and OAuth/Supabase credentials are never included in the backup.
 
+Each new access-key account starts with an empty workspace. In Settings, **Clear data and reset** permanently removes that account's products, sales, farm data, custom recipes, and app settings, then syncs the empty defaults to Supabase. The access key and linked identity records are retained.
+
 Create a Google OAuth Web application and/or a Discord application with OAuth2 enabled. Register these local redirect URLs:
 
 - Google: `http://localhost:3000/api/auth/google/callback`
