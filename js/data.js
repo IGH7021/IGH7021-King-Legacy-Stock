@@ -3,7 +3,7 @@ const THEME_KEY = "igh_theme";
 const LANG_KEY = "igh_lang";
 const APP_VERSION = "V.4.41";
 const APP_CHANGELOG = [
-  { version: "V.4.41", updatedAt: "2026-10-04T20:21:41.870Z", changes: [
+  { version: "V.4.41", updatedAt: "2026-10-04T20:31:23.974Z", changes: [
     "ปรับขนาดปุ่มโปรไฟล์มุมขวาบนให้กะทัดรัดและเหมาะกับหน้าจอมือถือ"
   ], changesEn: [
     "Refined the upper-right profile shortcut sizing for compact mobile layouts"
