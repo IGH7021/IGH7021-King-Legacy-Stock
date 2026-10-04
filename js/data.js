@@ -1,8 +1,13 @@
 const STORAGE_KEY = "igh_kinglegacy_state";
 const THEME_KEY = "igh_theme";
 const LANG_KEY = "igh_lang";
-const APP_VERSION = "V.4.36";
+const APP_VERSION = "V.4.37";
 const APP_CHANGELOG = [
+  { version: "V.4.37", updatedAt: "2026-10-04T19:12:56.175Z", changes: [
+    "เปลี่ยนแท็บตั้งค่าเป็นโปรไฟล์ กำหนดให้ยืนยัน Google/Discord ก่อนส่งคำขอและอัปเดตสิทธิ์เมื่อยกเลิกการยืนยัน รวมกล่องข้อความ Admin และปรับปุ่มเลือกไฟล์ให้เข้ากับธีม"
+  ], changesEn: [
+    "Renamed the Settings tab to Profile, require Google/Discord verification before sending requests and refresh eligibility when unlinked, unified the Admin inbox, and themed the file picker"
+  ] },
   { version: "V.4.36", updatedAt: "2026-10-04T19:01:10.202Z", changes: [
     "ย่อชื่อแท็บข้อเสนอแนะในหน้าตั้งค่า เพิ่มปุ่มโลโก้กลับ Dashboard และย้ายคำขอลูกค้าไปไว้ในแท็บข้อเสนอแนะของ Admin"
   ], changesEn: [

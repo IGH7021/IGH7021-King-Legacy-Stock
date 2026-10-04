@@ -5,13 +5,11 @@ function enableAdminUi() {
   loadAdminKeys().catch(error => { if (error.message === t("admin_access_denied")) { document.querySelectorAll(".admin-only").forEach(el => el.classList.add("hidden")); } else toast(error.message, "error"); });
   if (!adminRequestsTimer) adminRequestsTimer = setInterval(() => {
     if (document.visibilityState !== "visible") return;
-    if (!document.getElementById("admin-suggestions-panel")?.classList.contains("hidden")) {
-      loadAdminSuggestions().catch(error => console.error("Could not refresh site suggestions:", error));
-      loadAdminRequests().catch(error => { console.error("Could not refresh admin requests:", error); adminRequestsLoadError = true; renderAdminRequests(); });
+    if (!document.getElementById("admin-inbox-panel")?.classList.contains("hidden")) {
+      loadAdminInbox().catch(error => console.error("Could not refresh Admin inbox:", error));
     }
   }, 20000);
 }
-window.renderAdminRequests = renderAdminRequests;
 function formatRemaining(ms) {
   if (ms === null) return t("admin_key_time_permanent");
   if (ms <= 0) return t("admin_key_time_expired");
@@ -32,11 +30,10 @@ let adminFiltersBound = false;
 let adminRequestsTimer = null;
 let adminRequestsCache = [];
 let adminRequestsLoadError = false;
-let adminRequestsHasLoaded = false;
 let adminKeysHasLoaded = false;
 let adminKeysLoadError = false;
 let adminSuggestions = [];
-let adminSuggestionsLoaded = false;
+let adminInboxLoaded = false;
 let adminSuggestionsError = false;
 function beginAdminSkeleton(element, count, isStats = false) {
   if (!element) return () => {};
@@ -53,70 +50,67 @@ function beginAdminSkeleton(element, count, isStats = false) {
   };
 }
 function escapeAdminRequestText(value) { return String(value ?? "").replace(/[&<>"']/g, char => ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", "\"":"&quot;", "'":"&#039;" }[char])); }
-function renderAdminRequests() {
-  const list = document.getElementById("admin-requests-list");
-  const count = document.getElementById("admin-requests-count");
-  if (!list || !count) return;
-  count.textContent = t("admin_requests_count", { count: adminRequestsCache.length });
-  if (list.getAttribute("aria-busy") === "true") return;
-  if (adminRequestsLoadError) { list.innerHTML = `<p class="text-sm text-rose-300">${t("admin_requests_load_failed")}</p>`; return; }
-  list.innerHTML = adminRequestsCache.length ? adminRequestsCache.map(item => {
-    const createdAt = item.createdAt ? new Date(item.createdAt).toLocaleString(currentLang === "th" ? "th-TH" : "en-US", { timeZone: "Asia/Bangkok" }) : item.requestDate;
-    return `<article class="glass-card rounded-xl p-3"><div class="flex flex-wrap items-center justify-between gap-2 mb-2"><strong class="text-sm">${escapeAdminRequestText(item.owner)}</strong><time class="text-xs text-slate-400">${escapeAdminRequestText(createdAt)}</time></div><p class="text-sm whitespace-pre-wrap break-words">${escapeAdminRequestText(item.message)}</p></article>`;
-  }).join("") : `<p class="text-sm text-slate-400">${t("admin_requests_empty")}</p>`;
+function renderAdminInbox() {
+  const list = document.getElementById("admin-inbox-list");
+  const count = document.getElementById("admin-inbox-count");
+  if (!list || !count || list.getAttribute("aria-busy") === "true") return;
+  const entries = [
+    ...adminSuggestions.map(item => ({ ...item, type: "suggestion", owner: item.displayName, avatar: item.avatarData })),
+    ...adminRequestsCache.map(item => ({ ...item, type: "request", owner: item.owner, avatar: item.avatarUrl })),
+  ].sort((left, right) => String(right.createdAt || "").localeCompare(String(left.createdAt || "")));
+  count.textContent = t("admin_inbox_count", { count: entries.length });
+  const errors = [];
+  if (adminSuggestionsError) errors.push(`<p class="text-sm text-rose-300">${t("admin_suggestions_load_failed")}</p>`);
+  if (adminRequestsLoadError) errors.push(`<p class="text-sm text-rose-300">${t("admin_requests_load_failed")}</p>`);
+  const cards = entries.map(item => {
+    const online = item.type === "suggestion" && item.presenceStatus === "online";
+    const avatar = typeof item.avatar === "string" && (
+      /^data:image\/png;base64,[A-Za-z0-9+/]+={0,2}$/.test(item.avatar)
+      || /^https:\/\/lh3\.googleusercontent\.com\/[A-Za-z0-9_./=?&%-]+$/.test(item.avatar)
+      || /^https:\/\/cdn\.discordapp\.com\/avatars\/\d+\/[A-Za-z0-9_]+\.png\?size=150$/.test(item.avatar)
+    ) ? item.avatar : "";
+    const createdAt = item.createdAt
+      ? new Date(item.createdAt).toLocaleString(currentLang === "th" ? "th-TH" : "en-US", { timeZone: "Asia/Bangkok" })
+      : item.requestDate || "";
+    const provider = ["google", "discord"].includes(item.provider)
+      ? t(`identity_provider_${item.provider}`)
+      : "";
+    const deleteButton = item.type === "suggestion"
+      ? `<button type="button" class="admin-suggestion-delete px-3 py-1.5 rounded-lg bg-rose-500/15 text-rose-300 text-xs" data-delete-suggestion="${escapeAdminRequestText(item.id)}">${t("admin_suggestion_delete")}</button>`
+      : "";
+    const presence = item.type === "suggestion"
+      ? `<span class="presence-dot ${online ? "is-online" : "is-offline"}" role="img" aria-label="${t(online ? "presence_online" : "presence_offline")}"><span class="presence-halo" aria-hidden="true"></span></span>`
+      : "";
+    return `<article class="glass-card rounded-2xl p-4"><div class="flex items-start gap-3"><div class="profile-avatar-wrap admin-suggestion-avatar-wrap">${avatar ? `<img class="admin-suggestion-avatar" src="${escapeAdminRequestText(avatar)}" alt="">` : `<span class="admin-suggestion-avatar grid place-items-center" aria-hidden="true">👤</span>`}${presence}</div><div class="min-w-0 flex-1"><div class="flex flex-wrap items-center justify-between gap-2"><strong class="text-sm break-words">${escapeAdminRequestText(item.owner)}</strong><time class="text-xs text-slate-400">${escapeAdminRequestText(createdAt)}</time></div><div class="mt-1 flex flex-wrap items-center gap-2"><span class="admin-inbox-type">${t(item.type === "suggestion" ? "admin_inbox_suggestion" : "admin_inbox_request")}</span>${provider ? `<span class="text-xs text-slate-400">${escapeAdminRequestText(provider)}</span>` : ""}${item.type === "suggestion" ? `<span class="text-xs text-slate-400">${t(online ? "presence_online" : "presence_offline")}</span>` : ""}</div><p class="mt-3 text-sm whitespace-pre-wrap break-words">${escapeAdminRequestText(item.message)}</p></div>${deleteButton}</div></article>`;
+  });
+  if (!entries.length && !errors.length) errors.push(`<p class="text-sm text-slate-400">${t("admin_inbox_empty")}</p>`);
+  list.innerHTML = [...errors, ...cards].join("");
 }
-function renderAdminSuggestions() {
-  const list = document.getElementById("admin-suggestions-list");
-  const count = document.getElementById("admin-suggestions-count");
-  if (!list || !count) return;
-  count.textContent = t("admin_suggestions_count", { count: adminSuggestions.length });
-  if (list.getAttribute("aria-busy") === "true") return;
-  if (adminSuggestionsError) {
-    list.innerHTML = `<p class="text-sm text-rose-300">${t("admin_suggestions_load_failed")}</p>`;
-    return;
-  }
-  list.innerHTML = adminSuggestions.length ? adminSuggestions.map(item => {
-    const online = item.presenceStatus === "online";
-    const avatar = typeof item.avatarData === "string" && (/^data:image\/png;base64,[A-Za-z0-9+/]+={0,2}$/.test(item.avatarData)
-      || /^https:\/\/lh3\.googleusercontent\.com\/[A-Za-z0-9_./=?&%-]+$/.test(item.avatarData)
-      || /^https:\/\/cdn\.discordapp\.com\/avatars\/\d+\/[A-Za-z0-9_]+\.png\?size=150$/.test(item.avatarData)) ? item.avatarData : "";
-    const createdAt = item.createdAt ? new Date(item.createdAt).toLocaleString(currentLang === "th" ? "th-TH" : "en-US", { timeZone: "Asia/Bangkok" }) : "";
-    return `<article class="glass-card rounded-2xl p-4"><div class="flex items-start gap-3"><div class="profile-avatar-wrap admin-suggestion-avatar-wrap">${avatar ? `<img class="admin-suggestion-avatar" src="${escapeAdminRequestText(avatar)}" alt="">` : `<span class="admin-suggestion-avatar grid place-items-center" aria-hidden="true">👤</span>`}<span class="presence-dot ${online ? "is-online" : "is-offline"}" role="img" aria-label="${t(online ? "presence_online" : "presence_offline")}"><span class="presence-halo" aria-hidden="true"></span></span></div><div class="min-w-0 flex-1"><div class="flex flex-wrap items-center justify-between gap-2"><strong class="text-sm break-words">${escapeAdminRequestText(item.displayName)}</strong><time class="text-xs text-slate-400">${escapeAdminRequestText(createdAt)}</time></div><p class="text-xs text-slate-400">${escapeAdminRequestText(t(`identity_provider_${item.provider}`))} · ${t(online ? "presence_online" : "presence_offline")}</p><p class="mt-3 text-sm whitespace-pre-wrap break-words">${escapeAdminRequestText(item.message)}</p></div><button type="button" class="admin-suggestion-delete px-3 py-1.5 rounded-lg bg-rose-500/15 text-rose-300 text-xs" data-delete-suggestion="${escapeAdminRequestText(item.id)}" data-i18n="admin_suggestion_delete">${t("admin_suggestion_delete")}</button></div></article>`;
-  }).join("") : `<p class="text-sm text-slate-400">${t("admin_suggestions_empty")}</p>`;
-}
-async function loadAdminSuggestions() {
-  const list = document.getElementById("admin-suggestions-list");
-  const finishLoading = !adminSuggestionsLoaded ? beginAdminSkeleton(list, 2) : () => {};
-  try {
-    const response = await fetch("/api/admin/suggestions", { headers: adminHeaders() });
+async function loadAdminInbox() {
+  const list = document.getElementById("admin-inbox-list");
+  const finishLoading = !adminInboxLoaded ? beginAdminSkeleton(list, 3) : () => {};
+  const load = async (path, errorCode) => {
+    const response = await fetch(path, { headers: adminHeaders() });
     const result = await readApiResponse(response);
-    if (!response.ok) throw new Error(result.error || "SUGGESTION_STORAGE_UNAVAILABLE");
-    adminSuggestions = result;
-    adminSuggestionsError = false;
+    if (!response.ok) throw new Error(result.error || errorCode);
     return result;
-  } catch (error) {
-    adminSuggestionsError = true;
-    throw error;
-  } finally {
-    adminSuggestionsLoaded = true;
-    finishLoading();
-    renderAdminSuggestions();
-  }
-}
-async function loadAdminRequests() {
-  const list = document.getElementById("admin-requests-list");
-  const finishLoading = !adminRequestsHasLoaded ? beginAdminSkeleton(list, 2) : () => {};
+  };
   try {
-    const response = await fetch("/api/admin/requests", { headers: adminHeaders() });
-    const result = await readApiResponse(response);
-    if (!response.ok) throw new Error(result.error || "REQUEST_STORAGE_UNAVAILABLE");
-    adminRequestsCache = result;
-    adminRequestsLoadError = false;
-    return result;
+    const [suggestions, requests] = await Promise.allSettled([
+      load("/api/admin/suggestions", "SUGGESTION_STORAGE_UNAVAILABLE"),
+      load("/api/admin/requests", "REQUEST_STORAGE_UNAVAILABLE"),
+    ]);
+    adminSuggestionsError = suggestions.status === "rejected";
+    adminRequestsLoadError = requests.status === "rejected";
+    if (suggestions.status === "fulfilled") adminSuggestions = suggestions.value;
+    if (requests.status === "fulfilled") adminRequestsCache = requests.value;
+    if (adminSuggestionsError || adminRequestsLoadError) {
+      throw new Error("ADMIN_INBOX_PARTIAL_FAILURE");
+    }
   } finally {
-    adminRequestsHasLoaded = true;
+    adminInboxLoaded = true;
     finishLoading();
-    renderAdminRequests();
+    renderAdminInbox();
   }
 }
 function bindAdminKeyFilters() {
@@ -161,7 +155,7 @@ function renderAdminKeyStats(keys) {
   const expired = keys.filter(key => !key.permanent && (key.archived || (!key.waitingForFirstUse && key.remainingMs <= 0))).length;
   stats.innerHTML = `<div class="glass-card rounded-xl p-3"><small>${t("admin_stat_total")}</small><strong>${keys.length}</strong></div><div class="glass-card rounded-xl p-3"><small>${t("admin_stat_used")}</small><strong>${keys.filter(key => key.user).length}</strong></div><div class="glass-card rounded-xl p-3"><small>${t("admin_stat_active")}</small><strong>${active}</strong></div><div class="glass-card rounded-xl p-3"><small>${t("admin_stat_expired")}</small><strong>${expired}</strong></div>`;
 }
-window.refreshAdminKeyTranslations = () => { renderAdminKeyList(adminKeysCache); if (!adminKeysLoadError) renderAdminKeyStats(adminKeysCache); renderAdminRequests(); renderAdminSuggestions(); };
+window.refreshAdminKeyTranslations = () => { renderAdminKeyList(adminKeysCache); if (!adminKeysLoadError) renderAdminKeyStats(adminKeysCache); renderAdminInbox(); };
 async function loadAdminKeys() {
   const list = document.getElementById("admin-key-list");
   const stats = document.getElementById("admin-key-stats");
@@ -215,18 +209,15 @@ document.addEventListener("DOMContentLoaded", () => {
   enableAdminUi();
   const refresh = () => loadAdminKeys().catch(error => toast(error.message, "error"));
   document.querySelectorAll("[data-admin-tab]").forEach(button => button.addEventListener("click", () => {
-    const suggestionsSelected = button.dataset.adminTab === "suggestions";
-    document.getElementById("admin-keys-panel")?.classList.toggle("hidden", suggestionsSelected);
-    document.getElementById("admin-suggestions-panel")?.classList.toggle("hidden", !suggestionsSelected);
+    const inboxSelected = button.dataset.adminTab === "inbox";
+    document.getElementById("admin-keys-panel")?.classList.toggle("hidden", inboxSelected);
+    document.getElementById("admin-inbox-panel")?.classList.toggle("hidden", !inboxSelected);
     document.querySelectorAll("[data-admin-tab]").forEach(tab => {
       const selected = tab === button;
       tab.classList.toggle("is-active", selected);
       tab.setAttribute("aria-selected", String(selected));
     });
-    if (suggestionsSelected) {
-      loadAdminSuggestions().catch(error => console.error("Could not load site suggestions:", error));
-      loadAdminRequests().catch(error => { console.error("Could not load admin requests:", error); adminRequestsLoadError = true; renderAdminRequests(); });
-    }
+    if (inboxSelected) loadAdminInbox().catch(error => console.error("Could not load Admin inbox:", error));
   }));
   document.getElementById("admin-key-form")?.addEventListener("submit", async event => { event.preventDefault(); try { const response = await fetch("/api/admin/keys", { method: "POST", headers: adminHeaders(), body: JSON.stringify({ hours: Number(document.getElementById("admin-hours").value), permanent: document.getElementById("admin-permanent").checked, admin: document.getElementById("admin-key-is-admin").checked }) }); const result = await readApiResponse(response); if (!response.ok) throw new Error(result.error); const output = document.getElementById("admin-generated-key"); const copyButton = document.getElementById("copy-generated-key"); output.textContent = result.value; output.classList.remove("hidden"); copyButton.dataset.copyKey = result.value; copyButton.classList.remove("hidden"); refresh(); } catch (error) { toast(`${t("admin_key_create_failed")}: ${error.message}`, "error"); } });
   document.getElementById("copy-generated-key")?.addEventListener("click", async event => { if (await copyText(event.currentTarget.dataset.copyKey)) { event.currentTarget.textContent = t("admin_copied"); setTimeout(() => { event.currentTarget.textContent = t("admin_copy"); }, 1600); } });
@@ -246,7 +237,7 @@ document.addEventListener("DOMContentLoaded", () => {
     if (!button) return;
     if (await copyText(button.dataset.copyKey)) { button.textContent = t("admin_copied"); setTimeout(() => { button.textContent = t("admin_copy"); }, 1600); }
   });
-  document.getElementById("admin-suggestions-list")?.addEventListener("click", event => {
+  document.getElementById("admin-inbox-list")?.addEventListener("click", event => {
     const button = event.target.closest("[data-delete-suggestion]");
     if (!button) return;
     confirmDialog(t("admin_suggestion_delete_confirm"), async () => {
@@ -256,7 +247,7 @@ document.addEventListener("DOMContentLoaded", () => {
         const result = await readApiResponse(response);
         if (!response.ok) throw new Error(result.error || "SUGGESTION_DELETE_FAILED");
         adminSuggestions = adminSuggestions.filter(item => item.id !== button.dataset.deleteSuggestion);
-        renderAdminSuggestions();
+        renderAdminInbox();
       } catch (error) {
         console.error("Could not delete site suggestion:", error);
         toast(t("admin_suggestion_delete_failed"), "error");

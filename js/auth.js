@@ -138,6 +138,7 @@ document.addEventListener("DOMContentLoaded", () => {
       if (!response.ok) throw new Error(t("auth_identity_unlink_failed"));
       await refreshIdentitySettings();
       await window.refreshUserProfile?.();
+      await window.refreshSupportRequestStatus?.();
     } catch (error) { toast(error.message, "error"); }
   }));
   githubButton?.addEventListener("click", () => { location.href = "/api/auth/github"; });

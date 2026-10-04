@@ -527,6 +527,7 @@ const server = http.createServer(async (request, response) => {
     if (!session?.keyId || session.admin) return json(response, 401, { error: "ACTIVE_KEY_LOGIN_REQUIRED" });
     try {
       if (!(await sessionHasActiveKey(session))) return json(response, 401, { error: "ACTIVE_KEY_LOGIN_REQUIRED" });
+      if (!(await verifiedIdentityForKey(session.keyId))) return json(response, 403, { error: "VERIFIED_IDENTITY_REQUIRED" });
       const requestDate = bangkokDate();
       const rows = SUPABASE_ENABLED
         ? await supabaseRequest("support_requests", "GET", `owner_id=eq.${encodeURIComponent(session.keyId)}&request_date=eq.${requestDate}&select=id,created_at`)
@@ -539,6 +540,8 @@ const server = http.createServer(async (request, response) => {
     if (!session?.keyId || session.admin) return json(response, 401, { error: "ACTIVE_KEY_LOGIN_REQUIRED" });
     try {
       if (!(await sessionHasActiveKey(session))) return json(response, 401, { error: "ACTIVE_KEY_LOGIN_REQUIRED" });
+      const identity = await verifiedIdentityForKey(session.keyId);
+      if (!identity) return json(response, 403, { error: "VERIFIED_IDENTITY_REQUIRED" });
       let body;
       try { body = await requestBody(request, 10000); }
       catch (error) { return json(response, error.message === "payload too large" ? 413 : 400, { error: error.message === "payload too large" ? "REQUEST_TOO_LARGE" : "INVALID_JSON" }); }
@@ -572,7 +575,7 @@ const server = http.createServer(async (request, response) => {
         const owner = data.users.find(user => user.keyId === keyId);
         const identity = data.identities.find(entry => entry.originalKeyId === keyId || entry.ownerId === owner?.id);
         const key = data.keys.find(entry => entry.id === keyId);
-        return { id: item.id, owner: identity?.displayName || owner?.name || (key ? `Key ${String(key.id).slice(0, 8)}` : item.owner_id || item.ownerId), message: item.message, status: item.status, requestDate: item.request_date || item.requestDate, createdAt: item.created_at || item.createdAt };
+        return { id: item.id, owner: identity?.displayName || owner?.name || (key ? `Key ${String(key.id).slice(0, 8)}` : item.owner_id || item.ownerId), provider: identity?.provider || null, avatarUrl: identity?.avatarUrl || "", message: item.message, status: item.status, requestDate: item.request_date || item.requestDate, createdAt: item.created_at || item.createdAt };
       }));
     } catch (error) { console.error("Could not load admin support requests:", error.message); return json(response, 503, { error: "REQUEST_STORAGE_UNAVAILABLE" }); }
   }

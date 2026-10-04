@@ -404,9 +404,15 @@ html.light .nav-active { color: #312e81; }
 .dashboard-bento-wide { grid-column: span 2; }
 .dashboard-bento-hero #stat-total-sales { font-size: clamp(1.75rem, 5vw, 2.75rem); }
 .profile-avatar-wrap { position: relative; width: 4.5rem; height: 4.5rem; flex: 0 0 auto; overflow: visible; border-radius: 50%; }
-#user-profile-section, #admin-suggestions-panel .glass-card { background: var(--bg); }
+#user-profile-section, #admin-inbox-panel .glass-card { background: var(--bg); }
 .profile-avatar, .profile-avatar-fallback { width: 100%; height: 100%; border: 1px solid var(--border); border-radius: 50%; object-fit: cover; background: rgba(148,163,184,.12); }
 .profile-avatar-fallback { display: grid; place-items: center; font-size: 1.7rem; }
+.profile-file-input { min-height: 2.8rem; padding: .35rem; border: 1px solid var(--border); border-radius: .75rem; background: linear-gradient(145deg, rgba(30,35,60,.92), rgba(15,23,42,.78)); box-shadow: inset 0 1px rgba(255,255,255,.06), 0 8px 20px rgba(0,0,0,.16); color: var(--text); }
+html.light .profile-file-input { background: linear-gradient(145deg, rgba(255,255,255,.96), rgba(226,232,240,.88)); }
+.profile-file-input::file-selector-button { margin-right: .75rem; padding: .45rem .75rem; border: 1px solid rgba(249,115,22,.5); border-radius: .55rem; background: linear-gradient(135deg, #f97316, #c2410c); box-shadow: 0 3px 10px rgba(249,115,22,.22); color: #fff; font: inherit; font-weight: 700; cursor: pointer; }
+.profile-file-input::-webkit-file-upload-button { margin-right: .75rem; padding: .45rem .75rem; border: 1px solid rgba(249,115,22,.5); border-radius: .55rem; background: linear-gradient(135deg, #f97316, #c2410c); box-shadow: 0 3px 10px rgba(249,115,22,.22); color: #fff; font: inherit; font-weight: 700; cursor: pointer; }
+.profile-file-input::file-selector-button:hover { background: linear-gradient(135deg, #fb923c, #ea580c); }
+.profile-file-input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 .presence-dot { position: absolute; right: 0; bottom: 0; display: grid; width: 1rem; height: 1rem; place-items: center; border: 2px solid var(--bg); border-radius: 50%; background: #64748b; }
 .presence-dot.is-online { background: #22c55e; }
 .presence-dot.is-offline { background: #64748b; }
@@ -421,6 +427,7 @@ html.light .nav-active { color: #312e81; }
 .admin-suggestion-avatar { width: 2.5rem; height: 2.5rem; flex: 0 0 auto; border: 1px solid var(--border); border-radius: 50%; object-fit: cover; background: rgba(148,163,184,.12); }
 .admin-suggestion-avatar-wrap { width: 2.5rem; height: 2.5rem; flex: 0 0 auto; }
 .admin-suggestion-avatar-wrap .presence-dot { right: -2px; bottom: -2px; }
+.admin-inbox-type { display: inline-flex; align-items: center; width: fit-content; padding: .2rem .55rem; border: 1px solid rgba(249,115,22,.28); border-radius: 999px; background: rgba(249,115,22,.1); color: var(--accent-soft); font-size: .7rem; font-weight: 700; }
 .site-suggestion-dialog { position: fixed; inset: 0; width: 100%; height: 100%; max-width: none; max-height: none; margin: 0; padding: 1rem; place-items: center; overflow: hidden; overscroll-behavior: contain; border: 0; color: var(--text); background: transparent; }
 .site-suggestion-dialog[open] { display: grid; animation: dialog-enter .18s ease-out both; }
 .site-suggestion-dialog::backdrop { background: rgba(2,6,23,.62); -webkit-backdrop-filter: blur(5px); backdrop-filter: blur(5px); transition: background-color .18s ease, backdrop-filter .18s ease; }

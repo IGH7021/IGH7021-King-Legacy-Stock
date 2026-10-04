@@ -1,6 +1,7 @@
 let supportRequestSubmitted = null;
 let supportRequestLoading = false;
 let supportRequestStatusKey = "request_available";
+let supportRequestVerified = false;
 
 function renderSupportRequestStatus(messageKey = null) {
   const status = document.getElementById("support-request-status");
@@ -9,8 +10,8 @@ function renderSupportRequestStatus(messageKey = null) {
   if (messageKey) supportRequestStatusKey = messageKey;
   else if (supportRequestSubmitted !== null) supportRequestStatusKey = supportRequestSubmitted ? "request_submitted_today" : "request_available";
   if (status) status.textContent = t(supportRequestStatusKey);
-  if (form) form.classList.toggle("hidden", supportRequestSubmitted === true);
-  if (submit) submit.disabled = supportRequestLoading || supportRequestSubmitted === true;
+  if (form) form.classList.toggle("hidden", !supportRequestVerified || supportRequestSubmitted === true);
+  if (submit) submit.disabled = !supportRequestVerified || supportRequestLoading || supportRequestSubmitted === true;
 }
 
 async function refreshSupportRequestStatus() {
@@ -21,7 +22,15 @@ async function refreshSupportRequestStatus() {
   if (!section) return;
   section.classList.toggle("hidden", !token || token === "demo" || !hasKey || isAdmin);
   if (!token || token === "demo" || !hasKey || isAdmin) return;
+  supportRequestVerified = false;
+  supportRequestSubmitted = null;
+  renderSupportRequestStatus("request_verify_first");
   try {
+    const profileResponse = await fetch("/api/profile", { headers: { Authorization: `Bearer ${token}` } });
+    const profile = await readApiResponse(profileResponse);
+    if (!profileResponse.ok) throw new Error(profile.error || "PROFILE_LOAD_FAILED");
+    if (!profile.verified) return;
+    supportRequestVerified = true;
     const response = await fetch("/api/requests", { headers: { Authorization: `Bearer ${token}` } });
     const result = await readApiResponse(response);
     if (!response.ok) throw new Error(result.error || "REQUEST_STORAGE_UNAVAILABLE");
@@ -29,7 +38,8 @@ async function refreshSupportRequestStatus() {
     renderSupportRequestStatus();
   } catch (error) {
     console.error("Could not load daily request status:", error);
-    renderSupportRequestStatus(error.message === "ACTIVE_KEY_LOGIN_REQUIRED" ? "request_login_required" : "request_status_failed");
+    if (error.message === "VERIFIED_IDENTITY_REQUIRED") supportRequestVerified = false;
+    renderSupportRequestStatus(error.message === "VERIFIED_IDENTITY_REQUIRED" ? "request_verify_first" : error.message === "ACTIVE_KEY_LOGIN_REQUIRED" ? "request_login_required" : "request_status_failed");
   }
 }
 window.refreshSupportRequestStatus = refreshSupportRequestStatus;
@@ -47,6 +57,10 @@ document.addEventListener("DOMContentLoaded", () => {
   input?.addEventListener("input", renderSupportRequestCount);
   form?.addEventListener("submit", async event => {
     event.preventDefault();
+    if (!supportRequestVerified) {
+      renderSupportRequestStatus("request_verify_first");
+      return;
+    }
     if (!input || input.value.trim().length < 3 || input.value.trim().length > 1000) {
       renderSupportRequestStatus("request_invalid");
       return;
@@ -77,11 +91,12 @@ document.addEventListener("DOMContentLoaded", () => {
       toast(t("request_sent"));
     } catch (error) {
       console.error("Could not submit support request:", error);
-      const message = error.message === "INVALID_REQUEST_MESSAGE" ? "request_invalid" : error.message === "ACTIVE_KEY_LOGIN_REQUIRED" ? "request_login_required" : "request_submit_failed";
+      if (error.message === "VERIFIED_IDENTITY_REQUIRED") supportRequestVerified = false;
+      const message = error.message === "INVALID_REQUEST_MESSAGE" ? "request_invalid" : error.message === "VERIFIED_IDENTITY_REQUIRED" ? "request_verify_first" : error.message === "ACTIVE_KEY_LOGIN_REQUIRED" ? "request_login_required" : "request_submit_failed";
       renderSupportRequestStatus(message);
     } finally {
       supportRequestLoading = false;
-      if (button) button.disabled = supportRequestSubmitted === true;
+      if (button) button.disabled = !supportRequestVerified || supportRequestSubmitted === true;
     }
   });
   renderSupportRequestCount();
