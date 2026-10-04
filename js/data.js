@@ -1,8 +1,13 @@
 const STORAGE_KEY = "igh_kinglegacy_state";
 const THEME_KEY = "igh_theme";
 const LANG_KEY = "igh_lang";
-const APP_VERSION = "V.4.40";
+const APP_VERSION = "V.4.41";
 const APP_CHANGELOG = [
+  { version: "V.4.41", updatedAt: "2026-10-04T20:21:41.870Z", changes: [
+    "ปรับขนาดปุ่มโปรไฟล์มุมขวาบนให้กะทัดรัดและเหมาะกับหน้าจอมือถือ"
+  ], changesEn: [
+    "Refined the upper-right profile shortcut sizing for compact mobile layouts"
+  ] },
   { version: "V.4.40", updatedAt: "2026-10-04T20:14:41.892Z", changes: [
     "เพิ่มตัวนับเวลารอก่อนส่งคำขอถึงแอดมินได้อีกครั้ง และย้ายทางลัดโปรไฟล์ไว้ด้านขวาบนพร้อมย้ายตัวเลือกภาษาและธีมเข้าเมนูตั้งค่า"
   ], changesEn: [
