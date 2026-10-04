@@ -344,7 +344,7 @@ function handleBulkEditSubmit(e) {
 
   const btn = f.querySelector("button[type=submit]");
   const original = btn.innerHTML;
-  btn.disabled = true; btn.innerHTML = `<span class="spinner"></span> ...`;
+  btn.disabled = true; btn.innerHTML = `<span class="inline-flex items-center gap-2" role="status"><span class="spinner" aria-hidden="true"></span><span class="sr-only">${t("loading")}</span></span>`;
 
   setTimeout(() => {
     let count = 0;
@@ -412,7 +412,7 @@ function handleProductFormSubmit(e) {
   const submitBtn = f.querySelector("button[type=submit]");
   const originalLabel = submitBtn.innerHTML;
   submitBtn.disabled = true;
-  submitBtn.innerHTML = `<span class="spinner"></span> ...`;
+  submitBtn.innerHTML = `<span class="inline-flex items-center gap-2" role="status"><span class="spinner" aria-hidden="true"></span><span class="sr-only">${t("loading")}</span></span>`;
 
   setTimeout(() => {
     const name = f.name.value.trim();

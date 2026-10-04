@@ -1,15 +1,16 @@
 const AUTH_TOKEN_KEY = "igh_kinglegacy_auth_token";
 const AUTH_KEY_KEY = "igh_kinglegacy_auth_key";
 let pendingAuthKey = "";
+let keyStatusTimer = null;
 const authApi = path => fetch(path, { headers: { "Content-Type": "application/json" } });
 async function readApiResponse(response) {
   const text = await response.text();
   try { return text ? JSON.parse(text) : {}; }
-  catch (error) { throw new Error(location.protocol === "file:" ? "กรุณาเปิดเว็บผ่าน Node.js Server ด้วยคำสั่ง npm start" : "Server ตอบกลับไม่ถูกต้อง"); }
+  catch (error) { throw new Error(location.protocol === "file:" ? t("auth_local_server_required") : t("auth_server_response_invalid")); }
 }
 async function postAuth(path, body) {
   try { return await fetch(path, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) }); }
-  catch (error) { throw new Error("เชื่อมต่อ Server ไม่ได้ กรุณาเปิดเว็บผ่าน http://localhost:3000"); }
+  catch (error) { throw new Error(t("auth_server_unavailable")); }
 }
 
 function authMessage(message, error = true) {
@@ -32,6 +33,8 @@ function openApp(result) {
   startKeyStatus(result.expiresAt);
   window.updateKeySettings?.(result);
   window.refreshIdentitySettings?.();
+  window.refreshUserProfile?.();
+  window.refreshSupportRequestStatus?.();
   window.activateUserState?.(result.ownerId || result.user?.id || result.keyId || "guest");
   if (result.admin && sessionStorage.getItem("igh_pending_admin_route") === "1") {
     sessionStorage.removeItem("igh_pending_admin_route");
@@ -39,20 +42,25 @@ function openApp(result) {
   }
 }
 function startKeyStatus(expiresAt) {
+  clearInterval(keyStatusTimer);
   const expiry = Number(expiresAt || localStorage.getItem("igh_kinglegacy_expires_at"));
   const isAdmin = localStorage.getItem("igh_kinglegacy_is_admin") === "1";
   if (!expiry && !isAdmin) return;
-  let timer;
   const update = () => {
     const remaining = expiry ? Math.max(0, expiry - Date.now()) : null;
     const seconds = Math.floor(remaining / 1000);
-    const label = remaining === null ? "อันลิมิต" : seconds >= 3600 ? `${Math.floor(seconds / 3600)} ชั่วโมง ${Math.floor(seconds % 3600 / 60)} นาที` : `${Math.floor(seconds / 60)} นาที ${seconds % 60} วินาที`;
-    document.querySelectorAll(".key-status").forEach(el => { el.textContent = isAdmin ? "Admin • อันลิมิต" : `คีย์เหลือ ${label}`; el.classList.remove("hidden"); });
-    if (remaining === 0) clearInterval(timer);
+    const label = remaining === null ? t("key_time_unlimited") : seconds >= 3600 ? t("key_time_hours_minutes", { h: Math.floor(seconds / 3600), m: Math.floor(seconds % 3600 / 60) }) : t("key_time_minutes_seconds", { m: Math.floor(seconds / 60), s: seconds % 60 });
+    document.querySelectorAll(".key-status").forEach(el => { el.textContent = isAdmin ? t("key_status_admin") : t("key_status_remaining", { time: label }); el.classList.remove("hidden"); });
+    if (remaining === 0) clearInterval(keyStatusTimer);
   };
   update();
-  if (expiry) timer = setInterval(update, 1000);
+  if (expiry) keyStatusTimer = setInterval(update, 1000);
 }
+window.refreshAuthTranslations = () => {
+  updateKeySettings({ expiresAt: Number(localStorage.getItem("igh_kinglegacy_expires_at")) || null, admin: localStorage.getItem("igh_kinglegacy_is_admin") === "1" });
+  startKeyStatus(Number(localStorage.getItem("igh_kinglegacy_expires_at")) || null);
+  refreshIdentitySettings();
+};
 async function refreshIdentitySettings() {
   const panel = document.getElementById("identity-verification-settings");
   if (!panel) return;
@@ -64,16 +72,16 @@ async function refreshIdentitySettings() {
   let identities;
   try {
     const configResponse = await fetch("/api/config");
-    if (!configResponse.ok) throw new Error("โหลดการตั้งค่าผู้ให้บริการยืนยันตัวตนไม่สำเร็จ");
+    if (!configResponse.ok) throw new Error(t("auth_identity_load_provider_failed"));
     config = await configResponse.json();
     const response = await fetch("/api/auth/identities", { headers: { Authorization: `Bearer ${localStorage.getItem(AUTH_TOKEN_KEY) || ""}` } });
-    if (!response.ok) throw new Error("โหลดข้อมูลการยืนยันตัวตนไม่สำเร็จ");
+    if (!response.ok) throw new Error(t("auth_identity_load_failed"));
     identities = await response.json();
   } catch (error) {
     console.error("Could not refresh identity verification settings:", error);
     ["google", "discord"].forEach(provider => {
       const status = document.getElementById(`${provider}-identity-status`);
-      if (status) status.textContent = "โหลดสถานะไม่สำเร็จ กรุณาลองใหม่";
+      if (status) status.textContent = t("identity_check_failed");
     });
     return;
   }
@@ -83,10 +91,10 @@ async function refreshIdentitySettings() {
     const verifyButton = document.querySelector(`[data-identity-verify="${provider}"]`);
     const unlinkButton = document.querySelector(`[data-identity-unlink="${provider}"]`);
     const configured = Boolean(config[`${provider}Configured`]);
-    if (status) status.textContent = linked ? `ยืนยันแล้ว: ${linked.displayName}` : configured ? "ยังไม่ได้ยืนยัน" : "ยังไม่ได้ตั้งค่า OAuth ของผู้ให้บริการนี้";
+    if (status) status.textContent = linked ? t("identity_verified_name", { name: linked.displayName }) : configured ? t("identity_not_verified") : t("identity_config_failed");
     if (verifyButton) {
       verifyButton.disabled = !configured || Boolean(linked);
-      verifyButton.title = configured ? "" : "ผู้ดูแลระบบต้องตั้งค่า OAuth credentials ก่อน";
+      verifyButton.title = configured ? "" : t("identity_admin_setup");
     }
     unlinkButton?.classList.toggle("hidden", !linked);
   });
@@ -98,18 +106,18 @@ function showAdminView() {
 document.addEventListener("DOMContentLoaded", () => {
   const gate = document.getElementById("auth-gate");
   const githubButton = document.getElementById("github-admin-login");
-  fetch("/api/config").then(response => response.json()).then(config => githubButton?.classList.toggle("hidden", !config.githubConfigured)).catch(() => {});
+  fetch("/api/config").then(response => response.json()).then(config => githubButton?.classList.toggle("hidden", !config.githubConfigured)).catch(error => console.error("Could not load authentication configuration:", error));
   const identityResult = new URLSearchParams(location.search).get("identity");
   if (identityResult) {
-    const messages = { verified: "ยืนยันตัวตนสำเร็จ", failed: "ยืนยันตัวตนไม่สำเร็จ กรุณาลองใหม่", conflict: "บัญชีนี้หรือคีย์นี้ผูกกับผู้ให้บริการอื่นแล้ว", "key-expired": "คีย์หมดอายุแล้ว ไม่สามารถยืนยันตัวตนได้" };
+    const messages = { verified: t("identity_result_verified"), failed: t("identity_result_failed"), conflict: t("identity_result_conflict"), "key-expired": t("identity_result_expired") };
     const notice = document.getElementById("identity-verification-result");
     if (notice) {
-      notice.textContent = messages[identityResult] || "ยืนยันตัวตนไม่สำเร็จ กรุณาลองใหม่";
+      notice.textContent = messages[identityResult] || t("identity_result_failed");
       notice.classList.remove("hidden");
       notice.classList.toggle("text-rose-300", identityResult !== "verified");
       notice.classList.toggle("text-emerald-300", identityResult === "verified");
     } else {
-      authMessage(messages[identityResult] || "ยืนยันตัวตนไม่สำเร็จ กรุณาลองใหม่", identityResult !== "verified");
+      authMessage(messages[identityResult] || t("identity_result_failed"), identityResult !== "verified");
     }
     history.replaceState({}, "", location.pathname);
   }
@@ -119,7 +127,7 @@ document.addEventListener("DOMContentLoaded", () => {
     try {
       const response = await fetch(`/api/auth/${provider}/verify`, { method: "POST", headers: { Authorization: `Bearer ${localStorage.getItem(AUTH_TOKEN_KEY) || ""}` } });
       const result = await readApiResponse(response);
-      if (!response.ok) throw new Error(result.error === "IDENTITY_PROVIDER_NOT_CONFIGURED" ? "ผู้ให้บริการนี้ยังตั้งค่าไม่ครบ" : "ไม่สามารถเริ่มยืนยันตัวตนได้");
+      if (!response.ok) throw new Error(result.error === "IDENTITY_PROVIDER_NOT_CONFIGURED" ? t("auth_identity_provider_unconfigured") : t("auth_identity_start_failed"));
       location.href = result.url;
     } catch (error) { authMessage(error.message); button.disabled = false; }
   }));
@@ -127,35 +135,36 @@ document.addEventListener("DOMContentLoaded", () => {
     const provider = button.dataset.identityUnlink;
     try {
       const response = await fetch(`/api/auth/${provider}/verify`, { method: "DELETE", headers: { Authorization: `Bearer ${localStorage.getItem(AUTH_TOKEN_KEY) || ""}` } });
-      if (!response.ok) throw new Error("ยกเลิกการยืนยันตัวตนไม่สำเร็จ");
+      if (!response.ok) throw new Error(t("auth_identity_unlink_failed"));
       await refreshIdentitySettings();
+      await window.refreshUserProfile?.();
     } catch (error) { toast(error.message, "error"); }
   }));
   githubButton?.addEventListener("click", () => { location.href = "/api/auth/github"; });
   if (new URLSearchParams(location.search).get("github") === "success") {
     fetch("/api/auth/session", { credentials: "same-origin" }).then(async response => {
       const result = await readApiResponse(response);
-      if (!response.ok || !result.admin) throw new Error("ไม่สามารถยืนยันบัญชีผู้ดูแล GitHub ได้");
+      if (!response.ok || !result.admin) throw new Error(t("auth_github_confirm_failed"));
       pendingAuthKey = ""; openApp(result); history.replaceState({}, "", location.pathname);
     }).catch(error => authMessage(error.message));
   }
-  if (new URLSearchParams(location.search).get("github") === "failed") authMessage("เข้าสู่ระบบ GitHub ไม่สำเร็จ หรือบัญชีนี้ไม่ได้รับอนุญาต");
+  if (new URLSearchParams(location.search).get("github") === "failed") authMessage(t("auth_github_failed"));
   document.getElementById("signup-password-toggle")?.addEventListener("click", event => {
     const input = document.getElementById("signup-password");
     const visible = input.type === "text";
     input.type = visible ? "password" : "text";
-    event.currentTarget.textContent = visible ? "แสดง" : "ซ่อน";
-    event.currentTarget.setAttribute("aria-label", visible ? "Show password" : "Hide password");
+    event.currentTarget.textContent = visible ? t("auth_github_password_show") : t("auth_github_password_hide");
+    event.currentTarget.setAttribute("aria-label", visible ? t("auth_github_password_show") : t("auth_github_password_hide"));
   });
   document.getElementById("auth-key-form").addEventListener("submit", async event => {
     event.preventDefault(); pendingAuthKey = document.getElementById("auth-key").value.trim();
     try {
       const response = await postAuth("/api/auth/key", { key: pendingAuthKey });
       const result = await readApiResponse(response);
-      if (!response.ok) throw new Error(result.error === "KEY_INVALID_OR_EXPIRED" ? "ไม่พบคีย์หรือคีย์หมดอายุ" : "ตรวจสอบคีย์ไม่สำเร็จ");
+      if (!response.ok) throw new Error(result.error === "KEY_INVALID_OR_EXPIRED" ? t("auth_key_invalid") : t("auth_key_check_failed"));
       const login = await postAuth("/api/auth/login", { key: pendingAuthKey });
       const loginResult = await readApiResponse(login);
-      if (!login.ok) throw new Error("ไม่สามารถเข้าสู่ระบบได้");
+      if (!login.ok) throw new Error(t("auth_login_failed"));
       openApp(loginResult);
     } catch (error) { authMessage(error.message); }
   });

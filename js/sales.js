@@ -174,7 +174,7 @@ function handleSaleSubmit(e) {
   if (!p || qty <= 0 || qty > remaining(p)) { toast(t("toast_insufficient_stock"), "error"); return; }
 
   const original = btn.innerHTML;
-  btn.disabled = true; btn.innerHTML = `<span class="spinner"></span> ...`;
+  btn.disabled = true; btn.innerHTML = `<span class="inline-flex items-center gap-2" role="status"><span class="spinner" aria-hidden="true"></span><span class="sr-only">${t("loading")}</span></span>`;
 
   setTimeout(() => {
     const rememberRate = document.getElementById("remember-rate-checkbox").checked;

@@ -9,8 +9,9 @@ function updateKeySettings(result = {}) {
   panel.classList.toggle("hidden", isAdmin);
   panel.dataset.key = key;
   value.textContent = "•".repeat(Math.min(24, Math.max(8, key.length)));
-  expiry.textContent = result.expiresAt ? `กำลังใช้งาน • หมดอายุ ${new Date(result.expiresAt).toLocaleString("th-TH")}` : "กำลังใช้งาน • อันลิมิต";
-  if (toggle) toggle.textContent = "แสดงคีย์";
+  const locale = currentLang === "th" ? "th-TH" : "en-US";
+  expiry.textContent = result.expiresAt ? t("key_active_expires", { date: new Date(result.expiresAt).toLocaleString(locale) }) : t("key_active_unlimited");
+  if (toggle) toggle.textContent = toggle.dataset.showing === "true" ? t("key_hide") : t("key_show");
 }
 
 function applyTheme(theme) {
@@ -18,14 +19,11 @@ function applyTheme(theme) {
   localStorage.setItem(THEME_KEY, theme);
 }
 
-function initSkeleton(cb) {
-  const skel = document.getElementById("app-skeleton");
+function initializeApp(cb) {
   const app = document.getElementById("app-root");
-  setTimeout(() => {
-    skel.classList.add("hidden");
-    app.classList.remove("hidden");
-    cb();
-  }, 350);
+  app.classList.remove("hidden");
+  cb();
+  app.setAttribute("aria-busy", "false");
 }
 
 function initFloatingProducts() {
@@ -61,7 +59,9 @@ function initFloatingProducts() {
 
 function renderSettings() {
   document.getElementById("app-version").textContent = APP_VERSION;
-  document.getElementById("stock-alert-slider").value = state.settings.stockAlert;
+  const stockAlertSlider = document.getElementById("stock-alert-slider");
+  stockAlertSlider.value = state.settings.stockAlert;
+  updateStockAlertSliderProgress(stockAlertSlider);
   document.getElementById("stock-alert-value").textContent = state.settings.stockAlert;
   const catList = document.getElementById("settings-category-list");
   catList.innerHTML = state.settings.categories.map(c => `
@@ -69,6 +69,14 @@ function renderSettings() {
       ${c}
       <button data-cat="${c}" class="remove-cat-btn text-slate-400 hover:text-rose-400" aria-label="${t('aria_delete')}">×</button>
     </span>`).join("");
+}
+
+function updateStockAlertSliderProgress(slider) {
+  const min = Number(slider.min) || 0;
+  const max = Number(slider.max);
+  const value = Number(slider.value);
+  const progress = max > min ? Math.min(100, Math.max(0, ((value - min) / (max - min)) * 100)) : 0;
+  slider.style.setProperty("--slider-progress", `${progress}%`);
 }
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -85,14 +93,14 @@ document.addEventListener("DOMContentLoaded", () => {
     const showing = event.currentTarget.dataset.showing === "true";
     value.textContent = showing ? "•".repeat(Math.min(24, Math.max(8, key.length))) : key;
     event.currentTarget.dataset.showing = String(!showing);
-    event.currentTarget.textContent = showing ? "แสดงคีย์" : "ซ่อนคีย์";
+    event.currentTarget.textContent = showing ? t("key_show") : t("key_hide");
   });
   document.getElementById("copy-current-key")?.addEventListener("click", async event => {
     const key = document.getElementById("user-key-settings")?.dataset.key || localStorage.getItem(AUTH_KEY_KEY) || "";
-    if (await copyText(key)) { event.currentTarget.textContent = "คัดลอกแล้ว"; setTimeout(() => { event.currentTarget.textContent = "คัดลอก"; }, 1600); }
+    if (await copyText(key)) { event.currentTarget.textContent = t("admin_copied"); setTimeout(() => { event.currentTarget.textContent = t("admin_copy"); }, 1600); }
   });
 
-  initSkeleton(() => {
+  initializeApp(() => {
     renderProducts();
     renderCrafting();
     renderSalesHistory();
@@ -102,7 +110,7 @@ document.addEventListener("DOMContentLoaded", () => {
     showPage(pageFromLocation(), false);
   });
 
-  // Navigation (sidebar + bottom nav)
+  // App-wide navigation drawer
   document.querySelectorAll("[data-nav]").forEach(el => {
     el.addEventListener("click", () => { showPage(el.dataset.nav); closeMobileDrawer(); });
   });
@@ -114,6 +122,23 @@ document.addEventListener("DOMContentLoaded", () => {
   menuButton?.addEventListener("click", openMobileDrawer);
   closeButton?.addEventListener("click", closeMobileDrawer);
   scrim?.addEventListener("click", closeMobileDrawer);
+  document.addEventListener("keydown", event => {
+    const drawer = document.getElementById("mobile-nav-drawer");
+    if (!drawer?.classList.contains("nav-drawer-open")) return;
+    if (event.key === "Escape") {
+      event.preventDefault();
+      closeMobileDrawer();
+      return;
+    }
+    if (event.key !== "Tab") return;
+    const focusable = [...drawer.querySelectorAll('button:not([disabled]):not(.hidden), a[href], [tabindex]:not([tabindex="-1"])')]
+      .filter(element => element.getClientRects().length > 0);
+    if (!focusable.length) { event.preventDefault(); drawer.focus(); return; }
+    const first = focusable[0];
+    const last = focusable[focusable.length - 1];
+    if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last.focus(); }
+    else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus(); }
+  });
 
   // Theme toggle
   document.querySelectorAll(".theme-toggle-btn").forEach(btn => {
@@ -138,6 +163,7 @@ document.addEventListener("DOMContentLoaded", () => {
   // Settings: stock alert slider
   const slider = document.getElementById("stock-alert-slider");
   slider.addEventListener("input", (e) => {
+    updateStockAlertSliderProgress(e.currentTarget);
     document.getElementById("stock-alert-value").textContent = e.target.value;
   });
   slider.addEventListener("change", (e) => {
@@ -187,20 +213,48 @@ document.addEventListener("DOMContentLoaded", () => {
   });
   document.getElementById("export-products-csv-btn").addEventListener("click", exportProductsCSV);
   document.getElementById("export-sales-csv-btn").addEventListener("click", exportSalesCSV);
+
+  document.querySelectorAll("[data-settings-tab]").forEach(button => button.addEventListener("click", () => {
+    const tab = button.dataset.settingsTab;
+    document.getElementById("page-settings")?.setAttribute("data-settings-active", tab);
+    document.querySelectorAll("[data-settings-tab]").forEach(item => {
+      const selected = item === button;
+      item.classList.toggle("is-active", selected);
+      item.setAttribute("aria-selected", String(selected));
+    });
+  }));
 });
 
 function openMobileDrawer() {
-  document.getElementById("mobile-nav-drawer")?.classList.add("nav-drawer-open");
-  document.getElementById("mobile-nav-scrim")?.classList.remove("hidden");
-  document.getElementById("mobile-menu-btn")?.setAttribute("aria-expanded", "true");
-  document.getElementById("mobile-nav-drawer")?.setAttribute("aria-hidden", "false");
-  document.body.classList.add("overflow-hidden");
+  const drawer = document.getElementById("mobile-nav-drawer");
+  const scrim = document.getElementById("mobile-nav-scrim");
+  const app = document.getElementById("app-root");
+  const menuButton = document.getElementById("mobile-menu-btn");
+  if (!drawer || drawer.classList.contains("nav-drawer-open")) return;
+  menuButton?.setAttribute("aria-expanded", "true");
+  menuButton?.setAttribute("aria-label", t("nav_close"));
+  drawer.classList.add("nav-drawer-open");
+  drawer.setAttribute("aria-hidden", "false");
+  drawer.inert = false;
+  if (scrim) { scrim.classList.add("nav-scrim-open"); scrim.setAttribute("aria-hidden", "false"); }
+  if (app) app.inert = true;
+  document.body.classList.add("nav-open");
+  drawer.querySelector(".drawer-close")?.focus();
 }
 
 function closeMobileDrawer() {
-  document.getElementById("mobile-nav-drawer")?.classList.remove("nav-drawer-open");
-  document.getElementById("mobile-nav-scrim")?.classList.add("hidden");
-  document.getElementById("mobile-menu-btn")?.setAttribute("aria-expanded", "false");
-  document.getElementById("mobile-nav-drawer")?.setAttribute("aria-hidden", "true");
-  document.body.classList.remove("overflow-hidden");
+  const drawer = document.getElementById("mobile-nav-drawer");
+  const scrim = document.getElementById("mobile-nav-scrim");
+  const app = document.getElementById("app-root");
+  const menuButton = document.getElementById("mobile-menu-btn");
+  if (!drawer || !drawer.classList.contains("nav-drawer-open")) return;
+  drawer.classList.remove("nav-drawer-open");
+  drawer.setAttribute("aria-hidden", "true");
+  drawer.inert = true;
+  if (scrim) { scrim.classList.remove("nav-scrim-open"); scrim.setAttribute("aria-hidden", "true"); }
+  if (app) app.inert = false;
+  document.body.classList.remove("nav-open");
+  menuButton?.setAttribute("aria-expanded", "false");
+  menuButton?.setAttribute("aria-label", t("nav_open"));
+  menuButton?.focus();
 }

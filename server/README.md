@@ -30,7 +30,9 @@ For a public deployment, set `APP_ORIGIN` to the HTTPS site origin and register 
 
 ## Optional Google/Discord identity verification
 
-Access keys remain required to enter the app. After logging in with a key, users may optionally verify a Google or Discord account in Settings and attach its display name to that key. This is identity verification, not an alternative login method. When Supabase is enabled, the provider ID, display name, and email are saved in `public.user_identities`; the linked name appears in Admin and can be unlinked from Settings. Apply `supabase/schema.sql` to create this table if it does not exist yet.
+Access keys remain required to enter the app. After logging in with a key, users may optionally verify a Google or Discord account in Settings and attach its display name to that key. This is identity verification, not an alternative login method. When Supabase is enabled, the provider ID, display name, and email are saved in `public.user_identities`; the linked name appears in Admin and can be unlinked from Settings. Apply the latest `supabase/schema.sql` before using the profile and suggestion features; it creates `user_profiles` and `site_suggestions` in addition to the identity table.
+
+Verified users can save a profile name, avatar (maximum 150 × 150 pixels), and online/offline display preference. They can submit website suggestions from Settings; Admin can view and delete them. The server derives the submitter's identity from the verified access-key session rather than trusting a client-provided name. The profile and suggestion endpoints require Supabase tables from the latest schema.
 
 ## Backup and restore
 
@@ -55,7 +57,9 @@ The Admin key list provides `+1 hour` and `-1 hour` controls for non-permanent k
 
 ## Deploy to Render Free
 
-This repository includes `render.yaml` for a Render Free Node web service. Connect the repository in Render Blueprint, enter the requested secret/config values, and deploy. Render provides `RENDER_EXTERNAL_URL`; when `APP_ORIGIN` is not explicitly set the server uses this HTTPS URL to build OAuth callback URLs. Set the GitHub, Google, and Discord callback URLs to `<RENDER_EXTERNAL_URL>/api/auth/<provider>/callback` for the providers you configure.
+This repository includes `render.yaml` for a Render Free Node web service named `igh7021-kinglegacy-stock-node`. The existing Render Static Site cannot be converted in place, so create this as a separate service and keep the Static Site available until the Node service is configured and verified. The Node service receives a new `onrender.com` URL; Render does not transfer the Static Site's generated hostname to a different service.
+
+Connect the repository in Render Blueprint, enter the requested secret/config values directly in the Render Dashboard, and deploy. Do not commit `.env` or share credential values in chat. Render provides `RENDER_EXTERNAL_URL`; when `APP_ORIGIN` is not explicitly set the server uses this HTTPS URL to build OAuth callback URLs. Set the GitHub, Google, and Discord callback URLs to `<RENDER_EXTERNAL_URL>/api/auth/<provider>/callback` for the providers you configure, and keep the existing Static Site until sign-in and data access have been tested on the Node service.
 
 Before connecting a repository to a public deployment, make sure access-key and local data files are not tracked or present in public Git history. `.gitignore` does not remove files that were already committed. Rotate any access keys that were committed before deployment.
 
@@ -70,5 +74,20 @@ In local fallback mode, the first admin key must be present as a JSON file in `s
 
 - `GET /api/reviews` returns saved reviews.
 - `POST /api/reviews` saves a review with `rating` from 1 to 5 and `text` up to 240 characters.
+- `GET /api/requests` checks whether the signed-in access key has submitted a request today in Bangkok time; `POST /api/requests` accepts one message (3–1,000 characters) per key per Bangkok calendar day.
+- `GET /api/admin/requests` returns the latest 200 customer requests and requires an administrator session.
+- `GET /api/state` uses an `ETag` for efficient live refresh; account updates are polled every five seconds while the app tab is visible.
 - `POST /api/presence` updates the current browser heartbeat.
 - `GET /api/community` returns the current online and total user counts.
+
+### Customer requests migration
+
+Run the updated `supabase/schema.sql` in the Supabase SQL Editor before using customer requests. The `support_requests` table has a unique `(owner_id, request_date)` constraint, where `owner_id` is the access-key UUID, so simultaneous submissions or later account registration cannot bypass the daily limit. The server uses Bangkok calendar dates and the service-role key; the table is unavailable directly to anonymous/authenticated clients. If the migration has not been applied, the request form reports a storage error instead of claiming the request was sent.
+
+### Profiles and website suggestions
+
+Run the latest `supabase/schema.sql` to create the `user_profiles` and `site_suggestions` tables and add the provider avatar column to `user_identities`. Users must verify Google or Discord before submitting suggestions; the server derives the author's verified name and provider from that identity rather than trusting browser-supplied author details. Admin can view or delete suggestions. Profile pictures selected in Settings are resized in the browser to at most 150 × 150 pixels; only the Admin session can read submitted suggestions.
+
+The matching endpoints are `GET/PUT /api/profile`, `POST /api/suggestions`, and Admin-only `GET /api/admin/suggestions` / `DELETE /api/admin/suggestions/:id`. Existing once-per-day customer requests remain separate. If the migration has not been applied, the request form reports a storage error instead of claiming the request was sent.
+
+The browser must receive its HTML, CSS, and JavaScript to render the app; these client files can always be inspected in browser developer tools. The server blocks direct HTTP access to server code, local key/data files, migration scripts, and Supabase schema files. Secrets and privileged operations must remain server-side; source minification cannot make delivered client code confidential.

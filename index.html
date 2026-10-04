@@ -9,88 +9,36 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Itim&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/style.css">
+<link rel="stylesheet" href="css/style.css?v=4.38">
 </head>
 <body class="min-h-screen itim-regular">
 
-<section id="auth-gate" class="auth-gate" aria-label="Account access">
+<section id="auth-gate" class="auth-gate" data-i18n-aria="auth_access" aria-label="Account access">
   <div class="auth-card">
     <div class="auth-loader" aria-hidden="true"><div class="loop cubes"><div class="item cubes"></div><div class="item cubes"></div><div class="item cubes"></div><div class="item cubes"></div><div class="item cubes"></div><div class="item cubes"></div></div></div>
     <div class="auth-brand"><span>👑</span><strong>IGH7021</strong><small>King Legacy Stock</small></div>
     <div id="auth-key-step">
-      <h1>Access key</h1><p class="auth-help">กรอกคีย์เพื่อเข้าสู่ระบบ</p>
-      <form id="auth-key-form" class="auth-form"><div class="inputContainer"><label for="auth-key">Access key <b>*</b></label><input id="auth-key" required autocomplete="off" placeholder="เช่น IGH000001..."><small id="auth-key-hint">ใช้คีย์ที่ได้รับจากแอดมิน</small><span id="auth-key-error" class="field-error" role="alert"></span></div><button class="enter" type="submit">Continue</button></form>
-      <button id="github-admin-login" class="hidden mt-3 w-full rounded-xl bg-slate-700/70 px-4 py-2.5 text-sm font-semibold hover:bg-slate-600" type="button">เข้าสู่ระบบผู้ดูแลด้วย GitHub</button>
+      <h1 data-i18n="auth_title">Access key</h1><p class="auth-help" data-i18n="auth_description">กรอกคีย์เพื่อเข้าสู่ระบบ</p>
+      <form id="auth-key-form" class="auth-form"><div class="inputContainer"><label for="auth-key" data-i18n="auth_key_label">Access key *</label><input id="auth-key" required autocomplete="off" data-i18n-placeholder="auth_key_placeholder" placeholder="เช่น IGH000001..."><small id="auth-key-hint" data-i18n="auth_key_hint">ใช้คีย์ที่ได้รับจากแอดมิน</small><span id="auth-key-error" class="field-error" role="alert"></span></div><button class="enter" type="submit" data-i18n="auth_continue">Continue</button></form>
+      <button id="github-admin-login" class="hidden mt-3 w-full rounded-xl bg-slate-700/70 px-4 py-2.5 text-sm font-semibold hover:bg-slate-600" type="button" data-i18n="auth_github_admin">เข้าสู่ระบบผู้ดูแลด้วย GitHub</button>
     </div>
     <p id="auth-message" class="auth-message" role="alert"></p>
   </div>
 </section>
 
-<section id="cookie-banner" class="cookie-banner hidden" aria-label="Cookie consent">
-  <div><strong>การใช้คุกกี้</strong><p>เราใช้คุกกี้/Local Storage เพื่อจดจำการเข้าสู่ระบบ การตั้งค่า และการรีวิวของคุณ ทำให้ไม่ต้องกรอกข้อมูลซ้ำทุกครั้ง</p></div>
-  <button id="cookie-accept" class="btn-primary px-4 py-2 rounded-xl text-sm" type="button">ยอมรับ</button>
+<section id="cookie-banner" class="cookie-banner hidden" data-i18n-aria="cookie_consent" aria-label="Cookie consent">
+  <div><strong data-i18n="cookie_title">การใช้คุกกี้</strong><p data-i18n="cookie_description">เราใช้คุกกี้/Local Storage เพื่อจดจำการเข้าสู่ระบบ การตั้งค่า และการรีวิวของคุณ ทำให้ไม่ต้องกรอกข้อมูลซ้ำทุกครั้ง</p></div>
+  <button id="cookie-accept" class="btn-primary px-4 py-2 rounded-xl text-sm" type="button" data-i18n="cookie_accept">ยอมรับ</button>
 </section>
 
-<!-- ===== Skeleton Loading ===== -->
-<div id="app-skeleton" class="min-h-screen p-4 md:p-8">
-  <div class="skeleton h-10 w-64 rounded-xl mb-6"></div>
-  <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-    <div class="skeleton h-24 rounded-2xl"></div><div class="skeleton h-24 rounded-2xl"></div>
-    <div class="skeleton h-24 rounded-2xl"></div><div class="skeleton h-24 rounded-2xl"></div>
-  </div>
-  <div class="skeleton h-64 rounded-2xl"></div>
-  <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4">
-    <div class="skeleton h-20 rounded-2xl"></div><div class="skeleton h-20 rounded-2xl"></div>
-    <div class="skeleton h-20 rounded-2xl"></div><div class="skeleton h-20 rounded-2xl"></div>
-  </div>
-  <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4">
-    <div class="skeleton h-48 rounded-2xl"></div><div class="skeleton h-48 rounded-2xl"></div>
-    <div class="skeleton h-48 rounded-2xl"></div><div class="skeleton h-48 rounded-2xl"></div>
-  </div>
-  <div class="skeleton h-32 rounded-2xl mt-4"></div>
-</div>
-
 <!-- ===== App Root ===== -->
-<div id="app-root" class="hidden flex min-h-screen">
-
-  <!-- ===== Sidebar (Desktop) ===== -->
-  <aside class="hidden md:flex flex-col w-64 flex-shrink-0 border-r border-slate-700/30 p-5 gap-1 sticky top-0 h-screen">
-    <div class="flex items-center gap-2 mb-6 px-2">
-      <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-indigo-500 to-pink-500 flex items-center justify-center font-bold">👑</div>
-      <div>
-        <p class="font-bold leading-tight">IGH7021</p>
-        <p class="text-xs text-slate-400 leading-tight">King Legacy Stock</p>
-        <p id="key-status-desktop" class="key-status hidden"></p>
-      </div>
-    </div>
-    <button data-nav="dashboard" class="sidebar-link nav-active flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium">📊 <span data-i18n="nav_dashboard">Dashboard</span></button>
-    <button data-nav="products" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium">🎒 <span data-i18n="nav_products">สินค้า / Stock</span></button>
-    <button data-nav="sales" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium">🧾 <span data-i18n="nav_sales">การขาย</span></button>
-    <button data-nav="reports" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium">📈 <span data-i18n="nav_reports">สรุปยอดขาย</span></button>
-    <button data-nav="settings" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium">⚙️ <span data-i18n="nav_settings">ตั้งค่า</span></button>
-    <button data-nav="updates" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium">🆕 <span>อัปเดต</span></button>
-    <button id="admin-nav-btn" data-nav="admin" class="sidebar-link admin-only hidden flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium">🔐 <span>Admin</span></button>
-    <button id="logout-btn" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-rose-300">↪ <span>ออกจากบัญชี</span></button>
-    <div class="mt-auto px-2 flex flex-col gap-2">
-      <div class="flex rounded-xl bg-slate-800/50 p-1 border border-slate-700/50">
-        <button class="lang-btn seg-btn seg-active flex-1 py-1.5 rounded-lg text-xs font-semibold" data-lang="th">TH</button>
-        <button class="lang-btn seg-btn flex-1 py-1.5 rounded-lg text-xs font-semibold" data-lang="en">EN</button>
-      </div>
-      <div class="background">
-        <button class="theme-toggle-btn change-theme__icon" data-i18n-aria="theme_toggle">
-          <span class="icon-sun-moon"></span>
-          <span class="sun-rays"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span>
-        </button>
-      </div>
-    </div>
-  </aside>
+<div id="app-root" class="hidden flex min-h-screen" aria-busy="true">
 
   <!-- ===== Main Content ===== -->
-  <main class="flex-1 min-w-0 pb-24 md:pb-8">
-    <!-- Mobile header -->
-    <header class="md:hidden flex items-center justify-between p-4 border-b border-slate-700/30 sticky top-0 bg-[var(--bg)] z-30">
-      <button id="mobile-menu-btn" class="hamburger-btn" type="button" aria-expanded="false" aria-controls="mobile-nav-drawer" aria-label="Open navigation menu"><span></span><span></span><span></span></button>
-      <div class="flex items-center gap-2">
+  <main class="flex-1 min-w-0">
+    <header class="app-header flex items-center justify-between gap-3 px-4 md:px-8 py-3 border-b border-slate-700/30 sticky top-0 bg-[var(--bg)] z-30">
+      <button id="mobile-menu-btn" class="hamburger-btn" type="button" aria-expanded="false" aria-controls="mobile-nav-drawer" data-i18n-aria="nav_open" aria-label="Open navigation menu"><span></span><span></span><span></span></button>
+      <div class="header-brand flex items-center gap-2">
         <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-500 to-pink-500 flex items-center justify-center text-sm">👑</div>
         <div>
           <p class="font-bold text-sm leading-tight">IGH7021</p>
@@ -99,7 +47,7 @@
         </div>
       </div>
       <div class="flex items-center gap-2">
-        <div class="flex rounded-lg bg-slate-800/50 p-0.5 border border-slate-700/50">
+        <div class="header-language flex rounded-lg bg-slate-800/50 p-0.5 border border-slate-700/50">
           <button class="lang-btn seg-btn seg-active px-2 py-1 rounded-md text-[11px] font-semibold" data-lang="th">TH</button>
           <button class="lang-btn seg-btn px-2 py-1 rounded-md text-[11px] font-semibold" data-lang="en">EN</button>
         </div>
@@ -129,20 +77,20 @@
           </div>
         </div>
 
-        <div class="dashboard-primary-stats grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 mb-6">
-          <div class="glass-card rounded-2xl p-4">
+        <div class="dashboard-primary-stats dashboard-bento-grid mb-6">
+            <div class="dashboard-bento-tile dashboard-bento-hero glass-card rounded-2xl p-4">
             <p class="text-xs text-slate-400 mb-1" data-i18n="stat_total_sales">ยอดขายรวม</p>
             <p id="stat-total-sales" class="text-xl md:text-2xl font-bold text-indigo-300">฿0</p>
           </div>
-          <div class="glass-card rounded-2xl p-4">
+          <div class="dashboard-bento-tile glass-card rounded-2xl p-4">
             <p class="text-xs text-slate-400 mb-1" data-i18n="stat_sold_qty">ขายไปแล้ว</p>
             <p id="stat-sold-qty" class="text-xl md:text-2xl font-bold text-pink-300">0</p>
           </div>
-          <div class="glass-card rounded-2xl p-4">
+          <div class="dashboard-bento-tile glass-card rounded-2xl p-4">
             <p class="text-xs text-slate-400 mb-1" data-i18n="stat_sale_count">รายการขาย</p>
             <p id="stat-sale-count" class="text-xl md:text-2xl font-bold text-purple-300">0</p>
           </div>
-          <div class="glass-card rounded-2xl p-4">
+          <div class="dashboard-bento-tile dashboard-bento-wide glass-card rounded-2xl p-4">
             <p class="text-xs text-slate-400 mb-1" data-i18n="stat_remaining">สต็อกคงเหลือ</p>
             <p id="stat-remaining" class="text-xl md:text-2xl font-bold text-emerald-300">0</p>
           </div>
@@ -156,7 +104,8 @@
           <div class="glass-card rounded-2xl p-4"><p class="text-xs text-slate-400 mb-1" data-i18n="average_order">เฉลี่ยต่อออเดอร์</p><p id="stat-average-order" class="text-xl font-bold text-lime-300">฿0</p></div>
         </div>
 
-        <section class="feature-section glass-card rounded-2xl p-4 mb-6" aria-labelledby="community-title">
+        <div class="dashboard-feedback-grid">
+        <section id="community-section" class="dashboard-community feature-section glass-card rounded-2xl p-4" aria-labelledby="community-title" aria-busy="true">
           <div class="flex items-start justify-between gap-3 mb-4">
             <div>
               <p id="community-title" class="font-semibold" data-i18n="community_title">ชุมชนผู้ใช้งาน</p>
@@ -165,23 +114,27 @@
             <span class="status-live text-xs px-2 py-1 rounded-full" data-i18n="demo_badge">DEMO</span>
           </div>
           <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
-            <div class="feature-stat"><span class="text-2xl">👥</span><strong id="community-total-users" class="text-lg">1</strong><span data-i18n="total_users">ผู้ใช้งานทั้งหมด</span></div>
-            <div class="feature-stat"><span class="text-2xl">🟢</span><strong id="community-online-users" class="text-lg">1</strong><span data-i18n="online_users">กำลังออนไลน์</span></div>
-            <div class="feature-stat"><span class="text-2xl">⭐</span><strong id="review-average" class="text-lg">0.0</strong><span data-i18n="average_rating">คะแนนเฉลี่ย</span></div>
-            <div class="feature-stat"><span class="text-2xl">💬</span><strong id="review-count" class="text-lg">0</strong><span data-i18n="review_count">รีวิวทั้งหมด</span></div>
+            <div class="feature-stat"><span class="text-2xl">👥</span><strong id="community-total-users" class="text-lg" aria-hidden="true"><span class="skeleton skeleton-stat-value skeleton-pending"></span></strong><span data-i18n="total_users">ผู้ใช้งานทั้งหมด</span></div>
+            <div class="feature-stat"><span class="text-2xl">🟢</span><strong id="community-online-users" class="text-lg" aria-hidden="true"><span class="skeleton skeleton-stat-value skeleton-pending"></span></strong><span data-i18n="online_users">กำลังออนไลน์</span></div>
+            <div class="feature-stat"><span class="text-2xl">⭐</span><strong id="review-average" class="text-lg" aria-hidden="true"><span class="skeleton skeleton-stat-value skeleton-pending"></span></strong><span data-i18n="average_rating">คะแนนเฉลี่ย</span></div>
+            <div class="feature-stat"><span class="text-2xl">💬</span><strong id="review-count" class="text-lg" aria-hidden="true"><span class="skeleton skeleton-stat-value skeleton-pending"></span></strong><span data-i18n="review_count">รีวิวทั้งหมด</span></div>
           </div>
         </section>
 
-        <section class="glass-card rounded-2xl p-4 mb-6" aria-labelledby="review-title">
+        <section class="dashboard-review glass-card rounded-2xl p-4" aria-labelledby="review-title">
           <div class="flex items-center justify-between gap-3 mb-3">
             <p id="review-title" class="font-semibold" data-i18n="review_title">Rating / Review</p>
             <span class="text-xs text-slate-400" data-i18n="review_local_note">บันทึกในเครื่องนี้</span>
           </div>
-          <div id="review-list" class="review-list flex flex-col gap-2 mb-4"></div>
+          <div id="review-list" class="review-list flex flex-col gap-2 mb-4" aria-busy="true">
+            <article class="review-item review-skeleton skeleton-pending" aria-hidden="true"><div class="review-skeleton-heading"><span class="skeleton skeleton-review-rating"></span><span class="skeleton skeleton-review-date"></span></div><span class="skeleton skeleton-review-copy"></span></article>
+            <article class="review-item review-skeleton skeleton-pending" aria-hidden="true"><div class="review-skeleton-heading"><span class="skeleton skeleton-review-rating"></span><span class="skeleton skeleton-review-date"></span></div><span class="skeleton skeleton-review-copy"></span></article>
+            <article class="review-item review-skeleton skeleton-pending" aria-hidden="true"><div class="review-skeleton-heading"><span class="skeleton skeleton-review-rating"></span><span class="skeleton skeleton-review-date"></span></div><span class="skeleton skeleton-review-copy"></span></article>
+          </div>
           <form id="review-form" class="grid gap-2">
             <div class="flex items-center gap-2">
               <span class="text-sm" data-i18n="review_rating_label">ให้คะแนน</span>
-              <div class="radio" role="radiogroup" aria-label="Rating">
+              <div class="radio" role="radiogroup" data-i18n-aria="review_rating_label" aria-label="Rating">
                 <input id="rating-5" type="radio" name="rating" value="5" checked>
                 <label for="rating-5" title="5 stars"><svg viewBox="0 0 576 512" aria-hidden="true"><path d="M316.9 18C311.6 7 300.4 0 288.1 0s-23.4 7-28.8 18L195 150.3 51.4 171.5c-12 1.8-22 10.2-25.7 21.7s-.7 24.2 7.9 32.7L137.8 329 113.2 474.7c-2 12 3 24.2 12.9 31.3s23 8 33.8 2.3l128.3-68.5 128.3 68.5c10.8 5.7 23.9 4.9 33.8-2.3s14.9-19.3 12.9-31.3L438.5 329 542.7 225.9c8.6-8.5 11.7-21.2 7.9-32.7s-13.7-19.9-25.7-21.7L381.2 150.3 316.9 18z"></path></svg></label>
                 <input id="rating-4" type="radio" name="rating" value="4">
@@ -194,10 +147,11 @@
                 <label for="rating-1" title="1 star"><svg viewBox="0 0 576 512" aria-hidden="true"><path d="M316.9 18C311.6 7 300.4 0 288.1 0s-23.4 7-28.8 18L195 150.3 51.4 171.5c-12 1.8-22 10.2-25.7 21.7s-.7 24.2 7.9 32.7L137.8 329 113.2 474.7c-2 12 3 24.2 12.9 31.3s23 8 33.8 2.3l128.3-68.5 128.3 68.5c10.8 5.7 23.9 4.9 33.8-2.3s14.9-19.3 12.9-31.3L438.5 329 542.7 225.9c8.6-8.5 11.7-21.2 7.9-32.7s-13.7-19.9-25.7-21.7L381.2 150.3 316.9 18z"></path></svg></label>
               </div>
             </div>
-            <textarea id="review-text" rows="2" maxlength="240" required data-i18n-placeholder="review_placeholder" placeholder="เขียนความคิดเห็นของคุณ..." class="w-full px-3 py-2 rounded-xl bg-slate-800/50 border border-slate-700/50 text-sm resize-y"></textarea>
+            <textarea id="review-text" rows="2" maxlength="240" required data-i18n-placeholder="review_placeholder" placeholder="เขียนความคิดเห็นของคุณ..." class="review-form-textarea w-full px-3 py-2 rounded-xl bg-slate-800/50 border border-slate-700/50 text-sm resize-y"></textarea>
             <button type="submit" class="btn-primary px-4 py-2 rounded-xl text-sm w-fit" data-i18n="submit_review">ส่งรีวิว</button>
           </form>
         </section>
+        </div>
 
         <div class="dashboard-insights grid md:grid-cols-3 gap-4">
           <div class="dashboard-chart-panel md:col-span-2 glass-card rounded-2xl p-4">
@@ -335,13 +289,17 @@
       </section>
 
       <!-- ============ PAGE: SETTINGS ============ -->
-      <section id="page-settings" class="page hidden">
+      <section id="page-settings" class="page hidden settings-page" data-settings-active="general">
         <div class="flex items-center justify-between mb-4 gap-3">
           <h1 class="text-xl md:text-2xl font-bold" data-i18n="settings_title">ตั้งค่า</h1>
           <span id="app-version" class="text-xs font-semibold text-indigo-300 px-2.5 py-1 rounded-full bg-indigo-500/15 border border-indigo-500/30">V.1.3</span>
         </div>
+        <div class="settings-section-tabs flex gap-2 mb-4" role="tablist" data-i18n-aria="settings_tabs_aria" aria-label="Settings">
+          <button id="settings-general-tab" type="button" role="tab" aria-selected="true" aria-controls="page-settings" class="admin-section-tab is-active" data-settings-tab="general" data-i18n="settings_tab_general">ทั่วไป</button>
+          <button id="settings-messages-tab" type="button" role="tab" aria-selected="false" aria-controls="page-settings" class="admin-section-tab" data-settings-tab="messages" data-i18n="settings_tab_messages">ข้อความและข้อเสนอแนะ</button>
+        </div>
 
-        <div class="glass-card rounded-2xl p-4 mb-4">
+        <div data-settings-panel="general" class="glass-card rounded-2xl p-4 mb-4">
           <p class="font-semibold mb-2" data-i18n="settings_language">ภาษา</p>
           <div class="flex rounded-xl bg-slate-800/50 p-1 border border-slate-700/50 w-fit">
             <button class="lang-btn seg-btn seg-active px-5 py-1.5 rounded-lg text-sm font-semibold" data-lang="th">ไทย (TH)</button>
@@ -349,24 +307,66 @@
           </div>
         </div>
 
-        <div id="user-key-settings" class="glass-card rounded-2xl p-4 mb-4">
-          <div class="flex items-center justify-between gap-3 mb-3"><p class="font-semibold">คีย์ที่ใช้งาน</p><div class="flex gap-2"><button id="toggle-key-visibility" type="button" class="px-3 py-1.5 rounded-lg bg-slate-700/60 text-xs">แสดงคีย์</button><button id="copy-current-key" type="button" class="px-3 py-1.5 rounded-lg bg-slate-700/60 text-xs">คัดลอก</button></div></div>
+        <div id="user-key-settings" data-settings-panel="general" class="glass-card rounded-2xl p-4 mb-4">
+          <div class="flex items-center justify-between gap-3 mb-3"><p class="font-semibold" data-i18n="key_settings_title">คีย์ที่ใช้งาน</p><div class="flex gap-2"><button id="toggle-key-visibility" type="button" class="px-3 py-1.5 rounded-lg bg-slate-700/60 text-xs" data-i18n="key_show">แสดงคีย์</button><button id="copy-current-key" type="button" class="px-3 py-1.5 rounded-lg bg-slate-700/60 text-xs" data-i18n="admin_copy">คัดลอก</button></div></div>
           <code id="current-key-value" class="block text-xs break-all text-slate-300">••••••••••••••••</code>
           <p id="current-key-expiry" class="text-xs text-slate-400 mt-2"></p>
         </div>
 
-        <section id="identity-verification-settings" class="glass-card rounded-2xl p-4 mb-4 hidden" aria-labelledby="identity-verification-title">
-          <div class="mb-3"><h2 id="identity-verification-title" class="font-semibold">ยืนยันตัวตนเพิ่มเติม (ไม่บังคับ)</h2><p class="text-xs text-slate-400 mt-1">ชื่อบัญชีที่ยืนยันจะแสดงเป็นเจ้าของคีย์ในหน้า Admin</p></div>
+        <section id="user-profile-section" data-settings-panel="messages" class="glass-card rounded-2xl p-4 mb-4 hidden" aria-labelledby="user-profile-title">
+          <div class="flex items-center gap-4">
+            <div class="profile-avatar-wrap" data-profile-avatar-wrap>
+              <img id="user-profile-avatar" class="profile-avatar" alt="" hidden>
+              <span id="user-profile-avatar-fallback" class="profile-avatar-fallback" aria-hidden="true">👤</span>
+              <span id="user-profile-presence" class="presence-dot is-offline" data-status="offline" role="img" aria-label="ออฟไลน์"><span class="presence-halo" aria-hidden="true"></span></span>
+            </div>
+            <div class="min-w-0 flex-1">
+              <h2 id="user-profile-title" class="font-semibold" data-i18n="profile_title">โปรไฟล์</h2>
+              <p id="user-profile-name" class="text-sm truncate">—</p>
+              <p id="user-profile-provider" class="text-xs text-slate-400"></p>
+            </div>
+          </div>
+          <div class="mt-4 grid gap-3 sm:grid-cols-2">
+            <label class="text-xs text-slate-400"><span data-i18n="profile_avatar_label">รูปโปรไฟล์ (สูงสุด 150 × 150 px)</span><input id="profile-avatar-input" type="file" accept="image/png,image/jpeg,image/webp" class="mt-1 block w-full text-xs"></label>
+            <label class="text-xs text-slate-400"><span data-i18n="profile_status_label">สถานะโปรไฟล์</span><select id="profile-presence-select" class="date-input" aria-describedby="profile-presence-description"><option value="online" data-i18n="presence_online">ออนไลน์</option><option value="offline" data-i18n="presence_offline">ออฟไลน์</option></select><span id="profile-presence-description" class="mt-1 block" data-i18n="profile_status_help">เลือกสถานะที่ต้องการแสดง</span></label>
+          </div>
+          <div class="mt-3 flex items-center gap-2"><button id="profile-avatar-clear" type="button" class="px-3 py-1.5 rounded-lg bg-slate-700/60 text-xs" data-i18n="profile_avatar_clear">ลบรูปโปรไฟล์</button><p id="profile-save-status" class="text-xs text-slate-400" role="status" aria-live="polite"></p></div>
+        </section>
+
+        <section id="site-suggestion-section" data-settings-panel="messages" class="glass-card rounded-2xl p-4 mb-4 hidden" aria-labelledby="site-suggestion-title">
+          <h2 id="site-suggestion-title" class="font-semibold" data-i18n="suggestion_title">เสนอแนะเพื่อพัฒนาเว็บ</h2>
+          <p class="text-xs text-slate-400 mt-1 mb-3" data-i18n="suggestion_description">ยืนยัน Google หรือ Discord ก่อนส่ง เพื่อให้ Admin ทราบว่าใครเป็นผู้เสนอ</p>
+          <p id="suggestion-identity-status" class="text-sm text-slate-300 mb-3" role="status" aria-live="polite"></p>
+          <button id="open-suggestion-dialog" type="button" class="btn-primary px-4 py-2 rounded-xl text-sm" disabled data-i18n="suggestion_open">เขียนข้อเสนอแนะ</button>
+        </section>
+
+        <section id="identity-verification-settings" data-settings-panel="messages" class="glass-card rounded-2xl p-4 mb-4 hidden" aria-labelledby="identity-verification-title">
+          <div class="mb-3"><h2 id="identity-verification-title" class="font-semibold" data-i18n="identity_title">ยืนยันตัวตนเพิ่มเติม (ไม่บังคับ)</h2><p class="text-xs text-slate-400 mt-1" data-i18n="identity_description">ชื่อบัญชีที่ยืนยันจะแสดงเป็นเจ้าของคีย์ในหน้า Admin</p></div>
           <p id="identity-verification-result" class="hidden rounded-xl bg-slate-800/60 px-3 py-2 text-sm mb-3" role="status"></p>
           <div class="flex flex-col gap-2">
-            <div class="identity-provider-row"><div class="min-w-0"><strong>Google</strong><p id="google-identity-status" class="text-xs text-slate-400 mt-0.5">กำลังตรวจสอบการตั้งค่า...</p></div><div class="flex gap-2"><button type="button" data-identity-verify="google" disabled class="px-3 py-1.5 rounded-lg bg-slate-700/60 text-xs disabled:cursor-not-allowed disabled:opacity-50">ยืนยัน Google</button><button type="button" data-identity-unlink="google" class="hidden px-3 py-1.5 rounded-lg bg-slate-700/60 text-xs">ยกเลิกการยืนยัน</button></div></div>
-            <div class="identity-provider-row"><div class="min-w-0"><strong>Discord</strong><p id="discord-identity-status" class="text-xs text-slate-400 mt-0.5">กำลังตรวจสอบการตั้งค่า...</p></div><div class="flex gap-2"><button type="button" data-identity-verify="discord" disabled class="px-3 py-1.5 rounded-lg bg-slate-700/60 text-xs disabled:cursor-not-allowed disabled:opacity-50">ยืนยัน Discord</button><button type="button" data-identity-unlink="discord" class="hidden px-3 py-1.5 rounded-lg bg-slate-700/60 text-xs">ยกเลิกการยืนยัน</button></div></div>
+            <div class="identity-provider-row"><div class="min-w-0"><strong>Google</strong><p id="google-identity-status" class="text-xs text-slate-400 mt-0.5" data-i18n="identity_checking">กำลังตรวจสอบการตั้งค่า...</p></div><div class="flex gap-2"><button type="button" data-identity-verify="google" disabled class="px-3 py-1.5 rounded-lg bg-slate-700/60 text-xs disabled:cursor-not-allowed disabled:opacity-50" data-i18n="identity_verify_google">ยืนยัน Google</button><button type="button" data-identity-unlink="google" class="hidden px-3 py-1.5 rounded-lg bg-slate-700/60 text-xs" data-i18n="identity_unlink">ยกเลิกการยืนยัน</button></div></div>
+            <div class="identity-provider-row"><div class="min-w-0"><strong>Discord</strong><p id="discord-identity-status" class="text-xs text-slate-400 mt-0.5" data-i18n="identity_checking">กำลังตรวจสอบการตั้งค่า...</p></div><div class="flex gap-2"><button type="button" data-identity-verify="discord" disabled class="px-3 py-1.5 rounded-lg bg-slate-700/60 text-xs disabled:cursor-not-allowed disabled:opacity-50" data-i18n="identity_verify_discord">ยืนยัน Discord</button><button type="button" data-identity-unlink="discord" class="hidden px-3 py-1.5 rounded-lg bg-slate-700/60 text-xs" data-i18n="identity_unlink">ยกเลิกการยืนยัน</button></div></div>
           </div>
         </section>
 
-        <div class="glass-card rounded-2xl p-4 mb-4">
+        <section id="support-request-section" data-settings-panel="messages" class="glass-card rounded-2xl p-4 mb-4 hidden" aria-labelledby="support-request-title">
+          <div class="mb-3">
+            <h2 id="support-request-title" class="font-semibold" data-i18n="request_title">ส่งคำขอถึงแอดมิน</h2>
+            <p class="text-xs text-slate-400 mt-1" data-i18n="request_description">ส่งคำขอหรือแจ้งปัญหาได้วันละ 1 ครั้ง (เวลาไทย)</p>
+          </div>
+          <p id="support-request-status" class="text-sm text-slate-300 mb-3" role="status" aria-live="polite"></p>
+          <form id="support-request-form" class="grid gap-2">
+            <textarea id="support-request-message" rows="4" maxlength="1000" required data-i18n-placeholder="request_placeholder" placeholder="พิมพ์คำขอของคุณ..." class="w-full px-3 py-2 rounded-xl bg-slate-800/50 border border-slate-700/50 text-sm resize-y"></textarea>
+            <div class="flex flex-wrap items-center justify-between gap-2">
+              <span id="support-request-count" class="text-xs text-slate-400">0 / 1000</span>
+              <button id="support-request-submit" type="submit" class="btn-primary px-4 py-2 rounded-xl text-sm" data-i18n="request_submit">ส่งคำขอ</button>
+            </div>
+          </form>
+        </section>
+
+        <div data-settings-panel="general" class="glass-card rounded-2xl p-4 mb-4">
           <p class="font-semibold mb-3" data-i18n="credits_title">ช่องทางติดต่อแอดมิน</p>
-          <p class="text-xs text-slate-400 mb-3">ประวัติการอัปเดตระบบและฟีเจอร์ที่เพิ่มเข้ามา</p>
+          <p class="text-xs text-slate-400 mb-3" data-i18n="update_log_description">ประวัติการอัปเดตระบบและฟีเจอร์ที่เพิ่มเข้ามา</p>
           <div class="flex flex-wrap gap-x-4 gap-y-2 text-sm">
             <a class="credit-link" href="https://web.facebook.com/IGH7021" target="_blank" rel="noreferrer" aria-label="Facebook">
               <svg class="icons-social-media" viewBox="0 0 320 512" aria-hidden="true"><path d="M279.14 288l14.22-92.66h-88.91V127.2c0-25.35 12.42-50.06 52.24-50.06H297V6.26S260.43 0 225.36 0c-73.22 0-121.08 44.38-121.08 124.72v70.62H22.89V288h81.39v224h100.17V288z"></path></svg>
@@ -380,16 +380,16 @@
           </div>
         </div>
 
-        <div class="glass-card rounded-2xl p-4 mb-4">
-          <p class="font-semibold mb-2" data-i18n="settings_stock_alert_title">แจ้งเตือนเมื่อเหลือไม่เกิน</p>
+        <div data-settings-panel="general" class="glass-card rounded-2xl p-4 mb-4">
+          <p id="settings-stock-alert-label" class="font-semibold mb-2" data-i18n="settings_stock_alert_title">แจ้งเตือนเมื่อเหลือไม่เกิน</p>
           <div class="flex items-center gap-3">
-            <input id="stock-alert-slider" type="range" min="1" max="50" value="5" class="slider flex-1">
+            <input id="stock-alert-slider" type="range" min="1" max="50" value="5" class="slider flex-1" aria-labelledby="settings-stock-alert-label">
             <span id="stock-alert-value" class="w-10 text-center font-semibold">5</span>
             <span class="text-sm text-slate-400" data-i18n="pieces_unit">ชิ้น</span>
           </div>
         </div>
 
-        <div class="glass-card rounded-2xl p-4 mb-4">
+        <div data-settings-panel="general" class="glass-card rounded-2xl p-4 mb-4">
           <p class="font-semibold mb-2" data-i18n="settings_category_title">หมวดหมู่สินค้า</p>
           <div id="settings-category-list" class="flex flex-wrap gap-2 mb-3"></div>
           <form id="add-category-form" class="flex gap-2">
@@ -398,7 +398,7 @@
           </form>
         </div>
 
-        <div class="glass-card rounded-2xl p-4">
+        <div data-settings-panel="general" class="glass-card rounded-2xl p-4">
           <p class="font-semibold mb-3" data-i18n="backup_section_title">Backup / Restore / Export</p>
           <p class="text-xs text-slate-400 mb-3" data-i18n="backup_details">Backup รวมข้อมูลสินค้า ยอดขาย การตั้งค่า ธีม ภาษา ชื่อและอีเมลบัญชีที่ยืนยันไว้ หลัง Restore ต้องยืนยัน OAuth อีกครั้ง</p>
           <div class="flex flex-wrap gap-2">
@@ -412,7 +412,7 @@
           </div>
         </div>
 
-        <div class="glass-card rounded-2xl border border-rose-500/30 p-4 mt-4">
+        <div data-settings-panel="general" class="glass-card rounded-2xl border border-rose-500/30 p-4 mt-4">
           <h2 class="font-semibold text-rose-300 mb-1" data-i18n="clear_account_title">ล้างข้อมูลบัญชี</h2>
           <p class="text-xs text-slate-400 mb-3" data-i18n="clear_account_description">ลบสินค้า ยอดขาย งานฟาร์ม สูตรที่แก้ไข และการตั้งค่าทั้งหมดของบัญชีนี้ แล้วเริ่มใหม่โดยไม่มีสินค้า ค่าเริ่มต้นของธีมและภาษาจะถูกคืนค่า คีย์และการยืนยันตัวตนจะไม่ถูกลบ</p>
           <button id="clear-account-data-btn" type="button" class="px-4 py-2 rounded-xl border border-rose-500/40 bg-rose-500/10 text-rose-300 hover:bg-rose-500/20 text-sm" data-i18n="clear_account_button">ล้างข้อมูลและคืนค่าเริ่มต้น</button>
@@ -420,31 +420,41 @@
       </section>
 
       <section id="page-updates" class="page hidden">
-        <div class="flex items-center justify-between mb-4 gap-3"><div><h1 class="text-xl md:text-2xl font-bold">มีอะไรอัปเดต</h1><p class="text-xs text-slate-400 mt-1">ประวัติการอัปเดตระบบและฟีเจอร์ทั้งหมด</p></div><span id="updates-page-version" class="text-xs font-semibold text-indigo-300 px-2.5 py-1 rounded-full bg-indigo-500/15 border border-indigo-500/30"></span></div>
+        <div class="flex items-center justify-between mb-4 gap-3"><div><h1 class="text-xl md:text-2xl font-bold" data-i18n="updates_title">มีอะไรอัปเดต</h1><p class="text-xs text-slate-400 mt-1" data-i18n="updates_description">ประวัติการอัปเดตระบบและฟีเจอร์ทั้งหมด</p></div><span id="updates-page-version" class="text-xs font-semibold text-indigo-300 px-2.5 py-1 rounded-full bg-indigo-500/15 border border-indigo-500/30"></span></div>
         <div id="updates-page-log" class="flex flex-col gap-3"></div>
       </section>
 
       <section id="page-admin" class="page hidden admin-only">
-        <div class="admin-page-header flex items-center justify-between mb-4 gap-3"><div><p class="text-xs text-orange-300 mb-1">ADMIN CONTROL CENTER</p><h1 class="text-xl md:text-2xl font-bold">Admin Key Manager</h1><p class="text-xs text-slate-400 mt-1">จัดการคีย์ ดูเจ้าของคีย์ และตรวจสอบอายุการใช้งาน</p></div><button id="admin-logout-btn" class="btn-primary px-3 py-2 rounded-xl text-sm">ออกจากบัญชี</button></div>
-        <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4" id="admin-key-stats"></div>
-        <div class="glass-card rounded-2xl p-4 mb-4"><form id="admin-key-form" class="admin-key-create-form"><label class="admin-hours-field text-xs text-slate-400">อายุคีย์ (ชั่วโมง)<input id="admin-hours" type="number" min="1" value="24" class="date-input w-full"></label><label class="admin-key-toggle"><input id="admin-permanent" type="checkbox"> คีย์ถาวร</label><label class="admin-key-toggle"><input id="admin-key-is-admin" type="checkbox"> คีย์แอดมิน</label><button class="admin-key-submit btn-primary px-4 py-2 rounded-xl text-sm" type="submit">สุ่มคีย์</button></form><div class="flex items-center gap-2"><p id="admin-generated-key" class="generated-key hidden flex-1"></p><button id="copy-generated-key" type="button" class="hidden px-3 py-1.5 rounded-lg bg-slate-700/60 text-xs">คัดลอก</button></div></div>
-        <div class="flex gap-2 mb-3"><button id="admin-export-json" class="btn-primary px-3 py-2 rounded-xl text-sm" type="button">Export JSON</button><button id="admin-export-pdf" class="px-3 py-2 rounded-xl bg-slate-700/60 text-sm" type="button">Export PDF</button></div>
-        <div class="key-filter-chips flex items-center gap-2 mb-3 text-xs"><button type="button" data-key-filter="active" class="key-filter-chip is-selected">ใช้งานได้</button><button type="button" data-key-filter="unlimited" class="key-filter-chip">อันลิมิต</button><button type="button" data-key-filter="limited" class="key-filter-chip">จำกัดเวลา</button><button type="button" data-key-filter="expired" class="key-filter-chip">หมดอายุ</button><button type="button" data-key-filter="archived" class="key-filter-chip">เก็บถาวร</button><button type="button" data-key-filter="all" class="key-filter-chip">ทั้งหมด</button></div>
-        <div id="admin-key-list" class="flex flex-col gap-2"></div>
+        <div class="admin-page-header flex items-center justify-between mb-4 gap-3"><div><p class="text-xs text-orange-300 mb-1" data-i18n="admin_control_center">ADMIN CONTROL CENTER</p><h1 class="text-xl md:text-2xl font-bold" data-i18n="admin_key_manager">Admin Key Manager</h1><p class="text-xs text-slate-400 mt-1" data-i18n="admin_key_description">จัดการคีย์ ดูเจ้าของคีย์ และตรวจสอบอายุการใช้งาน</p></div><button id="admin-logout-btn" class="btn-primary px-3 py-2 rounded-xl text-sm" data-i18n="admin_logout">ออกจากบัญชี</button></div>
+        <div class="admin-section-tabs flex flex-wrap gap-2 mb-4" role="tablist" aria-label="Admin">
+          <button id="admin-keys-tab" type="button" role="tab" aria-selected="true" aria-controls="admin-keys-panel" class="admin-section-tab is-active" data-admin-tab="keys" data-i18n="admin_tab_keys">จัดการคีย์</button>
+          <button id="admin-suggestions-tab" type="button" role="tab" aria-selected="false" aria-controls="admin-suggestions-panel" class="admin-section-tab" data-admin-tab="suggestions" data-i18n="admin_tab_suggestions">ข้อเสนอแนะเพื่อพัฒนาเว็บ</button>
+        </div>
+        <div id="admin-keys-panel" role="tabpanel" aria-labelledby="admin-keys-tab">
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4" id="admin-key-stats" aria-busy="true"></div>
+        <div class="glass-card rounded-2xl p-4 mb-4"><form id="admin-key-form" class="admin-key-create-form"><label class="admin-hours-field text-xs text-slate-400"><span data-i18n="admin_key_duration">อายุคีย์ (ชั่วโมง)</span><input id="admin-hours" type="number" min="1" value="24" class="date-input w-full"></label><label class="admin-key-toggle"><input id="admin-permanent" type="checkbox"> <span data-i18n="admin_key_permanent">คีย์ถาวร</span></label><label class="admin-key-toggle"><input id="admin-key-is-admin" type="checkbox"> <span data-i18n="admin_key_admin">คีย์แอดมิน</span></label><button class="admin-key-submit btn-primary px-4 py-2 rounded-xl text-sm" type="submit" data-i18n="admin_key_generate">สุ่มคีย์</button></form><div class="flex items-center gap-2"><p id="admin-generated-key" class="generated-key hidden flex-1"></p><button id="copy-generated-key" type="button" class="hidden px-3 py-1.5 rounded-lg bg-slate-700/60 text-xs" data-i18n="admin_copy">คัดลอก</button></div></div>
+        <div class="flex gap-2 mb-3"><button id="admin-export-json" class="btn-primary px-3 py-2 rounded-xl text-sm" type="button" data-i18n="admin_export_json">Export JSON</button><button id="admin-export-pdf" class="px-3 py-2 rounded-xl bg-slate-700/60 text-sm" type="button" data-i18n="admin_export_pdf">Export PDF</button></div>
+        <section class="glass-card rounded-2xl p-4 mb-4" aria-labelledby="admin-requests-title">
+          <div class="flex items-center justify-between gap-3 mb-3">
+            <h2 id="admin-requests-title" class="font-semibold" data-i18n="admin_requests_title">คำขอจากลูกค้า</h2>
+            <span id="admin-requests-count" class="text-xs text-slate-400"></span>
+          </div>
+          <div id="admin-requests-list" class="flex flex-col gap-2" aria-live="polite" aria-busy="true"></div>
+        </section>
+        <div class="key-filter-chips flex items-center gap-2 mb-3 text-xs"><button type="button" data-key-filter="active" class="key-filter-chip is-selected" data-i18n="admin_filter_active">ใช้งานได้</button><button type="button" data-key-filter="unlimited" class="key-filter-chip" data-i18n="admin_filter_unlimited">อันลิมิต</button><button type="button" data-key-filter="limited" class="key-filter-chip" data-i18n="admin_filter_limited">จำกัดเวลา</button><button type="button" data-key-filter="expired" class="key-filter-chip" data-i18n="admin_filter_expired">หมดอายุ</button><button type="button" data-key-filter="archived" class="key-filter-chip" data-i18n="admin_filter_archived">เก็บถาวร</button><button type="button" data-key-filter="all" class="key-filter-chip" data-i18n="admin_filter_all">ทั้งหมด</button></div>
+        <div id="admin-key-list" class="flex flex-col gap-2" aria-live="polite" aria-busy="true"></div>
+        </div>
+        <section id="admin-suggestions-panel" class="hidden" role="tabpanel" aria-labelledby="admin-suggestions-tab">
+          <div class="glass-card rounded-2xl p-4">
+            <div class="flex items-center justify-between gap-3 mb-3"><div><h2 class="font-semibold" data-i18n="admin_suggestions_title">ข้อเสนอแนะเพื่อพัฒนาเว็บ</h2><p class="text-xs text-slate-400 mt-1" data-i18n="admin_suggestions_help">ข้อความจากผู้ใช้ที่ยืนยันตัวตนแล้ว</p></div><span id="admin-suggestions-count" class="text-xs text-slate-400"></span></div>
+            <div id="admin-suggestions-list" class="flex flex-col gap-3" aria-live="polite" aria-busy="true"></div>
+          </div>
+        </section>
       </section>
 
     </div>
   </main>
 
-  <!-- ===== Bottom Navigation (Mobile) ===== -->
-  <nav class="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-[var(--bg)]/95 backdrop-blur border-t border-slate-700/30 flex justify-around py-2">
-    <button data-nav="dashboard" class="sidebar-link nav-active flex flex-col items-center gap-0.5 px-2 py-1 rounded-xl text-[11px]">📊 <span data-i18n="nav_dashboard">Dashboard</span></button>
-    <button data-nav="products" class="sidebar-link flex flex-col items-center gap-0.5 px-2 py-1 rounded-xl text-[11px]">🎒 <span data-i18n="nav_products">สินค้า</span></button>
-    <button data-nav="sales" class="sidebar-link flex flex-col items-center gap-0.5 px-2 py-1 rounded-xl text-[11px]">🧾 <span data-i18n="nav_sales">การขาย</span></button>
-    <button data-nav="reports" class="sidebar-link flex flex-col items-center gap-0.5 px-2 py-1 rounded-xl text-[11px]">📈 <span data-i18n="nav_reports">สรุป</span></button>
-    <button data-nav="settings" class="sidebar-link flex flex-col items-center gap-0.5 px-2 py-1 rounded-xl text-[11px]">⚙️ <span data-i18n="nav_settings">ตั้งค่า</span></button>
-    <button data-nav="updates" class="sidebar-link flex flex-col items-center gap-0.5 px-2 py-1 rounded-xl text-[11px]">🆕 <span>อัปเดต</span></button>
-  </nav>
 </div>
 
 <!-- Crafting recipe modal -->
@@ -513,19 +523,30 @@
   </div>
 </div>
 
-<div id="mobile-nav-scrim" class="nav-scrim hidden"></div>
-<nav id="mobile-nav-drawer" class="nav-drawer" aria-hidden="true">
-  <button id="mobile-menu-close" class="drawer-close" type="button" aria-label="Close navigation menu">×</button>
+<div id="mobile-nav-scrim" class="nav-scrim" aria-hidden="true"></div>
+<nav id="mobile-nav-drawer" class="nav-drawer" data-i18n-aria="main_nav_aria" aria-label="Main navigation" aria-hidden="true" inert>
+  <button id="mobile-menu-close" class="drawer-close" type="button" data-i18n-aria="nav_close" aria-label="Close navigation menu">×</button>
   <p class="font-bold text-lg mb-5">IGH7021</p>
   <button data-nav="dashboard" class="drawer-link">📊 <span data-i18n="nav_dashboard">Dashboard</span></button>
   <button data-nav="products" class="drawer-link">🎒 <span data-i18n="nav_products">สินค้า / Stock</span></button>
   <button data-nav="sales" class="drawer-link">🧾 <span data-i18n="nav_sales">การขาย</span></button>
   <button data-nav="reports" class="drawer-link">📈 <span data-i18n="nav_reports">สรุปยอดขาย</span></button>
   <button data-nav="settings" class="drawer-link">⚙️ <span data-i18n="nav_settings">ตั้งค่า</span></button>
-  <button data-nav="updates" class="drawer-link">🆕 <span>อัปเดต</span></button>
+  <button data-nav="updates" class="drawer-link">🆕 <span data-i18n="nav_updates">อัปเดต</span></button>
   <button data-nav="admin" class="drawer-link admin-only hidden">🔐 Admin</button>
-  <button id="mobile-logout-btn" class="drawer-link text-rose-300">↪ ออกจากบัญชี</button>
+  <button id="mobile-logout-btn" class="drawer-link text-rose-300">↪ <span data-i18n="auth_logout">ออกจากบัญชี</span></button>
 </nav>
+
+<dialog id="site-suggestion-dialog" class="site-suggestion-dialog" closedby="any" aria-labelledby="site-suggestion-dialog-title">
+  <div class="glass-card rounded-2xl p-5">
+    <div class="flex items-start justify-between gap-3 mb-4"><div><h2 id="site-suggestion-dialog-title" class="font-bold text-lg" data-i18n="suggestion_dialog_title">ส่งข้อเสนอแนะ</h2><p class="text-xs text-slate-400 mt-1" data-i18n="suggestion_dialog_identity">ส่งในชื่อบัญชีที่ยืนยันแล้ว</p></div><button id="close-suggestion-dialog" type="button" class="text-slate-400 hover:text-white" aria-label="ปิด" data-i18n-aria="suggestion_close">✕</button></div>
+    <form id="site-suggestion-form" class="grid gap-3">
+      <label class="text-xs text-slate-400"><span data-i18n="suggestion_message_label">ข้อเสนอแนะ</span><textarea id="site-suggestion-message" rows="6" maxlength="2000" required minlength="3" class="w-full mt-1 px-3 py-2 rounded-xl bg-slate-800/50 border border-slate-700/50 text-sm resize-y" data-i18n-placeholder="suggestion_placeholder" placeholder="พิมพ์ข้อเสนอแนะของคุณ..."></textarea></label>
+      <p id="suggestion-submit-status" class="text-sm text-slate-300" role="status" aria-live="polite"></p>
+      <div class="flex gap-2"><button id="cancel-suggestion-dialog" type="button" class="flex-1 py-2.5 rounded-xl bg-slate-700/50 text-sm" data-i18n="btn_cancel">ยกเลิก</button><button id="submit-site-suggestion" type="submit" class="flex-1 btn-primary py-2.5 rounded-xl text-sm" data-i18n="suggestion_submit">ส่งข้อเสนอแนะ</button></div>
+    </form>
+  </div>
+</dialog>
 
 <!-- ===================== MODALS ===================== -->
 
@@ -741,20 +762,22 @@
   </div>
 </div>
 
-<script defer src="js/data.js"></script>
-<script defer src="js/i18n.js"></script>
-<script defer src="js/utils.js"></script>
-<script defer src="js/products.js"></script>
-<script defer src="js/farm.js"></script>
-<script defer src="js/crafting.js"></script>
-<script defer src="js/sales.js"></script>
-<script defer src="js/dashboard.js"></script>
-<script defer src="js/backup.js"></script>
-<script defer src="js/community.js"></script>
-<script defer src="js/auth.js"></script>
-<script defer src="js/admin.js"></script>
-<script defer src="js/cookie.js"></script>
-<script defer src="js/navigation.js"></script>
-<script defer src="js/main.js"></script>
+<script defer src="js/data.js?v=4.35"></script>
+<script defer src="js/i18n.js?v=4.34"></script>
+<script defer src="js/utils.js?v=4.34"></script>
+<script defer src="js/products.js?v=4.34"></script>
+<script defer src="js/farm.js?v=4.34"></script>
+<script defer src="js/crafting.js?v=4.34"></script>
+<script defer src="js/sales.js?v=4.34"></script>
+<script defer src="js/dashboard.js?v=4.34"></script>
+<script defer src="js/backup.js?v=4.34"></script>
+<script defer src="js/community.js?v=4.34"></script>
+<script defer src="js/auth.js?v=4.34"></script>
+<script defer src="js/profile.js?v=4.34"></script>
+<script defer src="js/requests.js?v=4.34"></script>
+<script defer src="js/admin.js?v=4.34"></script>
+<script defer src="js/cookie.js?v=4.34"></script>
+<script defer src="js/navigation.js?v=4.34"></script>
+<script defer src="js/main.js?v=4.34"></script>
 </body>
 </html>

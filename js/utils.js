@@ -2,6 +2,13 @@ let state = null;
 let stateOwnerId = null;
 let stateSyncReady = false;
 let stateSyncTimer = null;
+let statePollTimer = null;
+let stateSyncEtag = null;
+let stateSyncAllowed = false;
+let stateSyncInFlight = false;
+let stateSyncDirty = false;
+let stateLocalRevision = 0;
+let stateSyncErrorShown = false;
 
 function loadState() {
   try {
@@ -39,9 +46,13 @@ function saveState() {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
     if (stateOwnerId) localStorage.setItem(`${STORAGE_KEY}_${encodeURIComponent(stateOwnerId)}`, JSON.stringify(state));
-    if (stateOwnerId && stateSyncReady) {
+    if (stateOwnerId) {
+      stateLocalRevision++;
+      stateSyncDirty = true;
+    }
+    if (stateOwnerId && stateSyncReady && stateSyncAllowed) {
       clearTimeout(stateSyncTimer);
-      stateSyncTimer = setTimeout(() => fetch("/api/state", { method: "PUT", headers: { "Content-Type": "application/json", Authorization: `Bearer ${localStorage.getItem(AUTH_TOKEN_KEY) || ""}` }, body: JSON.stringify(state) }).catch(() => {}), 350);
+      stateSyncTimer = setTimeout(syncAccountState, 350);
     }
     return true;
   } catch (e) {
@@ -51,8 +62,85 @@ function saveState() {
   }
 }
 
+async function syncAccountState() {
+  stateSyncTimer = null;
+  if (!stateOwnerId || !stateSyncReady || !stateSyncAllowed || !stateSyncDirty || stateSyncInFlight) return;
+  const ownerId = stateOwnerId;
+  const revision = stateLocalRevision;
+  const snapshot = JSON.stringify(state);
+  stateSyncInFlight = true;
+  try {
+    const response = await fetch("/api/state", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${localStorage.getItem(AUTH_TOKEN_KEY) || ""}` },
+      body: snapshot,
+    });
+    if (!response.ok) throw new Error(`Account data sync failed (${response.status})`);
+    if (ownerId !== stateOwnerId) return;
+    stateSyncEtag = response.headers.get("ETag") || stateSyncEtag;
+    stateSyncErrorShown = false;
+    if (revision === stateLocalRevision) stateSyncDirty = false;
+  } catch (error) {
+    console.error("Account state sync failed:", error);
+    if (ownerId === stateOwnerId && !stateSyncErrorShown) {
+      toast(t("state_sync_failed"), "error");
+      stateSyncErrorShown = true;
+    }
+  } finally {
+    if (ownerId === stateOwnerId) {
+      stateSyncInFlight = false;
+      if (stateSyncDirty) {
+        clearTimeout(stateSyncTimer);
+        stateSyncTimer = setTimeout(syncAccountState, 3000);
+      }
+    }
+  }
+}
+
+function renderAccountState() {
+  renderProducts();
+  renderCrafting();
+  renderSalesHistory();
+  renderDashboard();
+  renderReports();
+  renderSettings();
+}
+
+async function pollAccountState() {
+  if (!stateOwnerId || !stateSyncReady || !stateSyncAllowed || stateSyncDirty || stateSyncInFlight || stateSyncTimer || document.visibilityState !== "visible") return;
+  const revision = stateLocalRevision;
+  const ownerId = stateOwnerId;
+  const token = localStorage.getItem(AUTH_TOKEN_KEY);
+  if (!token || token === "demo") return;
+  try {
+    const headers = { Authorization: `Bearer ${token}` };
+    if (stateSyncEtag) headers["If-None-Match"] = stateSyncEtag;
+    const response = await fetch("/api/state", { headers });
+    if (response.status === 304 || response.status === 404) return;
+    if (!response.ok) throw new Error(`Account data refresh failed (${response.status})`);
+    const remoteState = await response.json();
+    if (ownerId !== stateOwnerId || revision !== stateLocalRevision || stateSyncDirty || stateSyncInFlight) return;
+    stateSyncEtag = response.headers.get("ETag") || stateSyncEtag;
+    if (JSON.stringify(remoteState) === JSON.stringify(state)) return;
+    state = remoteState;
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    localStorage.setItem(`${STORAGE_KEY}_${encodeURIComponent(ownerId)}`, JSON.stringify(state));
+    renderAccountState();
+  } catch (error) {
+    console.warn("Live account refresh failed:", error);
+  }
+}
+
 async function activateUserState(ownerId) {
+  clearTimeout(stateSyncTimer);
+  clearInterval(statePollTimer);
   stateSyncReady = false;
+  stateSyncAllowed = false;
+  stateSyncEtag = null;
+  stateSyncDirty = false;
+  stateSyncInFlight = false;
+  stateLocalRevision = 0;
+  stateSyncErrorShown = false;
   stateOwnerId = ownerId;
   const personalKey = `${STORAGE_KEY}_${encodeURIComponent(ownerId)}`;
   const localState = localStorage.getItem(personalKey);
@@ -63,17 +151,32 @@ async function activateUserState(ownerId) {
   } else {
     state = defaultState({ emptyWorkspace: true });
   }
-  renderProducts(); renderCrafting(); renderSalesHistory(); renderDashboard(); renderReports(); renderSettings();
+  renderAccountState();
+  const loadRevision = stateLocalRevision;
   try {
     const response = await fetch("/api/state", { headers: { Authorization: `Bearer ${localStorage.getItem(AUTH_TOKEN_KEY) || ""}` } });
-    if (response.ok) state = await response.json();
-    else if (response.status === 404) state = defaultState({ emptyWorkspace: true });
-    else if (response.status !== 503) throw new Error("Could not load account data");
+    if (response.ok) {
+      const remoteState = await response.json();
+      stateSyncAllowed = true;
+      stateSyncEtag = response.headers.get("ETag");
+      if (stateLocalRevision === loadRevision) state = remoteState;
+    } else if (response.status === 404) {
+      stateSyncAllowed = true;
+      if (stateLocalRevision === loadRevision) state = defaultState({ emptyWorkspace: true });
+      stateSyncDirty = true;
+    } else if (response.status !== 503) throw new Error("Could not load account data");
   } catch (error) { console.warn("Account state sync unavailable; using this browser's local state."); }
   if (!state || !Array.isArray(state.products) || !Array.isArray(state.sales) || !state.settings) state = defaultState({ emptyWorkspace: true });
+  if (stateLocalRevision !== loadRevision) stateSyncDirty = true;
   stateSyncReady = true;
-  saveState();
-  renderProducts(); renderCrafting(); renderSalesHistory(); renderDashboard(); renderReports(); renderSettings();
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  localStorage.setItem(personalKey, JSON.stringify(state));
+  if (stateSyncDirty && stateSyncAllowed) stateSyncTimer = setTimeout(syncAccountState, 0);
+  renderAccountState();
+  if (stateSyncAllowed) {
+    pollAccountState();
+    statePollTimer = setInterval(pollAccountState, 5000);
+  }
 }
 window.activateUserState = activateUserState;
 
@@ -93,6 +196,9 @@ async function clearAccountData() {
         body: JSON.stringify(emptyState),
       });
       if (!response.ok) throw new Error(t("clear_account_server_failed"));
+      stateSyncAllowed = true;
+      stateSyncEtag = response.headers.get("ETag") || null;
+      stateSyncDirty = false;
       serverCleared = true;
     }
     state = emptyState;
@@ -101,7 +207,8 @@ async function clearAccountData() {
     applyTheme("dark");
     setLang("th");
     stateSyncReady = Boolean(ownerId);
-    renderProducts(); renderCrafting(); renderSalesHistory(); renderDashboard(); renderReports(); renderSettings();
+    stateLocalRevision++;
+    renderAccountState();
     toast(t("clear_account_success"));
     return true;
   } catch (error) {

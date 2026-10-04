@@ -1,6 +1,6 @@
 services:
   - type: web
-    name: igh7021-kinglegacy-stock
+    name: igh7021-kinglegacy-stock-node
     runtime: node
     plan: free
     buildCommand: npm install

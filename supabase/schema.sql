@@ -77,10 +77,13 @@ create table if not exists public.user_identities (
   owner_id text not null,
   display_name text not null,
   email text,
+  avatar_url text,
   linked_at bigint not null,
   unique (provider, provider_user_id),
   unique (original_key_id, provider)
 );
+
+alter table public.user_identities add column if not exists avatar_url text;
 
 create index if not exists user_identities_key_id_idx on public.user_identities(key_id);
 create index if not exists user_identities_original_key_id_idx on public.user_identities(original_key_id);
@@ -104,12 +107,47 @@ create table if not exists public.presence_clients (
   last_seen timestamptz not null default now()
 );
 
+create table if not exists public.support_requests (
+  id uuid primary key,
+  owner_id text not null,
+  request_date date not null,
+  message text not null check (char_length(message) between 3 and 1000),
+  status text not null default 'open' check (status in ('open', 'resolved')),
+  created_at timestamptz not null default now(),
+  unique (owner_id, request_date)
+);
+
+create table if not exists public.user_profiles (
+  owner_id text primary key,
+  avatar_data text not null default '',
+  presence_status text not null default 'online' check (presence_status in ('online', 'offline')),
+  updated_at timestamptz not null default now()
+);
+
+create table if not exists public.site_suggestions (
+  id uuid primary key,
+  owner_id text not null,
+  author_provider text not null check (author_provider in ('google', 'discord')),
+  author_name text not null,
+  author_avatar text not null default '',
+  author_presence text not null default 'online' check (author_presence in ('online', 'offline')),
+  message text not null check (char_length(message) between 3 and 2000),
+  created_at timestamptz not null default now()
+);
+
+create index if not exists site_suggestions_created_at_idx on public.site_suggestions(created_at desc);
+
 alter table public.access_keys enable row level security;
 alter table public.app_users enable row level security;
 alter table public.user_identities enable row level security;
 alter table public.user_states enable row level security;
 alter table public.reviews enable row level security;
 alter table public.presence_clients enable row level security;
+alter table public.support_requests enable row level security;
+alter table public.user_profiles enable row level security;
+alter table public.site_suggestions enable row level security;
 
 revoke all on public.access_keys, public.app_users, public.user_identities, public.user_states, public.reviews, public.presence_clients from anon, authenticated;
-grant all on public.access_keys, public.app_users, public.user_identities, public.user_states, public.reviews, public.presence_clients, public.key_archive to service_role;
+revoke all on public.support_requests from anon, authenticated;
+revoke all on public.user_profiles, public.site_suggestions from anon, authenticated;
+grant all on public.access_keys, public.app_users, public.user_identities, public.user_states, public.reviews, public.presence_clients, public.support_requests, public.user_profiles, public.site_suggestions, public.key_archive to service_role;

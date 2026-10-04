@@ -21,12 +21,13 @@ const KEY_EXPIRY_GRACE_MS = 7 * 24 * 60 * 60 * 1000;
 const SUPABASE_URL = process.env.SUPABASE_URL?.replace(/\/$/, "");
 const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const SUPABASE_ENABLED = process.env.SUPABASE_DISABLED !== "true" && Boolean(SUPABASE_URL && SUPABASE_SERVICE_ROLE_KEY);
-const APP_ORIGIN = process.env.APP_ORIGIN || process.env.RENDER_EXTERNAL_URL || `http://localhost:${PORT}`;
+const APP_ORIGIN = (process.env.APP_ORIGIN || process.env.RENDER_EXTERNAL_URL || `http://localhost:${PORT}`).replace(/\/+$/, "");
 const ONLINE_WINDOW = 90000;
 const presence = new Map();
 const sessions = new Map();
 const revokedSessions = new Set();
 const MIME_TYPES = { ".html": "text/html; charset=utf-8", ".js": "text/javascript; charset=utf-8", ".css": "text/css; charset=utf-8", ".json": "application/json; charset=utf-8", ".png": "image/png", ".jpg": "image/jpeg", ".jpeg": "image/jpeg", ".webp": "image/webp", ".svg": "image/svg+xml" };
+const SECURITY_HEADERS = { "X-Content-Type-Options": "nosniff", "X-Frame-Options": "DENY", "Referrer-Policy": "strict-origin-when-cross-origin", "Permissions-Policy": "camera=(), microphone=(), geolocation=()" };
 
 function readData() {
   try { return JSON.parse(fs.readFileSync(DATA_FILE, "utf8")); }
@@ -72,9 +73,22 @@ function archiveLocalExpiredKeys(now = Date.now()) {
   });
   return count;
 }
-function json(response, status, body) { response.writeHead(status, { "Content-Type": "application/json; charset=utf-8", "Access-Control-Allow-Origin": "*" }); response.end(JSON.stringify(body)); }
+function json(response, status, body, headers = {}) { response.writeHead(status, { ...SECURITY_HEADERS, "Content-Type": "application/json; charset=utf-8", ...headers }); response.end(JSON.stringify(body)); }
 function requestBody(request, maxBytes = 10000) {
   return new Promise((resolve, reject) => { let raw = ""; request.on("data", chunk => { raw += chunk; if (raw.length > maxBytes) reject(new Error("payload too large")); }); request.on("end", () => { try { resolve(raw ? JSON.parse(raw) : {}); } catch (error) { reject(error); } }); request.on("error", reject); });
+}
+function bangkokDate(now = new Date()) {
+  const parts = new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Bangkok", year: "numeric", month: "2-digit", day: "2-digit" }).formatToParts(now);
+  const values = Object.fromEntries(parts.map(part => [part.type, part.value]));
+  return `${values.year}-${values.month}-${values.day}`;
+}
+function stableJson(value) {
+  if (Array.isArray(value)) return `[${value.map(stableJson).join(",")}]`;
+  if (value && typeof value === "object") return `{${Object.keys(value).sort().map(key => `${JSON.stringify(key)}:${stableJson(value[key])}`).join(",")}}`;
+  return JSON.stringify(value);
+}
+function stateEtag(state, updatedAt) {
+  return `"${crypto.createHash("sha256").update(`${updatedAt}:${stableJson(state)}`).digest("hex")}"`;
 }
 function communityStats() {
   const now = Date.now();
@@ -82,11 +96,11 @@ function communityStats() {
   return { onlineUsers: presence.size, totalUsers: readData().totalUsers };
 }
 function authData() { const data = readData(); data.keys = readKeyFiles(); data.users = Array.isArray(data.users) ? data.users : []; data.identities = Array.isArray(data.identities) ? data.identities : []; const expired = new Set(data.keys.filter(key => !key.permanent && key.expiresAt && key.expiresAt + KEY_EXPIRY_GRACE_MS < Date.now()).map(key => key.id)); const keptUsers = data.users.filter(user => !expired.has(user.keyId)); if (keptUsers.length !== data.users.length) { data.users = keptUsers; writeData(data); } return data; }
-async function supabaseRequest(table, method = "GET", query = "", body = null) {
+async function supabaseRequest(table, method = "GET", query = "", body = null, prefer = null) {
   if (!SUPABASE_ENABLED) throw new Error("Supabase is not configured");
   const response = await fetch(`${SUPABASE_URL}/rest/v1/${table}${query ? `?${query}` : ""}`, {
     method,
-    headers: { apikey: SUPABASE_SERVICE_ROLE_KEY, Authorization: `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`, "Content-Type": "application/json", Prefer: method === "POST" ? "resolution=merge-duplicates,return=representation" : "return=representation" },
+    headers: { apikey: SUPABASE_SERVICE_ROLE_KEY, Authorization: `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`, "Content-Type": "application/json", Prefer: prefer || (method === "POST" ? "resolution=merge-duplicates,return=representation" : "return=representation") },
     ...(body ? { body: JSON.stringify(body) } : {}),
   });
   const text = await response.text();
@@ -100,7 +114,7 @@ async function getAuthData() {
     supabaseRequest("app_users", "GET", "select=*&order=created_at.desc"),
     supabaseRequest("user_identities", "GET", "select=*&order=linked_at.asc"),
   ]);
-  return { keys: keys.map(key => ({ ...key, expiresAt: key.expires_at, durationMs: key.duration_ms, activatedAt: key.activated_at, createdAt: key.created_at })), users: users.map(user => ({ ...user, keyId: user.key_id, createdAt: user.created_at })), identities: identities.map(identity => ({ ...identity, keyId: identity.key_id, originalKeyId: identity.original_key_id, ownerId: identity.owner_id, providerUserId: identity.provider_user_id, displayName: identity.display_name, linkedAt: identity.linked_at })) };
+  return { keys: keys.map(key => ({ ...key, expiresAt: key.expires_at, durationMs: key.duration_ms, activatedAt: key.activated_at, createdAt: key.created_at })), users: users.map(user => ({ ...user, keyId: user.key_id, createdAt: user.created_at })), identities: identities.map(identity => ({ ...identity, keyId: identity.key_id, originalKeyId: identity.original_key_id, ownerId: identity.owner_id, providerUserId: identity.provider_user_id, displayName: identity.display_name, avatarUrl: identity.avatar_url, linkedAt: identity.linked_at })) };
 }
 async function getArchivedKeys() {
   if (!SUPABASE_ENABLED) return readArchivedKeyFiles();
@@ -139,7 +153,7 @@ async function saveIdentity(identity) {
     data.identities = data.identities.filter(item => !(item.provider === identity.provider && item.originalKeyId === identity.originalKeyId));
     data.identities.push(identity); writeData(data); return identity;
   }
-  const payload = { id: providerIdentity?.id || crypto.randomUUID(), provider: identity.provider, provider_user_id: identity.providerUserId, key_id: identity.keyId, original_key_id: identity.originalKeyId, owner_id: identity.ownerId, display_name: identity.displayName, email: identity.email || null, linked_at: providerIdentity?.linkedAt || Date.now() };
+  const payload = { id: providerIdentity?.id || crypto.randomUUID(), provider: identity.provider, provider_user_id: identity.providerUserId, key_id: identity.keyId, original_key_id: identity.originalKeyId, owner_id: identity.ownerId, display_name: identity.displayName, email: identity.email || null, avatar_url: identity.avatarUrl || null, linked_at: providerIdentity?.linkedAt || Date.now() };
   if (providerIdentity) {
     const rows = await supabaseRequest("user_identities", "PATCH", `id=eq.${encodeURIComponent(providerIdentity.id)}`, payload);
     if (!rows.length) throw new Error("IDENTITY_UPDATE_FAILED");
@@ -201,6 +215,23 @@ async function sessionHasActiveKey(session) {
   if (!session?.keyId) return false;
   const data = await getAuthData();
   return validKey(data.keys.find(key => key.id === session.keyId));
+}
+async function verifiedIdentityForKey(keyId) {
+  const data = await getAuthData();
+  return data.identities.find(identity => identity.originalKeyId === keyId && identity.keyId === keyId) || null;
+}
+function profileAvatar(value) {
+  if (value === "") return "";
+  const match = typeof value === "string" && value.match(/^data:image\/png;base64,([A-Za-z0-9+/]+={0,2})$/);
+  if (!match || value.length > 180000) throw new Error("INVALID_PROFILE_IMAGE");
+  const bytes = Buffer.from(match[1], "base64");
+  if (bytes.length < 33 || bytes.length > 135000 || bytes.toString("base64") !== match[1]) throw new Error("INVALID_PROFILE_IMAGE");
+  const signature = Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]);
+  if (!bytes.subarray(0, 8).equals(signature) || bytes.toString("ascii", 12, 16) !== "IHDR") throw new Error("INVALID_PROFILE_IMAGE");
+  const width = bytes.readUInt32BE(16);
+  const height = bytes.readUInt32BE(20);
+  if (!width || !height || width > 150 || height > 150) throw new Error("INVALID_PROFILE_IMAGE");
+  return value;
 }
 function createOAuthState() {
   const timestamp = String(Date.now()); const nonce = crypto.randomBytes(24).toString("hex");
@@ -271,8 +302,8 @@ function passwordHash(password, salt = crypto.randomBytes(16).toString("hex")) {
 function passwordMatches(password, user) { const candidate = passwordHash(password, user.salt).hash; return crypto.timingSafeEqual(Buffer.from(candidate, "hex"), Buffer.from(user.passwordHash, "hex")); }
 const server = http.createServer(async (request, response) => {
   const url = new URL(request.url, `http://${request.headers.host || "localhost"}`);
-  if (request.method === "OPTIONS") { response.writeHead(204, { "Access-Control-Allow-Origin": "*", "Access-Control-Allow-Methods": "GET,POST,PUT,DELETE,OPTIONS", "Access-Control-Allow-Headers": "Content-Type,Authorization" }); return response.end(); }
-  if (url.pathname === "/api/config" && request.method === "GET") return json(response, 200, { githubConfigured: Boolean(process.env.GITHUB_CLIENT_ID && process.env.GITHUB_CLIENT_SECRET && process.env.GITHUB_ADMIN_USERNAME && process.env.GITHUB_OAUTH_STATE_SECRET?.length >= 32), googleConfigured: providerConfigured("google"), discordConfigured: providerConfigured("discord"), supabaseConfigured: SUPABASE_ENABLED });
+  if (request.method === "OPTIONS") { response.writeHead(204, { ...SECURITY_HEADERS, Allow: "GET,POST,PUT,DELETE,OPTIONS" }); return response.end(); }
+  if (url.pathname === "/api/config" && request.method === "GET") return json(response, 200, { githubConfigured: Boolean(process.env.GITHUB_CLIENT_ID && process.env.GITHUB_CLIENT_SECRET && process.env.GITHUB_ADMIN_USERNAME && process.env.GITHUB_OAUTH_STATE_SECRET?.length >= 32), googleConfigured: providerConfigured("google"), discordConfigured: providerConfigured("discord"), googleRedirectUri: providerConfigured("google") ? providerSettings("google").redirectUri : null, discordRedirectUri: providerConfigured("discord") ? providerSettings("discord").redirectUri : null, supabaseConfigured: SUPABASE_ENABLED });
   if (url.pathname === "/api/auth/logout" && request.method === "POST") {
     const token = request.headers.cookie?.match(/(?:^|;\s*)igh_session=([^;]+)/)?.[1]; if (token) { sessions.delete(token); revokedSessions.add(token); }
     response.writeHead(204, { "Set-Cookie": "igh_session=; HttpOnly; SameSite=Lax; Path=/; Max-Age=0" }); return response.end();
@@ -309,7 +340,11 @@ const server = http.createServer(async (request, response) => {
       const profileResponse = await fetch(provider === "google" ? "https://openidconnect.googleapis.com/v1/userinfo" : "https://discord.com/api/users/@me", { headers: { Authorization: `Bearer ${tokenBody.access_token}`, Accept: "application/json" } });
       const profile = await profileResponse.json();
       if (!profileResponse.ok) throw new Error(`${provider} profile request failed`);
-      const identity = { provider, providerUserId: String(provider === "google" ? profile.sub || "" : profile.id || ""), displayName: String(provider === "google" ? profile.name || profile.email || "Google user" : profile.global_name || profile.username || "Discord user").slice(0, 120), email: profile.email ? String(profile.email).slice(0, 254) : null };
+      const providerUserId = String(provider === "google" ? profile.sub || "" : profile.id || "");
+      const avatarUrl = provider === "google"
+        ? (typeof profile.picture === "string" && /^https:\/\/lh3\.googleusercontent\.com\//.test(profile.picture) ? profile.picture : "")
+        : (typeof profile.avatar === "string" && /^[A-Za-z0-9_]+$/.test(profile.avatar) && /^\d+$/.test(providerUserId) ? `https://cdn.discordapp.com/avatars/${providerUserId}/${profile.avatar}.png?size=150` : "");
+      const identity = { provider, providerUserId, displayName: String(provider === "google" ? profile.name || profile.email || "Google user" : profile.global_name || profile.username || "Discord user").slice(0, 120), email: profile.email ? String(profile.email).slice(0, 254) : null, avatarUrl };
       if (!identity.providerUserId) throw new Error("Provider profile has no account id");
       const data = await getAuthData();
       const key = data.keys.find(item => item.id === state.keyId);
@@ -368,13 +403,177 @@ const server = http.createServer(async (request, response) => {
     try {
       if (!SUPABASE_ENABLED) return json(response, 503, { error: "SUPABASE_NOT_CONFIGURED" });
       if (request.method === "GET") {
-        const rows = await supabaseRequest("user_states", "GET", `owner_id=eq.${encodeURIComponent(session.ownerId)}&select=state`);
-        return rows.length ? json(response, 200, rows[0].state) : json(response, 404, { error: "STATE_NOT_FOUND" });
+        const rows = await supabaseRequest("user_states", "GET", `owner_id=eq.${encodeURIComponent(session.ownerId)}&select=state,updated_at`);
+        if (!rows.length) return json(response, 404, { error: "STATE_NOT_FOUND" });
+        const etag = stateEtag(rows[0].state, rows[0].updated_at);
+        if (request.headers["if-none-match"] === etag) {
+          response.writeHead(304, { ETag: etag, "Cache-Control": "no-store" });
+          return response.end();
+        }
+        return json(response, 200, rows[0].state, { ETag: etag, "Cache-Control": "no-store" });
       }
       const body = await requestBody(request, 5 * 1024 * 1024);
-      await supabaseRequest("user_states", "POST", "on_conflict=owner_id", { owner_id: session.ownerId, state: body, updated_at: new Date().toISOString() });
-      return json(response, 200, { saved: true });
+      const updatedAt = new Date().toISOString();
+      await supabaseRequest("user_states", "POST", "on_conflict=owner_id", { owner_id: session.ownerId, state: body, updated_at: updatedAt });
+      return json(response, 200, { saved: true }, { ETag: stateEtag(body, updatedAt), "Cache-Control": "no-store" });
     } catch (error) { console.error(error.message); return json(response, 503, { error: "SUPABASE_UNAVAILABLE" }); }
+  }
+  if (url.pathname === "/api/profile" && (request.method === "GET" || request.method === "PUT")) {
+    const session = sessionFromRequest(request);
+    if (!session?.keyId || session.admin || !(await sessionHasActiveKey(session))) return json(response, 401, { error: "ACTIVE_KEY_LOGIN_REQUIRED" });
+    try {
+      const identity = await verifiedIdentityForKey(session.keyId);
+      if (request.method === "GET") {
+        const rows = SUPABASE_ENABLED
+          ? await supabaseRequest("user_profiles", "GET", `owner_id=eq.${encodeURIComponent(session.ownerId)}&select=avatar_data,presence_status`)
+          : (readData().userProfiles || []).filter(profile => profile.ownerId === session.ownerId);
+        const saved = rows[0] || {};
+        return json(response, 200, {
+          verified: Boolean(identity),
+          provider: identity?.provider || null,
+          displayName: identity?.displayName || null,
+          avatarData: saved.avatar_data || saved.avatarData || "",
+          avatarUrl: identity?.avatarUrl || "",
+          presenceStatus: saved.presence_status || saved.presenceStatus || "online",
+        }, { "Cache-Control": "no-store" });
+      }
+      let body;
+      try { body = await requestBody(request, 200000); }
+      catch (error) { return json(response, error.message === "payload too large" ? 413 : 400, { error: error.message === "payload too large" ? "PROFILE_IMAGE_TOO_LARGE" : "INVALID_JSON" }); }
+      if (!["online", "offline"].includes(body.presenceStatus)) return json(response, 400, { error: "INVALID_PROFILE_STATUS" });
+      let avatarData;
+      try { avatarData = profileAvatar(body.avatarData); }
+      catch (error) { return json(response, 400, { error: "INVALID_PROFILE_IMAGE" }); }
+      const profile = { owner_id: session.ownerId, avatar_data: avatarData, presence_status: body.presenceStatus, updated_at: new Date().toISOString() };
+      if (SUPABASE_ENABLED) await supabaseRequest("user_profiles", "POST", "on_conflict=owner_id", profile);
+      else {
+        const data = readData();
+        data.userProfiles = Array.isArray(data.userProfiles) ? data.userProfiles : [];
+        data.userProfiles = data.userProfiles.filter(item => item.ownerId !== session.ownerId);
+        data.userProfiles.push({ ownerId: session.ownerId, avatarData, presenceStatus: body.presenceStatus, updatedAt: profile.updated_at });
+        writeData(data);
+      }
+      return json(response, 200, { saved: true });
+    } catch (error) { console.error("Could not access user profile:", error.message); return json(response, 503, { error: "PROFILE_STORAGE_UNAVAILABLE" }); }
+  }
+  if (url.pathname === "/api/suggestions" && request.method === "POST") {
+    const session = sessionFromRequest(request);
+    if (!session?.keyId || session.admin || !(await sessionHasActiveKey(session))) return json(response, 401, { error: "ACTIVE_KEY_LOGIN_REQUIRED" });
+    try {
+      const identity = await verifiedIdentityForKey(session.keyId);
+      if (!identity) return json(response, 403, { error: "VERIFIED_IDENTITY_REQUIRED" });
+      let body;
+      try { body = await requestBody(request, 12000); }
+      catch (error) { return json(response, error.message === "payload too large" ? 413 : 400, { error: error.message === "payload too large" ? "SUGGESTION_TOO_LARGE" : "INVALID_JSON" }); }
+      const message = String(body.message || "").trim();
+      if (message.length < 3 || message.length > 2000) return json(response, 400, { error: "INVALID_SUGGESTION" });
+      const profiles = SUPABASE_ENABLED
+        ? await supabaseRequest("user_profiles", "GET", `owner_id=eq.${encodeURIComponent(session.ownerId)}&select=avatar_data,presence_status`)
+        : (readData().userProfiles || []).filter(profile => profile.ownerId === session.ownerId);
+      const profile = profiles[0] || {};
+      const suggestion = {
+        id: crypto.randomUUID(), owner_id: session.ownerId, author_provider: identity.provider,
+        author_name: identity.displayName, author_avatar: profile.avatar_data || profile.avatarData || identity.avatarUrl || "",
+        author_presence: profile.presence_status || profile.presenceStatus || "online",
+        message, created_at: new Date().toISOString(),
+      };
+      if (SUPABASE_ENABLED) await supabaseRequest("site_suggestions", "POST", "", suggestion, "return=representation");
+      else {
+        const data = readData();
+        data.siteSuggestions = Array.isArray(data.siteSuggestions) ? data.siteSuggestions : [];
+        data.siteSuggestions.push({ id: suggestion.id, ownerId: suggestion.owner_id, provider: suggestion.author_provider, displayName: suggestion.author_name, avatarData: suggestion.author_avatar, presenceStatus: suggestion.author_presence, message, createdAt: suggestion.created_at });
+        writeData(data);
+      }
+      return json(response, 201, { submitted: true, createdAt: suggestion.created_at });
+    } catch (error) { console.error("Could not save site suggestion:", error.message); return json(response, 503, { error: "SUGGESTION_STORAGE_UNAVAILABLE" }); }
+  }
+  if (url.pathname === "/api/admin/suggestions" && request.method === "GET") {
+    const session = sessionFromRequest(request);
+    if (!session?.admin) return json(response, 403, { error: "ADMIN_ONLY" });
+    try {
+      const rows = SUPABASE_ENABLED
+        ? await supabaseRequest("site_suggestions", "GET", "select=id,author_provider,author_name,author_avatar,author_presence,message,created_at&order=created_at.desc&limit=200")
+        : (readData().siteSuggestions || []).slice().sort((a, b) => String(b.createdAt).localeCompare(String(a.createdAt))).slice(0, 200);
+      return json(response, 200, rows.map(item => ({
+        id: item.id, provider: item.author_provider || item.provider,
+        displayName: item.author_name || item.displayName, avatarData: item.author_avatar || item.avatarData || "",
+        presenceStatus: item.author_presence || item.presenceStatus || "offline",
+        message: item.message, createdAt: item.created_at || item.createdAt,
+      })));
+    } catch (error) { console.error("Could not load site suggestions:", error.message); return json(response, 503, { error: "SUGGESTION_STORAGE_UNAVAILABLE" }); }
+  }
+  const adminSuggestionRoute = url.pathname.match(/^\/api\/admin\/suggestions\/([0-9a-f-]+)$/i);
+  if (adminSuggestionRoute && request.method === "DELETE") {
+    const session = sessionFromRequest(request);
+    if (!session?.admin) return json(response, 403, { error: "ADMIN_ONLY" });
+    try {
+      if (SUPABASE_ENABLED) {
+        const rows = await supabaseRequest("site_suggestions", "DELETE", `id=eq.${encodeURIComponent(adminSuggestionRoute[1])}`);
+        if (!rows.length) return json(response, 404, { error: "SUGGESTION_NOT_FOUND" });
+      } else {
+        const data = readData();
+        data.siteSuggestions = Array.isArray(data.siteSuggestions) ? data.siteSuggestions : [];
+        const remaining = data.siteSuggestions.filter(item => item.id !== adminSuggestionRoute[1]);
+        if (remaining.length === data.siteSuggestions.length) return json(response, 404, { error: "SUGGESTION_NOT_FOUND" });
+        data.siteSuggestions = remaining;
+        writeData(data);
+      }
+      return json(response, 200, { deleted: true });
+    } catch (error) { console.error("Could not delete site suggestion:", error.message); return json(response, 503, { error: "SUGGESTION_STORAGE_UNAVAILABLE" }); }
+  }
+  if (url.pathname === "/api/requests" && request.method === "GET") {
+    const session = sessionFromRequest(request);
+    if (!session?.keyId || session.admin) return json(response, 401, { error: "ACTIVE_KEY_LOGIN_REQUIRED" });
+    try {
+      if (!(await sessionHasActiveKey(session))) return json(response, 401, { error: "ACTIVE_KEY_LOGIN_REQUIRED" });
+      const requestDate = bangkokDate();
+      const rows = SUPABASE_ENABLED
+        ? await supabaseRequest("support_requests", "GET", `owner_id=eq.${encodeURIComponent(session.keyId)}&request_date=eq.${requestDate}&select=id,created_at`)
+        : (readData().supportRequests || []).filter(item => item.ownerId === session.keyId && item.requestDate === requestDate);
+      return json(response, 200, { submitted: rows.length > 0, submittedAt: rows[0]?.created_at || rows[0]?.createdAt || null });
+    } catch (error) { console.error("Could not load support-request status:", error.message); return json(response, 503, { error: "REQUEST_STORAGE_UNAVAILABLE" }); }
+  }
+  if (url.pathname === "/api/requests" && request.method === "POST") {
+    const session = sessionFromRequest(request);
+    if (!session?.keyId || session.admin) return json(response, 401, { error: "ACTIVE_KEY_LOGIN_REQUIRED" });
+    try {
+      if (!(await sessionHasActiveKey(session))) return json(response, 401, { error: "ACTIVE_KEY_LOGIN_REQUIRED" });
+      let body;
+      try { body = await requestBody(request, 10000); }
+      catch (error) { return json(response, error.message === "payload too large" ? 413 : 400, { error: error.message === "payload too large" ? "REQUEST_TOO_LARGE" : "INVALID_JSON" }); }
+      const message = String(body.message || "").trim();
+      if (message.length < 3 || message.length > 1000) return json(response, 400, { error: "INVALID_REQUEST_MESSAGE" });
+      const requestDate = bangkokDate();
+      if (SUPABASE_ENABLED) {
+        const rows = await supabaseRequest("support_requests", "POST", "on_conflict=owner_id,request_date", { id: crypto.randomUUID(), owner_id: session.keyId, request_date: requestDate, message, status: "open" }, "resolution=ignore-duplicates,return=representation");
+        if (!rows.length) return json(response, 429, { error: "REQUEST_DAILY_LIMIT" });
+        return json(response, 201, { submitted: true, submittedAt: rows[0].created_at });
+      }
+      const data = readData();
+      data.supportRequests = Array.isArray(data.supportRequests) ? data.supportRequests : [];
+      if (data.supportRequests.some(item => item.ownerId === session.keyId && item.requestDate === requestDate)) return json(response, 429, { error: "REQUEST_DAILY_LIMIT" });
+      const createdAt = new Date().toISOString();
+      data.supportRequests.push({ id: crypto.randomUUID(), ownerId: session.keyId, requestDate, message, status: "open", createdAt });
+      writeData(data);
+      return json(response, 201, { submitted: true, submittedAt: createdAt });
+    } catch (error) { console.error("Could not save support request:", error.message); return json(response, 503, { error: "REQUEST_STORAGE_UNAVAILABLE" }); }
+  }
+  if (url.pathname === "/api/admin/requests" && request.method === "GET") {
+    const session = sessionFromRequest(request);
+    if (!session?.admin) return json(response, 403, { error: "ADMIN_ONLY" });
+    try {
+      const requests = SUPABASE_ENABLED
+        ? await supabaseRequest("support_requests", "GET", "select=id,owner_id,message,status,request_date,created_at&order=created_at.desc&limit=200")
+        : (readData().supportRequests || []).slice().sort((a, b) => String(b.createdAt).localeCompare(String(a.createdAt))).slice(0, 200);
+      const data = await getAuthData();
+      return json(response, 200, requests.map(item => {
+        const keyId = item.owner_id || item.ownerId;
+        const owner = data.users.find(user => user.keyId === keyId);
+        const identity = data.identities.find(entry => entry.originalKeyId === keyId || entry.ownerId === owner?.id);
+        const key = data.keys.find(entry => entry.id === keyId);
+        return { id: item.id, owner: identity?.displayName || owner?.name || (key ? `Key ${String(key.id).slice(0, 8)}` : item.owner_id || item.ownerId), message: item.message, status: item.status, requestDate: item.request_date || item.requestDate, createdAt: item.created_at || item.createdAt };
+      }));
+    } catch (error) { console.error("Could not load admin support requests:", error.message); return json(response, 503, { error: "REQUEST_STORAGE_UNAVAILABLE" }); }
   }
   if (url.pathname === "/api/auth/key" && request.method === "POST") {
     try { const body = await requestBody(request); const value = String(body.key || "").trim(); const data = await getAuthData(); const key = keyRecord(data, value); if (!validKey(key)) return json(response, 401, { error: "KEY_INVALID_OR_EXPIRED" }); return json(response, 200, { valid: true, admin: !!key.admin, registered: key.admin || data.users.some(user => user.keyId === key.id), permanent: key.permanent, expiresAt: key.expiresAt || null, durationMs: key.durationMs || null, waitingForFirstUse: !key.permanent && !key.expiresAt && Number(key.durationMs) > 0 }); }
@@ -457,7 +656,7 @@ const server = http.createServer(async (request, response) => {
     if (SUPABASE_ENABLED) { try { await supabaseRequest("presence_clients", "POST", "on_conflict=client_id", { client_id: clientId, last_seen: new Date().toISOString() }); data.totalUsers = (await supabaseRequest("presence_clients", "GET", "select=client_id")).length; } catch (error) { console.error(error.message); } }
     else writeData(data);
     const stats = communityStats(); stats.totalUsers = data.totalUsers;
-    response.writeHead(200, { "Content-Type": "application/json; charset=utf-8", "Access-Control-Allow-Origin": "*", "X-Client-Id": clientId });
+    response.writeHead(200, { "Content-Type": "application/json; charset=utf-8", "X-Client-Id": clientId });
     return response.end(JSON.stringify(stats));
   }
   if (url.pathname === "/api/community" && request.method === "GET") {
@@ -471,13 +670,13 @@ const server = http.createServer(async (request, response) => {
   const filePath = path.resolve(ROOT, `.${requested}`);
   const relativePath = path.relative(ROOT, filePath);
   const normalizedRelativePath = relativePath.split(path.sep).join("/").toLowerCase();
-  const protectedPath = normalizedRelativePath.split("/").some(part => part.startsWith(".env")) || normalizedRelativePath.startsWith("server/keys/") || normalizedRelativePath.startsWith("server/key-archive/") || normalizedRelativePath === "server/data.json" || normalizedRelativePath === "scripts/migrate-supabase.js";
+  const protectedPath = normalizedRelativePath.split("/").some(part => part.startsWith(".env") || part === ".git" || part === "node_modules") || normalizedRelativePath.startsWith("server/") || normalizedRelativePath.startsWith("scripts/") || normalizedRelativePath.startsWith("supabase/") || ["package.json", "package-lock.json", "render.yaml", ".gitignore"].includes(normalizedRelativePath);
   if (!relativePath || relativePath.startsWith("..") || path.isAbsolute(relativePath) || protectedPath || !fs.existsSync(filePath) || fs.statSync(filePath).isDirectory()) {
     const notFound = path.join(ROOT, "404.html");
-    response.writeHead(404, { "Content-Type": "text/html; charset=utf-8" });
+    response.writeHead(404, { ...SECURITY_HEADERS, "Content-Type": "text/html; charset=utf-8" });
     return fs.createReadStream(notFound).pipe(response);
   }
-  response.writeHead(200, { "Content-Type": MIME_TYPES[path.extname(filePath).toLowerCase()] || "application/octet-stream" });
+  response.writeHead(200, { ...SECURITY_HEADERS, "Content-Type": MIME_TYPES[path.extname(filePath).toLowerCase()] || "application/octet-stream" });
   if (request.method === "HEAD") return response.end();
   fs.createReadStream(filePath).pipe(response);
 });
