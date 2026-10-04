@@ -1,8 +1,13 @@
 const STORAGE_KEY = "igh_kinglegacy_state";
 const THEME_KEY = "igh_theme";
 const LANG_KEY = "igh_lang";
-const APP_VERSION = "V.4.38";
+const APP_VERSION = "V.4.39";
 const APP_CHANGELOG = [
+  { version: "V.4.39", updatedAt: "2026-10-04T19:59:58.873Z", changes: [
+    "เพิ่มปุ่มลบพร้อมยืนยันสำหรับคำขอลูกค้าในกล่องข้อความ Admin ที่รวมกับข้อเสนอแนะ"
+  ], changesEn: [
+    "Added confirmed deletion of customer requests from the unified Admin inbox"
+  ] },
   { version: "V.4.38", updatedAt: "2026-10-04T19:56:39.258Z", changes: [
     "เปิดให้บัญชี Admin ดูและแก้ไขรูปโปรไฟล์กับสถานะออนไลน์/ออฟไลน์ของตนเองได้ โดยยังจำกัดข้อเสนอแนะและคำขอไว้สำหรับผู้ใช้ทั่วไป"
   ], changesEn: [

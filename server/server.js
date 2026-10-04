@@ -580,6 +580,25 @@ const server = http.createServer(async (request, response) => {
       }));
     } catch (error) { console.error("Could not load admin support requests:", error.message); return json(response, 503, { error: "REQUEST_STORAGE_UNAVAILABLE" }); }
   }
+  const adminRequestRoute = url.pathname.match(/^\/api\/admin\/requests\/([0-9a-f-]+)$/i);
+  if (adminRequestRoute && request.method === "DELETE") {
+    const session = sessionFromRequest(request);
+    if (!session?.admin) return json(response, 403, { error: "ADMIN_ONLY" });
+    try {
+      if (SUPABASE_ENABLED) {
+        const rows = await supabaseRequest("support_requests", "DELETE", `id=eq.${encodeURIComponent(adminRequestRoute[1])}`);
+        if (!rows.length) return json(response, 404, { error: "REQUEST_NOT_FOUND" });
+      } else {
+        const data = readData();
+        data.supportRequests = Array.isArray(data.supportRequests) ? data.supportRequests : [];
+        const remaining = data.supportRequests.filter(item => item.id !== adminRequestRoute[1]);
+        if (remaining.length === data.supportRequests.length) return json(response, 404, { error: "REQUEST_NOT_FOUND" });
+        data.supportRequests = remaining;
+        writeData(data);
+      }
+      return json(response, 200, { deleted: true });
+    } catch (error) { console.error("Could not delete support request:", error.message); return json(response, 503, { error: "REQUEST_STORAGE_UNAVAILABLE" }); }
+  }
   if (url.pathname === "/api/auth/key" && request.method === "POST") {
     try { const body = await requestBody(request); const value = String(body.key || "").trim(); const data = await getAuthData(); const key = keyRecord(data, value); if (!validKey(key)) return json(response, 401, { error: "KEY_INVALID_OR_EXPIRED" }); return json(response, 200, { valid: true, admin: !!key.admin, registered: key.admin || data.users.some(user => user.keyId === key.id), permanent: key.permanent, expiresAt: key.expiresAt || null, durationMs: key.durationMs || null, waitingForFirstUse: !key.permanent && !key.expiresAt && Number(key.durationMs) > 0 }); }
     catch (error) { if (SUPABASE_ENABLED) { console.error(error.message); return json(response, 503, { error: "AUTH_STORAGE_UNAVAILABLE" }); } return json(response, 400, { error: "Invalid JSON" }); }

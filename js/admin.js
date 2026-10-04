@@ -75,9 +75,7 @@ function renderAdminInbox() {
     const provider = ["google", "discord"].includes(item.provider)
       ? t(`identity_provider_${item.provider}`)
       : "";
-    const deleteButton = item.type === "suggestion"
-      ? `<button type="button" class="admin-suggestion-delete px-3 py-1.5 rounded-lg bg-rose-500/15 text-rose-300 text-xs" data-delete-suggestion="${escapeAdminRequestText(item.id)}">${t("admin_suggestion_delete")}</button>`
-      : "";
+    const deleteButton = `<button type="button" class="admin-message-delete px-3 py-1.5 rounded-lg bg-rose-500/15 text-rose-300 text-xs" data-delete-inbox-message="${item.type}" data-message-id="${escapeAdminRequestText(item.id)}">${t("admin_inbox_delete")}</button>`;
     const presence = item.type === "suggestion"
       ? `<span class="presence-dot ${online ? "is-online" : "is-offline"}" role="img" aria-label="${t(online ? "presence_online" : "presence_offline")}"><span class="presence-halo" aria-hidden="true"></span></span>`
       : "";
@@ -238,19 +236,23 @@ document.addEventListener("DOMContentLoaded", () => {
     if (await copyText(button.dataset.copyKey)) { button.textContent = t("admin_copied"); setTimeout(() => { button.textContent = t("admin_copy"); }, 1600); }
   });
   document.getElementById("admin-inbox-list")?.addEventListener("click", event => {
-    const button = event.target.closest("[data-delete-suggestion]");
-    if (!button) return;
-    confirmDialog(t("admin_suggestion_delete_confirm"), async () => {
+    const button = event.target.closest("[data-delete-inbox-message]");
+    if (!button || !["suggestion", "request"].includes(button.dataset.deleteInboxMessage)) return;
+    const type = button.dataset.deleteInboxMessage;
+    const request = type === "request";
+    const route = request ? "requests" : "suggestions";
+    confirmDialog(t(request ? "admin_request_delete_confirm" : "admin_suggestion_delete_confirm"), async () => {
       button.disabled = true;
       try {
-        const response = await fetch(`/api/admin/suggestions/${encodeURIComponent(button.dataset.deleteSuggestion)}`, { method: "DELETE", headers: adminHeaders() });
+        const response = await fetch(`/api/admin/${route}/${encodeURIComponent(button.dataset.messageId)}`, { method: "DELETE", headers: adminHeaders() });
         const result = await readApiResponse(response);
-        if (!response.ok) throw new Error(result.error || "SUGGESTION_DELETE_FAILED");
-        adminSuggestions = adminSuggestions.filter(item => item.id !== button.dataset.deleteSuggestion);
+        if (!response.ok) throw new Error(result.error || "INBOX_MESSAGE_DELETE_FAILED");
+        if (request) adminRequestsCache = adminRequestsCache.filter(item => item.id !== button.dataset.messageId);
+        else adminSuggestions = adminSuggestions.filter(item => item.id !== button.dataset.messageId);
         renderAdminInbox();
       } catch (error) {
-        console.error("Could not delete site suggestion:", error);
-        toast(t("admin_suggestion_delete_failed"), "error");
+        console.error("Could not delete Admin inbox message:", error);
+        toast(t(request ? "admin_request_delete_failed" : "admin_suggestion_delete_failed"), "error");
         button.disabled = false;
       }
     });
