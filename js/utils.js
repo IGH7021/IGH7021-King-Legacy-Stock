@@ -167,6 +167,7 @@ function enhanceNumberInput(input) {
   wrapper.className = "number-stepper";
   if (input.classList.contains("w-full")) wrapper.classList.add("number-stepper-full");
   if (input.classList.contains("flex-1")) wrapper.classList.add("flex-1");
+  if (input.classList.contains("craft-quantity-input")) wrapper.classList.add("craft-quantity-stepper");
   if (input.classList.contains("mt-1")) {
     wrapper.classList.add("mt-1");
     input.classList.remove("mt-1");
