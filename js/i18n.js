@@ -1,7 +1,7 @@
 const I18N = {
   th: {
     nav_dashboard: "Dashboard", nav_products: "สินค้า / Stock", nav_sales: "การขาย",
-    nav_reports: "สรุปยอดขาย", nav_settings: "ตั้งค่า", nav_updates: "อัปเดต", admin_nav: "Admin", nav_home: "กลับหน้า Dashboard", auth_logout: "ออกจากบัญชี",
+    nav_reports: "สรุปยอดขาย", nav_settings: "ตั้งค่า", admin_nav: "Admin", nav_home: "กลับหน้า Dashboard", auth_logout: "ออกจากบัญชี",
     theme_toggle: "สลับธีม", nav_open: "เปิดเมนูนำทาง", nav_close: "ปิดเมนูนำทาง",
     main_nav_aria: "เมนูนำทางหลัก",
     settings_tabs_aria: "หมวดหมู่การตั้งค่า",
@@ -58,8 +58,6 @@ const I18N = {
     suggestion_submit: "ส่งข้อเสนอแนะ", suggestion_sending: "กำลังส่งข้อเสนอแนะ...",
     suggestion_sent: "ส่งข้อเสนอแนะถึง Admin แล้ว", suggestion_invalid: "กรอกข้อความอย่างน้อย 3 ตัวอักษรและไม่เกิน 2,000 ตัวอักษร",
     suggestion_submit_failed: "ส่งข้อเสนอแนะไม่สำเร็จ กรุณาลองใหม่",
-    update_log_description: "ประวัติการอัปเดตระบบและฟีเจอร์ที่เพิ่มเข้ามา",
-    updates_title: "มีอะไรอัปเดต", updates_description: "ประวัติการอัปเดตระบบและฟีเจอร์ทั้งหมด",
 
     loading: "กำลังโหลด", dashboard_title: "Dashboard", quick_sale_btn: "⚡ Quick Sale",
     quick_sale_banner_title: "Quick Sale",
@@ -107,7 +105,7 @@ const I18N = {
     no_sales_data: "ยังไม่มีข้อมูลการขาย",
 
     settings_title: "ตั้งค่า", settings_tab_general: "ทั่วไป", settings_tab_messages: "โปรไฟล์",
-    update_log_title: "มีอะไรอัปเดต", update_date_prefix: "วันที่", update_time_prefix: "เวลา", update_time_unknown: "ไม่ระบุเวลา", credits_title: "ช่องทางติดต่อแอดมิน", back_to_top: "กลับด้านบน",
+    credits_title: "ช่องทางติดต่อแอดมิน", back_to_top: "กลับด้านบน",
     request_title: "ส่งคำขอถึงแอดมิน", request_description: "ส่งคำขอหรือแจ้งปัญหาได้วันละ 1 ครั้ง (เวลาไทย)",
     request_placeholder: "พิมพ์คำขอของคุณ...", request_submit: "ส่งคำขอ", request_char_count: "{count} / 1000",
     request_available: "วันนี้ยังส่งคำขอได้อีก 1 ครั้ง", request_submitted_today: "ส่งคำขอวันนี้แล้ว สามารถส่งใหม่ได้หลังเที่ยงคืน (เวลาไทย)",
@@ -224,7 +222,7 @@ const I18N = {
   },
   en: {
     nav_dashboard: "Dashboard", nav_products: "Products / Stock", nav_sales: "Sales",
-    nav_reports: "Reports", nav_settings: "Settings", nav_updates: "Updates", admin_nav: "Admin", nav_home: "Back to Dashboard", auth_logout: "Log out",
+    nav_reports: "Reports", nav_settings: "Settings", admin_nav: "Admin", nav_home: "Back to Dashboard", auth_logout: "Log out",
     theme_toggle: "Toggle theme", nav_open: "Open navigation menu", nav_close: "Close navigation menu",
     main_nav_aria: "Main navigation",
     settings_tabs_aria: "Settings sections",
@@ -281,8 +279,6 @@ const I18N = {
     suggestion_submit: "Send suggestion", suggestion_sending: "Sending suggestion...",
     suggestion_sent: "Your suggestion was sent to Admin.", suggestion_invalid: "Enter 3–2,000 characters.",
     suggestion_submit_failed: "Could not send the suggestion. Please try again.",
-    update_log_description: "System update history and newly added features.",
-    updates_title: "What's new", updates_description: "Full history of system updates and features.",
 
     loading: "Loading", dashboard_title: "Dashboard", quick_sale_btn: "⚡ Quick Sale",
     quick_sale_banner_title: "Quick Sale",
@@ -330,7 +326,7 @@ const I18N = {
     no_sales_data: "No sales data yet",
 
     settings_title: "Settings", settings_tab_general: "General", settings_tab_messages: "Profile",
-    update_log_title: "What’s new", update_date_prefix: "Date", update_time_prefix: "Time", update_time_unknown: "Time unavailable", credits_title: "Contact admin", back_to_top: "Back to top",
+    credits_title: "Contact admin", back_to_top: "Back to top",
     request_title: "Send a request to the admin", request_description: "You can send one request per day (Bangkok time).",
     request_placeholder: "Type your request...", request_submit: "Send request", request_char_count: "{count} / 1000",
     request_available: "You can send one request today", request_submitted_today: "You already sent a request today. You can send another after midnight (Bangkok time).",
@@ -465,7 +461,6 @@ function setLang(lang) {
   if (typeof renderSalesHistory === "function") renderSalesHistory();
   if (typeof renderDashboard === "function") renderDashboard();
   if (typeof renderReports === "function") renderReports();
-  if (typeof renderUpdatesPage === "function") renderUpdatesPage();
   if (typeof window.refreshCommunityTranslations === "function") window.refreshCommunityTranslations();
   if (typeof window.refreshSupportRequestUi === "function") window.refreshSupportRequestUi();
   if (typeof window.refreshAdminKeyTranslations === "function") window.refreshAdminKeyTranslations();
