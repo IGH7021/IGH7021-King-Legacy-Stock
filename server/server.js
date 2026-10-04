@@ -421,18 +421,19 @@ const server = http.createServer(async (request, response) => {
   }
   if (url.pathname === "/api/profile" && (request.method === "GET" || request.method === "PUT")) {
     const session = sessionFromRequest(request);
-    if (!session?.keyId || session.admin || !(await sessionHasActiveKey(session))) return json(response, 401, { error: "ACTIVE_KEY_LOGIN_REQUIRED" });
+    if (!session?.ownerId || (!session.admin && !session.keyId) || !(await sessionHasActiveKey(session))) return json(response, 401, { error: "ACTIVE_KEY_LOGIN_REQUIRED" });
     try {
-      const identity = await verifiedIdentityForKey(session.keyId);
+      const identity = session.keyId ? await verifiedIdentityForKey(session.keyId) : null;
       if (request.method === "GET") {
         const rows = SUPABASE_ENABLED
           ? await supabaseRequest("user_profiles", "GET", `owner_id=eq.${encodeURIComponent(session.ownerId)}&select=avatar_data,presence_status`)
           : (readData().userProfiles || []).filter(profile => profile.ownerId === session.ownerId);
         const saved = rows[0] || {};
         return json(response, 200, {
+          admin: Boolean(session.admin),
           verified: Boolean(identity),
           provider: identity?.provider || null,
-          displayName: identity?.displayName || null,
+          displayName: identity?.displayName || session.displayName || session.githubLogin || (session.admin ? "Admin" : null),
           avatarData: saved.avatar_data || saved.avatarData || "",
           avatarUrl: identity?.avatarUrl || "",
           presenceStatus: saved.presence_status || saved.presenceStatus || "online",

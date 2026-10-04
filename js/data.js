@@ -1,8 +1,13 @@
 const STORAGE_KEY = "igh_kinglegacy_state";
 const THEME_KEY = "igh_theme";
 const LANG_KEY = "igh_lang";
-const APP_VERSION = "V.4.37";
+const APP_VERSION = "V.4.38";
 const APP_CHANGELOG = [
+  { version: "V.4.38", updatedAt: "2026-10-04T19:46:55.320Z", changes: [
+    "เปิดให้บัญชี Admin ดูและแก้ไขรูปโปรไฟล์กับสถานะออนไลน์/ออฟไลน์ของตนเองได้ โดยยังจำกัดข้อเสนอแนะและคำขอไว้สำหรับผู้ใช้ทั่วไป"
+  ], changesEn: [
+    "Enabled administrators to view and edit their own profile image and online/offline status while keeping suggestions and customer requests for regular users"
+  ] },
   { version: "V.4.37", updatedAt: "2026-10-04T19:12:56.175Z", changes: [
     "เปลี่ยนแท็บตั้งค่าเป็นโปรไฟล์ กำหนดให้ยืนยัน Google/Discord ก่อนส่งคำขอและอัปเดตสิทธิ์เมื่อยกเลิกการยืนยัน รวมกล่องข้อความ Admin และปรับปุ่มเลือกไฟล์ให้เข้ากับธีม"
   ], changesEn: [

@@ -1,4 +1,4 @@
-let profileState = { verified: false, provider: null, displayName: "", avatarData: "", avatarUrl: "", presenceStatus: "online" };
+let profileState = { admin: false, verified: false, provider: null, displayName: "", avatarData: "", avatarUrl: "", presenceStatus: "online" };
 let profileReady = false;
 
 function profileHeaders() {
@@ -11,9 +11,9 @@ function renderProfile() {
   const token = localStorage.getItem(AUTH_TOKEN_KEY);
   const isAdmin = localStorage.getItem("igh_kinglegacy_is_admin") === "1";
   if (!section || !suggestionSection) return;
-  section.classList.toggle("hidden", !token || token === "demo" || isAdmin);
+  section.classList.toggle("hidden", !token || token === "demo");
   suggestionSection.classList.toggle("hidden", !token || token === "demo" || isAdmin);
-  if (!token || token === "demo" || isAdmin) return;
+  if (!token || token === "demo") return;
 
   const name = document.getElementById("user-profile-name");
   const provider = document.getElementById("user-profile-provider");
@@ -25,7 +25,9 @@ function renderProfile() {
   const suggestionButton = document.getElementById("open-suggestion-dialog");
 
   if (name) name.textContent = profileState.displayName || t("profile_not_verified");
-  if (provider) provider.textContent = profileState.provider ? t(`identity_provider_${profileState.provider}`) : t("profile_identity_required");
+  if (provider) provider.textContent = profileState.admin
+    ? t("profile_admin_account")
+    : profileState.provider ? t(`identity_provider_${profileState.provider}`) : t("profile_identity_required");
   if (image && fallback) {
     const avatar = profileState.avatarData || profileState.avatarUrl;
     image.hidden = !avatar;
@@ -50,7 +52,7 @@ function renderProfile() {
 
 async function refreshUserProfile() {
   const token = localStorage.getItem(AUTH_TOKEN_KEY);
-  if (!token || token === "demo" || localStorage.getItem("igh_kinglegacy_is_admin") === "1") {
+  if (!token || token === "demo") {
     profileReady = false;
     renderProfile();
     return;
@@ -60,6 +62,7 @@ async function refreshUserProfile() {
     const result = await readApiResponse(response);
     if (!response.ok) throw new Error(result.error || "PROFILE_LOAD_FAILED");
     profileState = {
+      admin: Boolean(result.admin),
       verified: Boolean(result.verified),
       provider: result.provider || null,
       displayName: result.displayName || "",
