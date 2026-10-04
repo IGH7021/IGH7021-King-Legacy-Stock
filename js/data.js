@@ -1,8 +1,13 @@
 const STORAGE_KEY = "igh_kinglegacy_state";
 const THEME_KEY = "igh_theme";
 const LANG_KEY = "igh_lang";
-const APP_VERSION = "V.4.41";
+const APP_VERSION = "V.4.42";
 const APP_CHANGELOG = [
+  { version: "V.4.42", updatedAt: "2026-10-04T21:26:25.855Z", changes: [
+    "แก้ไม่ให้หน้า Admin และตัวจัดการคีย์แสดงทับหน้าอื่นหลังเข้าสู่ระบบ โดยให้เปิดได้เฉพาะเมื่อเลือกหน้า Admin"
+  ], changesEn: [
+    "Fixed the Admin page and key manager appearing over other pages after sign-in; they now display only when the Admin page is selected"
+  ] },
   { version: "V.4.41", updatedAt: "2026-10-04T20:31:23.974Z", changes: [
     "ปรับขนาดปุ่มโปรไฟล์มุมขวาบนให้กะทัดรัดและเหมาะกับหน้าจอมือถือ"
   ], changesEn: [

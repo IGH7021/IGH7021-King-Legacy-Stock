@@ -1,6 +1,6 @@
 function adminHeaders() { return { "Content-Type": "application/json", Authorization: `Bearer ${localStorage.getItem(AUTH_TOKEN_KEY)}` }; }
 function enableAdminUi() {
-  document.querySelectorAll(".admin-only").forEach(el => el.classList.remove("hidden"));
+  document.querySelectorAll(".admin-only:not(.page)").forEach(el => el.classList.remove("hidden"));
   bindAdminKeyFilters();
   loadAdminKeys().catch(error => { if (error.message === t("admin_access_denied")) { document.querySelectorAll(".admin-only").forEach(el => el.classList.add("hidden")); } else toast(error.message, "error"); });
   if (!adminRequestsTimer) adminRequestsTimer = setInterval(() => {
