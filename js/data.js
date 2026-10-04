@@ -3,7 +3,7 @@ const THEME_KEY = "igh_theme";
 const LANG_KEY = "igh_lang";
 const APP_VERSION = "V.4.38";
 const APP_CHANGELOG = [
-  { version: "V.4.38", updatedAt: "2026-10-04T19:46:55.320Z", changes: [
+  { version: "V.4.38", updatedAt: "2026-10-04T19:56:39.258Z", changes: [
     "เปิดให้บัญชี Admin ดูและแก้ไขรูปโปรไฟล์กับสถานะออนไลน์/ออฟไลน์ของตนเองได้ โดยยังจำกัดข้อเสนอแนะและคำขอไว้สำหรับผู้ใช้ทั่วไป"
   ], changesEn: [
     "Enabled administrators to view and edit their own profile image and online/offline status while keeping suggestions and customer requests for regular users"
