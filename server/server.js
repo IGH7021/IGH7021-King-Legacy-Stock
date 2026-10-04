@@ -58,6 +58,7 @@ function readArchivedKeyFiles() {
   }).filter(key => key && key.id && key.value);
 }
 function archiveLocalExpiredKeys(now = Date.now()) {
+  fs.mkdirSync(KEYS_DIR, { recursive: true });
   fs.mkdirSync(KEY_ARCHIVE_DIR, { recursive: true });
   let count = 0;
   fs.readdirSync(KEYS_DIR).filter(file => file.toLowerCase().endsWith(".json")).forEach(file => {
