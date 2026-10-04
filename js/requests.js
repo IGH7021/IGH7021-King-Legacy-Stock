@@ -2,6 +2,50 @@ let supportRequestSubmitted = null;
 let supportRequestLoading = false;
 let supportRequestStatusKey = "request_available";
 let supportRequestVerified = false;
+let supportRequestCountdownTimer = null;
+
+function millisecondsUntilBangkokMidnight(now = Date.now()) {
+  const bangkokNow = new Date(now + 7 * 60 * 60 * 1000);
+  const nextMidnightUtc = Date.UTC(
+    bangkokNow.getUTCFullYear(),
+    bangkokNow.getUTCMonth(),
+    bangkokNow.getUTCDate() + 1,
+  ) - 7 * 60 * 60 * 1000;
+  return Math.max(0, nextMidnightUtc - now);
+}
+
+function stopSupportRequestCountdown() {
+  if (supportRequestCountdownTimer) clearInterval(supportRequestCountdownTimer);
+  supportRequestCountdownTimer = null;
+}
+
+function updateSupportRequestCountdown() {
+  const countdown = document.getElementById("support-request-countdown");
+  if (!countdown || !supportRequestVerified || supportRequestSubmitted !== true) {
+    stopSupportRequestCountdown();
+    if (countdown) countdown.classList.add("hidden");
+    return;
+  }
+  const remainingSeconds = Math.ceil(millisecondsUntilBangkokMidnight() / 1000);
+  if (remainingSeconds <= 0) {
+    stopSupportRequestCountdown();
+    refreshSupportRequestStatus();
+    return;
+  }
+  const hours = Math.floor(remainingSeconds / 3600);
+  const minutes = Math.floor((remainingSeconds % 3600) / 60);
+  const seconds = remainingSeconds % 60;
+  countdown.textContent = t("request_cooldown_remaining", { hours, minutes, seconds });
+  countdown.classList.remove("hidden");
+}
+
+function startSupportRequestCountdown() {
+  if (supportRequestCountdownTimer) return;
+  updateSupportRequestCountdown();
+  if (supportRequestSubmitted === true && supportRequestVerified) {
+    supportRequestCountdownTimer = setInterval(updateSupportRequestCountdown, 1000);
+  }
+}
 
 function renderSupportRequestStatus(messageKey = null) {
   const status = document.getElementById("support-request-status");
@@ -12,6 +56,11 @@ function renderSupportRequestStatus(messageKey = null) {
   if (status) status.textContent = t(supportRequestStatusKey);
   if (form) form.classList.toggle("hidden", !supportRequestVerified || supportRequestSubmitted === true);
   if (submit) submit.disabled = !supportRequestVerified || supportRequestLoading || supportRequestSubmitted === true;
+  if (supportRequestVerified && supportRequestSubmitted === true) startSupportRequestCountdown();
+  else {
+    stopSupportRequestCountdown();
+    document.getElementById("support-request-countdown")?.classList.add("hidden");
+  }
 }
 
 async function refreshSupportRequestStatus() {

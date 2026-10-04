@@ -8,11 +8,13 @@ function profileHeaders() {
 function renderProfile() {
   const section = document.getElementById("user-profile-section");
   const suggestionSection = document.getElementById("site-suggestion-section");
+  const headerButton = document.getElementById("header-profile-button");
   const token = localStorage.getItem(AUTH_TOKEN_KEY);
   const isAdmin = localStorage.getItem("igh_kinglegacy_is_admin") === "1";
   if (!section || !suggestionSection) return;
   section.classList.toggle("hidden", !token || token === "demo");
   suggestionSection.classList.toggle("hidden", !token || token === "demo" || isAdmin);
+  if (headerButton) headerButton.classList.toggle("hidden", !token || token === "demo");
   if (!token || token === "demo") return;
 
   const name = document.getElementById("user-profile-name");
@@ -20,6 +22,10 @@ function renderProfile() {
   const image = document.getElementById("user-profile-avatar");
   const fallback = document.getElementById("user-profile-avatar-fallback");
   const presence = document.getElementById("user-profile-presence");
+  const headerImage = document.getElementById("header-profile-avatar");
+  const headerFallback = document.getElementById("header-profile-avatar-fallback");
+  const headerPresence = document.getElementById("header-profile-presence");
+  const headerLabel = document.getElementById("header-profile-label");
   const statusSelect = document.getElementById("profile-presence-select");
   const suggestionStatus = document.getElementById("suggestion-identity-status");
   const suggestionButton = document.getElementById("open-suggestion-dialog");
@@ -35,6 +41,13 @@ function renderProfile() {
     else image.removeAttribute("src");
     fallback.hidden = Boolean(avatar);
     fallback.textContent = profileState.displayName?.trim().slice(0, 1).toUpperCase() || "👤";
+    if (headerImage && headerFallback) {
+      headerImage.hidden = !avatar;
+      if (avatar) headerImage.src = avatar;
+      else headerImage.removeAttribute("src");
+      headerFallback.hidden = Boolean(avatar);
+      headerFallback.textContent = fallback.textContent;
+    }
   }
   if (presence) {
     const online = profileState.presenceStatus === "online";
@@ -42,6 +55,18 @@ function renderProfile() {
     presence.classList.toggle("is-offline", !online);
     presence.dataset.status = online ? "online" : "offline";
     presence.setAttribute("aria-label", t(online ? "presence_online" : "presence_offline"));
+    if (headerPresence) {
+      headerPresence.classList.toggle("is-online", online);
+      headerPresence.classList.toggle("is-offline", !online);
+      headerPresence.dataset.status = online ? "online" : "offline";
+      headerPresence.setAttribute("aria-label", t(online ? "presence_online" : "presence_offline"));
+    }
+  }
+  const displayName = profileState.displayName || t("profile_title");
+  if (headerLabel) headerLabel.textContent = displayName;
+  if (headerButton) {
+    headerButton.setAttribute("aria-label", t("profile_open_settings", { name: displayName }));
+    headerButton.title = t("profile_open_settings", { name: displayName });
   }
   if (statusSelect) statusSelect.value = profileState.presenceStatus;
   if (suggestionStatus) suggestionStatus.textContent = profileState.verified
@@ -150,6 +175,12 @@ document.addEventListener("DOMContentLoaded", () => {
   document.getElementById("user-profile-avatar")?.addEventListener("error", () => {
     const image = document.getElementById("user-profile-avatar");
     const fallback = document.getElementById("user-profile-avatar-fallback");
+    if (image) image.hidden = true;
+    if (fallback) fallback.hidden = false;
+  });
+  document.getElementById("header-profile-avatar")?.addEventListener("error", () => {
+    const image = document.getElementById("header-profile-avatar");
+    const fallback = document.getElementById("header-profile-avatar-fallback");
     if (image) image.hidden = true;
     if (fallback) fallback.hidden = false;
   });

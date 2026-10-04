@@ -223,6 +223,10 @@ document.addEventListener("DOMContentLoaded", () => {
       item.setAttribute("aria-selected", String(selected));
     });
   }));
+  document.getElementById("header-profile-button")?.addEventListener("click", () => {
+    showPage("settings");
+    document.getElementById("settings-messages-tab")?.click();
+  });
 });
 
 function openMobileDrawer() {

@@ -1,8 +1,13 @@
 const STORAGE_KEY = "igh_kinglegacy_state";
 const THEME_KEY = "igh_theme";
 const LANG_KEY = "igh_lang";
-const APP_VERSION = "V.4.39";
+const APP_VERSION = "V.4.40";
 const APP_CHANGELOG = [
+  { version: "V.4.40", updatedAt: "2026-10-04T20:14:41.892Z", changes: [
+    "เพิ่มตัวนับเวลารอก่อนส่งคำขอถึงแอดมินได้อีกครั้ง และย้ายทางลัดโปรไฟล์ไว้ด้านขวาบนพร้อมย้ายตัวเลือกภาษาและธีมเข้าเมนูตั้งค่า"
+  ], changesEn: [
+    "Added a live countdown until the next admin request is allowed, moved the profile shortcut to the upper-right header, and placed language and theme controls in Settings"
+  ] },
   { version: "V.4.39", updatedAt: "2026-10-04T19:59:58.873Z", changes: [
     "เพิ่มปุ่มลบพร้อมยืนยันสำหรับคำขอลูกค้าในกล่องข้อความ Admin ที่รวมกับข้อเสนอแนะ"
   ], changesEn: [
