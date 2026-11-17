@@ -18,7 +18,7 @@ function authMessage(message, error = true) {
   el.textContent = message || "";
   el.classList.toggle("auth-error", error);
 }
-function openApp(result) {
+async function openApp(result) {
   localStorage.setItem(AUTH_TOKEN_KEY, result.token || "demo");
   if (pendingAuthKey) localStorage.setItem(AUTH_KEY_KEY, pendingAuthKey);
   else localStorage.removeItem(AUTH_KEY_KEY);
@@ -27,15 +27,18 @@ function openApp(result) {
   localStorage.setItem("igh_kinglegacy_is_admin", result.admin ? "1" : "0");
   if (result.expiresAt) localStorage.setItem("igh_kinglegacy_expires_at", String(result.expiresAt));
   else localStorage.removeItem("igh_kinglegacy_expires_at");
+  const stateActivation = await window.activateUserState?.(result.ownerId || result.user?.id || result.keyId || "guest");
+  document.getElementById("app-root")?.classList.remove("hidden");
   if (result.admin) window.enableAdminUi?.();
   document.getElementById("auth-gate").classList.add("auth-complete");
+  if (stateActivation?.recoveredLocalState) toast(t("state_recovery_archived", { key: stateActivation.recoveryKey }), "error");
+  if (stateActivation?.stateSyncError) toast(t("state_sync_unavailable"), "error");
   setTimeout(() => document.getElementById("auth-gate")?.remove(), 350);
   startKeyStatus(result.expiresAt);
   window.updateKeySettings?.(result);
   window.refreshIdentitySettings?.();
   window.refreshUserProfile?.();
   window.refreshSupportRequestStatus?.();
-  window.activateUserState?.(result.ownerId || result.user?.id || result.keyId || "guest");
   if (result.admin && sessionStorage.getItem("igh_pending_admin_route") === "1") {
     sessionStorage.removeItem("igh_pending_admin_route");
     setTimeout(() => window.showPage?.("admin"), 400);
@@ -146,7 +149,7 @@ document.addEventListener("DOMContentLoaded", () => {
     fetch("/api/auth/session", { credentials: "same-origin" }).then(async response => {
       const result = await readApiResponse(response);
       if (!response.ok || !result.admin) throw new Error(t("auth_github_confirm_failed"));
-      pendingAuthKey = ""; openApp(result); history.replaceState({}, "", location.pathname);
+      pendingAuthKey = ""; await openApp(result); history.replaceState({}, "", location.pathname);
     }).catch(error => authMessage(error.message));
   }
   if (new URLSearchParams(location.search).get("github") === "failed") authMessage(t("auth_github_failed"));
@@ -166,7 +169,7 @@ document.addEventListener("DOMContentLoaded", () => {
       const login = await postAuth("/api/auth/login", { key: pendingAuthKey });
       const loginResult = await readApiResponse(login);
       if (!login.ok) throw new Error(t("auth_login_failed"));
-      openApp(loginResult);
+      await openApp(loginResult);
     } catch (error) { authMessage(error.message); }
   });
   document.querySelectorAll("#logout-btn, #mobile-logout-btn").forEach(button => button.addEventListener("click", async () => { await fetch("/api/auth/logout", { method: "POST", credentials: "same-origin" }).catch(() => {}); localStorage.removeItem(AUTH_TOKEN_KEY); localStorage.removeItem(AUTH_KEY_KEY); localStorage.removeItem("igh_kinglegacy_is_admin"); localStorage.removeItem("igh_kinglegacy_expires_at"); localStorage.removeItem("igh_kinglegacy_owner_id"); localStorage.removeItem("igh_kinglegacy_auth_method"); location.reload(); }));
@@ -178,7 +181,7 @@ document.addEventListener("DOMContentLoaded", () => {
       const login = await postAuth("/api/auth/login", { key: pendingAuthKey });
       const loginResult = await readApiResponse(login);
       if (!login.ok) throw new Error("login_failed");
-      openApp(loginResult);
+      await openApp(loginResult);
     }).catch(() => {
       localStorage.removeItem(AUTH_TOKEN_KEY);
       localStorage.removeItem(AUTH_KEY_KEY);
@@ -186,7 +189,7 @@ document.addEventListener("DOMContentLoaded", () => {
       localStorage.removeItem("igh_kinglegacy_expires_at");
     });
   } else if (localStorage.getItem("igh_kinglegacy_auth_method") === "github") {
-    fetch("/api/auth/session", { credentials: "same-origin" }).then(async response => { const result = await readApiResponse(response); if (!response.ok) throw new Error("session expired"); pendingAuthKey = ""; openApp(result); }).catch(() => {
+    fetch("/api/auth/session", { credentials: "same-origin" }).then(async response => { const result = await readApiResponse(response); if (!response.ok) throw new Error("session expired"); pendingAuthKey = ""; await openApp(result); }).catch(() => {
       localStorage.removeItem(AUTH_TOKEN_KEY); localStorage.removeItem("igh_kinglegacy_is_admin"); localStorage.removeItem("igh_kinglegacy_owner_id"); localStorage.removeItem("igh_kinglegacy_auth_method");
     });
   }

@@ -34,6 +34,39 @@ function recipeStock(name) {
   return product ? remaining(product) : 0;
 }
 
+function craftingEscape(value) {
+  return String(value ?? "").replace(/[&<>"']/g, char => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "\"": "&quot;", "'": "&#039;" }[char]));
+}
+
+function recipeMaterialRequirements(recipe, quantity = 1) {
+  const amounts = new Map();
+  recipe.ingredients.forEach(([name, required]) => {
+    const product = ingredientProduct(name);
+    const key = product ? `product:${product.id}` : `name:${String(name).toLowerCase()}`;
+    const material = amounts.get(key) || { name: product?.name || name, required: 0 };
+    material.required += Number(required) * quantity;
+    amounts.set(key, material);
+  });
+  return [...amounts.values()].map(({ name, required }) => ({ name, required, available: recipeStock(name) }));
+}
+
+function craftingQuantityPreview(recipe, inputValue, craftable) {
+  const rawValue = String(inputValue ?? "").trim();
+  const numericInput = /^[+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?$/.test(rawValue);
+  const requestedQuantity = numericInput ? Number(rawValue) : 0;
+  const isFiniteQuantity = Number.isFinite(requestedQuantity);
+  const isWholeQuantity = isFiniteQuantity && Number.isSafeInteger(requestedQuantity);
+  const quantity = isWholeQuantity && requestedQuantity > 0 ? requestedQuantity : 0;
+  return {
+    requestedQuantity: isFiniteQuantity ? requestedQuantity : 0,
+    quantity,
+    valid: isWholeQuantity && quantity >= 1 && quantity <= craftable,
+    requirements: recipeMaterialRequirements(recipe, quantity),
+    materialCost: recipePrice(recipe) * quantity,
+    saleTotal: recipeSalePrice(recipe) * quantity,
+  };
+}
+
 function productUnitPrice(product) {
   return product && Number(product.unitsPerBaht) > 0 ? 1 / Number(product.unitsPerBaht) : 0;
 }
@@ -69,7 +102,8 @@ function saveRecipeSalePrice(recipe) {
 }
 
 function recipeCraftable(recipe) {
-  return Math.min(...recipe.ingredients.map(([name, required]) => Math.floor(recipeStock(name) / required)));
+  const requirements = recipeMaterialRequirements(recipe);
+  return requirements.length ? Math.min(...requirements.map(item => Math.floor(item.available / item.required))) : 0;
 }
 
 function recipeCategory(recipe) {
@@ -81,9 +115,9 @@ function recipeCard(recipe) {
   const output = recipeProduct(recipe);
   const category = recipeCategory(recipe);
   const price = recipePrice(recipe);
-  return `<div class="recipe-card glass-card rounded-2xl overflow-hidden text-left ${craftable ? "recipe-ready" : "recipe-locked"}" data-recipe="${recipe.name}">
-    <button type="button" class="recipe-card-open w-full text-left"><div class="recipe-card-image relative h-36 bg-slate-800/60"><img src="${recipeOutputImage(recipe)}" loading="lazy" decoding="async" class="w-full h-full object-contain p-3" alt="${recipe.name}"><span class="absolute top-2 right-2 text-[11px] px-2 py-0.5 rounded-full border ${craftable ? "bg-emerald-500/15 text-emerald-300 border-emerald-500/30" : "bg-slate-900/75 text-slate-400 border-slate-600/50"}">${craftable ? `คราฟได้ ${fmtNum(craftable)}` : "วัตถุดิบไม่ครบ"}</span></div>
-    <div class="p-3"><div class="flex items-center justify-between gap-2"><strong class="text-sm truncate">${recipe.name}</strong><div class="flex items-center gap-1"><span class="text-[10px] px-2 py-0.5 rounded-full border border-slate-600/50 text-slate-400">${category}</span><span class="text-[10px] px-2 py-0.5 rounded-full border ${rarityBadgeClass(recipe.rarity)}">${rarityLabel(recipe.rarity)}</span></div></div><p class="text-xs text-slate-400 mt-1">${output ? `มีในคลัง ${fmtNum(remaining(output))} ชิ้น` : "ยังไม่มีในคลังสินค้า"}</p><p class="text-xs text-orange-300 mt-1">ต้นทุนวัตถุดิบ ${fmtBaht(price)} • ราคาขาย ${fmtBaht(recipeSalePrice(recipe))}</p></div></button>
+  return `<div class="recipe-card glass-card rounded-2xl overflow-hidden text-left ${craftable ? "recipe-ready" : "recipe-locked"}" data-recipe="${craftingEscape(recipe.name)}">
+    <button type="button" class="recipe-card-open w-full text-left"><div class="recipe-card-image relative h-36 bg-slate-800/60"><img src="${craftingEscape(recipeOutputImage(recipe))}" loading="lazy" decoding="async" class="w-full h-full object-contain p-3" alt="${craftingEscape(recipe.name)}"><span class="absolute top-2 right-2 text-[11px] px-2 py-0.5 rounded-full border ${craftable ? "bg-emerald-500/15 text-emerald-300 border-emerald-500/30" : "bg-slate-900/75 text-slate-400 border-slate-600/50"}">${craftable ? `คราฟได้ ${fmtNum(craftable)}` : "วัตถุดิบไม่ครบ"}</span></div>
+    <div class="p-3"><div class="flex items-center justify-between gap-2"><strong class="text-sm truncate">${craftingEscape(recipe.name)}</strong><div class="flex items-center gap-1"><span class="text-[10px] px-2 py-0.5 rounded-full border border-slate-600/50 text-slate-400">${craftingEscape(category)}</span><span class="text-[10px] px-2 py-0.5 rounded-full border ${rarityBadgeClass(recipe.rarity)}">${rarityLabel(recipe.rarity)}</span></div></div><p class="text-xs text-slate-400 mt-1">${output ? `มีในคลัง ${fmtNum(remaining(output))} ชิ้น` : "ยังไม่มีในคลังสินค้า"}</p><p class="text-xs text-orange-300 mt-1">ต้นทุนวัตถุดิบ ${fmtBaht(price)} • ราคาขาย ${fmtBaht(recipeSalePrice(recipe))}</p></div></button>
     <div class="px-3 pb-3 flex gap-2"><button type="button" data-recipe-action="edit" class="flex-1 text-xs py-1.5 rounded-lg bg-slate-700/60 hover:bg-slate-700">✏️ แก้ไขสูตร</button><button type="button" data-recipe-action="delete" class="recipe-delete-btn" aria-label="ลบสูตร" title="ลบสูตร">🗑️</button></div>
   </div>`;
 }
@@ -91,7 +125,7 @@ function recipeCard(recipe) {
 function renderCrafting() {
   const grid = document.getElementById("crafting-grid");
   if (!grid) return;
-  const recipes = [...getRecipes()].sort((first, second) => {
+  const recipes = [...getRecipes()].filter(recipe => recipeProduct(recipe)).sort((first, second) => {
     const firstCategory = categorySortIndex(recipeCategory(first));
     const secondCategory = categorySortIndex(recipeCategory(second));
     if (firstCategory !== secondCategory) return firstCategory - secondCategory;
@@ -121,31 +155,72 @@ function renderCraftingModal() {
   const craftable = recipeCraftable(recipe);
   const price = recipePrice(recipe);
   const salePrice = recipeSalePrice(recipe);
-  const ingredientRows = recipe.ingredients.map(([name, required]) => {
-    const available = recipeStock(name);
+  const ingredientRows = recipeMaterialRequirements(recipe).map(({ name, required, available }) => {
     const enough = available >= required;
-    const product = state.products.find(item => item.name.toLowerCase() === name.toLowerCase());
+    const product = ingredientProduct(name);
     const image = product?.image;
-    return `<div class="craft-ingredient ${enough ? "craft-ingredient-ok" : "craft-ingredient-missing"}"><div class="craft-ingredient-image">${image ? `<img src="${image}" alt="${name}">` : "🪵"}</div><div class="min-w-0 flex-1"><p class="text-xs font-semibold truncate">${name}</p><p class="text-[11px] ${enough ? "text-emerald-300" : "text-rose-300"}">${fmtNum(available)} / ${fmtNum(required)} ชิ้น${enough ? "" : ` • ขาด ${fmtNum(required - available)}`}</p></div><span class="craft-check">${enough ? "✓" : "!"}</span></div>`;
+    return `<div class="craft-ingredient ${enough ? "craft-ingredient-ok" : "craft-ingredient-missing"}" data-craft-material="${craftingEscape(name)}"><div class="craft-ingredient-image">${image ? `<img src="${craftingEscape(image)}" alt="${craftingEscape(name)}">` : "🪵"}</div><div class="min-w-0 flex-1"><p class="text-xs font-semibold truncate">${craftingEscape(name)}</p><p class="text-[11px] craft-material-count ${enough ? "text-emerald-300" : "text-rose-300"}" data-per-item="${required}" data-available="${available}">${t("craft_material_count", { required: fmtNum(required), available: fmtNum(available) })}</p></div><span class="craft-check">${enough ? "✓" : "!"}</span></div>`;
   }).join("");
-  container.innerHTML = `<div class="crafting-header"><div class="crafting-output-image"><img src="${recipeOutputImage(recipe)}" alt="${recipe.name}"></div><div class="min-w-0"><p class="text-xs text-orange-300 mb-1">สูตรคราฟ</p><h2 class="font-bold text-xl truncate">${recipe.name}</h2><p class="text-xs text-slate-400 mt-1">ต้นทุนจากวัตถุดิบ • ราคาขายอิงเรทสินค้า</p></div><button type="button" id="edit-crafting-btn" class="ml-auto flex-shrink-0 px-3 py-2 rounded-lg bg-slate-700/60 hover:bg-slate-700 text-xs">✏️ แก้ไข</button></div><div class="crafting-recipe-preview"><img src="${recipeImage(recipe)}" alt="สูตร ${recipe.name}"></div><div class="crafting-summary"><div><span>คราฟได้สูงสุด</span><strong class="${craftable ? "text-emerald-300" : "text-rose-300"}">${fmtNum(craftable)} ชิ้น</strong></div><div><span>ต้นทุนต่อชิ้น</span><strong class="text-orange-300">${fmtBaht(price)}</strong></div><div><span>ราคาขายต่อชิ้น</span><strong class="text-cyan-300">${fmtBaht(salePrice)}</strong></div></div><div class="flex items-end gap-2 mt-5"><label class="flex-1 text-xs text-slate-400">ราคาขายต่อชิ้น<input id="craft-sale-price-input" type="number" min="0.01" step="0.01" value="${salePrice.toFixed(2)}" class="w-full mt-1 rounded-lg bg-slate-800 border border-slate-600 px-3 py-2 text-sm text-slate-100"></label><button type="button" id="save-craft-price-btn" class="px-3 py-2 rounded-lg bg-cyan-600 hover:bg-cyan-500 text-sm">บันทึกราคา</button></div><div class="craft-quantity-row mt-5 mb-2"><h3 class="font-semibold text-sm">จำนวนที่คราฟ</h3><input id="craft-quantity-input" type="number" min="1" max="${Math.max(1, craftable)}" value="${craftable ? 1 : 0}" class="craft-quantity-input w-24 rounded-lg bg-slate-800 border border-slate-600 px-3 py-2 text-sm" ${craftable < 1 ? "disabled" : ""}><span class="text-xs text-slate-400">วัตถุดิบจะถูกหักตามจำนวนนี้</span></div><div class="flex items-center justify-between mt-5 mb-2"><h3 class="font-semibold text-sm">วัตถุดิบที่ต้องใช้ต่อ 1 ชิ้น</h3><span class="text-xs text-slate-400">ตรวจจากคงเหลือปัจจุบัน</span></div><div class="craft-ingredients-grid">${ingredientRows}</div><div class="flex gap-2 mt-5"><button type="button" data-close-modal class="flex-1 py-2.5 rounded-xl bg-slate-700/50 hover:bg-slate-700 text-sm">ยกเลิก</button><button type="button" id="confirm-craft-btn" class="flex-1 btn-primary py-2.5 rounded-xl text-sm" ${craftable < 1 ? "disabled" : ""}>คราฟ 1 ชิ้น</button></div>`;
+  container.innerHTML = `<div class="crafting-header"><div class="crafting-output-image"><img src="${craftingEscape(recipeOutputImage(recipe))}" alt="${craftingEscape(recipe.name)}"></div><div class="min-w-0"><p class="text-xs text-orange-300 mb-1">สูตรคราฟ</p><h2 class="font-bold text-xl truncate">${craftingEscape(recipe.name)}</h2><p class="text-xs text-slate-400 mt-1">ต้นทุนจากวัตถุดิบ • ราคาขายอิงเรทสินค้า</p></div><button type="button" id="edit-crafting-btn" class="ml-auto flex-shrink-0 px-3 py-2 rounded-lg bg-slate-700/60 hover:bg-slate-700 text-xs">✏️ แก้ไข</button></div><div class="crafting-recipe-preview"><img src="${craftingEscape(recipeImage(recipe))}" alt="สูตร ${craftingEscape(recipe.name)}"></div><div class="crafting-summary"><div><span>คราฟได้สูงสุด</span><strong class="${craftable ? "text-emerald-300" : "text-rose-300"}">${fmtNum(craftable)} ชิ้น</strong></div><div><span>ต้นทุนต่อชิ้น</span><strong class="text-orange-300">${fmtBaht(price)}</strong></div><div><span>ราคาขายต่อชิ้น</span><strong class="text-cyan-300">${fmtBaht(salePrice)}</strong></div></div><div class="flex items-end gap-2 mt-5"><label class="flex-1 text-xs text-slate-400">ราคาขายต่อชิ้น<input id="craft-sale-price-input" type="number" min="0.01" step="0.01" value="${salePrice.toFixed(2)}" class="w-full mt-1 rounded-lg bg-slate-800 border border-slate-600 px-3 py-2 text-sm text-slate-100"></label><button type="button" id="save-craft-price-btn" class="px-3 py-2 rounded-lg bg-cyan-600 hover:bg-cyan-500 text-sm">บันทึกราคา</button></div><div class="craft-quantity-row mt-5 mb-2"><h3 class="font-semibold text-sm">จำนวนที่คราฟ</h3><input id="craft-quantity-input" type="number" min="1" max="${Math.max(1, craftable)}" step="1" value="${craftable ? 1 : 0}" class="craft-quantity-input w-24 rounded-lg bg-slate-800 border border-slate-600 px-3 py-2 text-sm" ${craftable < 1 ? "disabled" : ""}><span class="text-xs text-slate-400">วัตถุดิบจะถูกหักตามจำนวนนี้</span></div><p id="craft-quantity-feedback" class="min-h-4 text-xs text-rose-300" aria-live="polite"></p><div id="craft-cost-preview" class="rounded-xl border border-orange-400/20 bg-orange-400/5 px-3 py-2 text-sm" aria-live="polite"></div><div class="flex items-center justify-between mt-5 mb-2"><h3 class="font-semibold text-sm">วัตถุดิบที่ต้องใช้</h3><span class="text-xs text-slate-400">จำนวนรวมสำหรับงานนี้</span></div><div class="craft-ingredients-grid">${ingredientRows}</div><div class="flex gap-2 mt-5"><button type="button" data-close-modal class="flex-1 py-2.5 rounded-xl bg-slate-700/50 hover:bg-slate-700 text-sm">ยกเลิก</button><button type="button" id="confirm-craft-btn" class="flex-1 btn-primary py-2.5 rounded-xl text-sm" ${craftable < 1 ? "disabled" : ""}>คราฟ 1 ชิ้น</button></div>`;
   document.getElementById("edit-crafting-btn")?.addEventListener("click", () => { closeModal("crafting-modal"); openRecipeEditor(recipe.name); });
   document.getElementById("save-craft-price-btn")?.addEventListener("click", () => saveRecipeSalePrice(recipe));
   const craftQuantityInput = document.getElementById("craft-quantity-input");
-  craftQuantityInput?.addEventListener("input", () => { const quantity = Math.min(craftable, Math.max(1, Number(craftQuantityInput.value) || 1)); document.getElementById("confirm-craft-btn").textContent = `คราฟ ${fmtNum(quantity)} ชิ้น`; });
+  const updatePreview = () => {
+    const preview = craftingQuantityPreview(recipe, craftQuantityInput.value, craftable);
+    document.getElementById("confirm-craft-btn").textContent = preview.requestedQuantity > 0
+      ? t("craft_confirm_quantity", { quantity: fmtNum(preview.requestedQuantity) })
+      : t("craft_confirm");
+    document.getElementById("confirm-craft-btn").disabled = !preview.valid;
+    document.getElementById("craft-quantity-feedback").textContent = preview.valid || !craftable
+      ? ""
+      : t("craft_quantity_invalid", { max: fmtNum(craftable) });
+    document.getElementById("craft-cost-preview").textContent = `${t("craft_material_cost_total", { cost: fmtBaht(preview.materialCost) })} • ${t("craft_sale_total", { price: fmtBaht(preview.saleTotal) })}`;
+    container.querySelectorAll(".craft-material-count").forEach((count, index) => {
+      const required = preview.requirements[index]?.required || 0;
+      const available = Number(count.dataset.available);
+      count.textContent = required > available
+        ? t("craft_material_count_short", { required: fmtNum(required), available: fmtNum(available), shortage: fmtNum(required - available) })
+        : t("craft_material_count", { required: fmtNum(required), available: fmtNum(available) });
+      count.classList.toggle("text-emerald-300", required <= available);
+      count.classList.toggle("text-rose-300", required > available);
+      const card = count.closest(".craft-ingredient");
+      card?.classList.toggle("craft-ingredient-ok", required <= available);
+      card?.classList.toggle("craft-ingredient-missing", required > available);
+      const icon = card?.querySelector(".craft-check");
+      if (icon) icon.textContent = required <= available ? "✓" : "!";
+    });
+  };
+  craftQuantityInput?.addEventListener("input", updatePreview);
+  updatePreview();
+  const addToCartButton = document.createElement("button");
+  addToCartButton.type = "button";
+  addToCartButton.className = "flex-1 py-2.5 rounded-xl bg-emerald-600/80 hover:bg-emerald-500 text-sm";
+  addToCartButton.textContent = "เพิ่มลงตะกร้า";
+  addToCartButton.addEventListener("click", () => {
+    const preview = craftingQuantityPreview(recipe, craftQuantityInput?.value, craftable);
+    if (!preview.valid) { toast("วัตถุดิบไม่เพียงพอ", "error"); return; }
+    addToCart("craft", recipe.name, preview.quantity);
+  });
+  document.getElementById("confirm-craft-btn")?.parentElement?.insertBefore(addToCartButton, document.getElementById("confirm-craft-btn"));
   document.getElementById("confirm-craft-btn")?.addEventListener("click", () => craftRecipe(recipe, Number(craftQuantityInput?.value) || 1));
 }
 
 function craftRecipe(recipe, quantity = 1) {
   const craftable = recipeCraftable(recipe);
-  quantity = Math.floor(Number(quantity));
-  if (!Number.isFinite(quantity) || quantity < 1 || quantity > craftable) { toast("วัตถุดิบไม่เพียงพอ", "error"); return; }
+  quantity = Number(quantity);
+  if (!Number.isSafeInteger(quantity) || quantity < 1 || quantity > craftable) { toast("วัตถุดิบไม่เพียงพอ", "error"); return; }
+  const requirements = recipeMaterialRequirements(recipe, quantity);
+  if (requirements.some(item => item.required > item.available || !ingredientProduct(item.name))) {
+    toast("วัตถุดิบไม่เพียงพอ", "error");
+    renderCraftingModal();
+    return;
+  }
   const salePrice = recipeSalePrice(recipe);
   const craftedAt = Date.now();
-  const deductedIngredients = recipe.ingredients.map(([name, required]) => `${name} -${fmtNum(required * quantity)}`).join(", ");
-  recipe.ingredients.forEach(([name, required]) => {
-    const product = state.products.find(item => item.name.toLowerCase() === name.toLowerCase());
-    product.stock -= required * quantity;
+  const deductedIngredients = requirements.map(({ name, required }) => `${name} -${fmtNum(required)}`).join(", ");
+  requirements.forEach(({ name, required }) => {
+    const product = ingredientProduct(name);
+    product.stock -= required;
   });
   const output = recipeProduct(recipe);
   if (output) {
@@ -153,7 +228,7 @@ function craftRecipe(recipe, quantity = 1) {
     output.sold = (output.sold || 0) + quantity;
     output.crafted = (output.crafted || 0) + quantity;
   } else {
-    state.products.unshift({ id: genId("p"), name: recipe.name, category: "ของคราฟ", image: recipeOutputImage(recipe), rarity: recipe.rarity, stock: 0, sold: quantity, crafted: quantity, unitsPerBaht: salePrice ? 1 / salePrice : 1, description: "สินค้าที่คราฟและขายจากสูตร", createdAt: craftedAt, restockHistory: [] });
+    state.products.unshift({ id: genId("p"), name: recipe.name, category: "ของวัตถุดิบ", source: "custom", tradeability: "craft-only", image: recipeOutputImage(recipe), rarity: recipe.rarity, stock: 0, sold: quantity, crafted: quantity, unitsPerBaht: salePrice ? 1 / salePrice : 1, description: "สินค้าที่คราฟและขายจากสูตร", createdAt: craftedAt, restockHistory: [] });
   }
   const outputProduct = recipeProduct(recipe) || state.products[0];
   state.sales.unshift({
@@ -181,11 +256,11 @@ function openRecipeEditor(recipeName = null) {
   const form = document.getElementById("crafting-editor-form");
   const recipe = recipeName ? getRecipes().find(item => item.name === recipeName) : null;
   form.reset();
-  const outputNames = [...CRAFT_OUTPUT_ITEMS].sort((a, b) => a.localeCompare(b));
-  form.name.innerHTML = `<option value="">เลือกไอเทมผลลัพธ์</option>` + outputNames.map(name => `<option value="${name}">${name}</option>`).join("");
+  const outputNames = [...new Set(state.products.map(product => product.name))].sort((a, b) => a.localeCompare(b));
+  form.name.innerHTML = `<option value="">เลือกไอเทมผลลัพธ์</option>` + outputNames.map(name => `<option value="${craftingEscape(name)}">${craftingEscape(name)}</option>`).join("");
   form.rarity.innerHTML = RARITY_ORDER.map(rarity => `<option value="${rarity}">${rarityLabel(rarity)}</option>`).join("");
   const recipeCategories = [...new Set([...(state.settings.categories || CATEGORY_ORDER), "อื่นๆ", recipe?.category].filter(Boolean))];
-  form.category.innerHTML = recipeCategories.map(category => `<option value="${category}">${category}</option>`).join("");
+  form.category.innerHTML = recipeCategories.map(category => `<option value="${craftingEscape(category)}">${craftingEscape(category)}</option>`).join("");
   form.rarity.value = recipe?.rarity || "none";
   form.category.value = recipe?.category || recipeProduct(recipe || {})?.category || "ของวัตถุดิบ";
   document.getElementById("crafting-editor-title").textContent = recipe ? "แก้ไขสูตรคราฟ" : "เพิ่มสูตรคราฟ";
@@ -212,8 +287,8 @@ function renderRecipeIngredientEditor(ingredients) {
   container.innerHTML = ingredients.map(([name, amount]) => {
     const selected = products.find(product => product.name.toLowerCase() === String(name || "").toLowerCase());
     const selectedName = selected?.name || "";
-    const options = products.map(product => `<button type="button" class="ingredient-option ${product.name === selectedName ? "is-selected" : ""}" data-ingredient-value="${product.name}" role="option">${product.image ? `<img src="${product.image}" alt="">` : "🪵"}<span>${product.name}</span></button>`).join("");
-    return `<div class="recipe-ingredient-editor-row"><div class="ingredient-row-icon">${ingredientImage(selectedName) ? `<img src="${ingredientImage(selectedName)}" alt="${selectedName}">` : "🪵"}</div><div class="ingredient-row-fields"><label>วัตถุดิบ<div class="ingredient-picker" data-ingredient-picker><input type="text" class="ingredient-search-input" data-ingredient-search value="${selectedName}" placeholder="พิมพ์เพื่อค้นหาวัตถุดิบ..." autocomplete="off" aria-label="ค้นหาวัตถุดิบ"><input type="hidden" name="ingredientProduct" value="${selectedName}"><div class="ingredient-picker-menu" data-ingredient-menu role="listbox">${options}</div></div></label><label class="ingredient-amount-field">จำนวน<input name="ingredientAmount" type="number" min="0.0001" step="any" value="${amount || 1}"></label></div><button type="button" data-remove-ingredient class="ingredient-remove-btn" aria-label="ลบวัตถุดิบ">✕</button></div>`;
+    const options = products.map(product => `<button type="button" class="ingredient-option ${product.name === selectedName ? "is-selected" : ""}" data-ingredient-value="${craftingEscape(product.name)}" role="option">${product.image ? `<img src="${craftingEscape(product.image)}" alt="">` : "🪵"}<span>${craftingEscape(product.name)}</span></button>`).join("");
+    return `<div class="recipe-ingredient-editor-row"><div class="ingredient-row-icon">${ingredientImage(selectedName) ? `<img src="${craftingEscape(ingredientImage(selectedName))}" alt="${craftingEscape(selectedName)}">` : "🪵"}</div><div class="ingredient-row-fields"><label>วัตถุดิบ<div class="ingredient-picker" data-ingredient-picker><input type="text" class="ingredient-search-input" data-ingredient-search value="${craftingEscape(selectedName)}" placeholder="พิมพ์เพื่อค้นหาวัตถุดิบ..." autocomplete="off" aria-label="ค้นหาวัตถุดิบ"><input type="hidden" name="ingredientProduct" value="${craftingEscape(selectedName)}"><div class="ingredient-picker-menu" data-ingredient-menu role="listbox">${options}</div></div></label><label class="ingredient-amount-field">จำนวน<input name="ingredientAmount" type="number" min="0.0001" step="any" value="${craftingEscape(amount || 1)}"></label></div><button type="button" data-remove-ingredient class="ingredient-remove-btn" aria-label="ลบวัตถุดิบ">✕</button></div>`;
   }).join("");
 }
 
@@ -283,7 +358,7 @@ document.addEventListener("DOMContentLoaded", () => {
       picker.querySelector("[data-ingredient-search]").value = value;
       picker.querySelector("input[name=ingredientProduct]").value = value;
       picker.querySelector("[data-ingredient-menu]").classList.remove("is-open");
-      row.querySelector(".ingredient-row-icon").innerHTML = ingredientImage(value) ? `<img src="${ingredientImage(value)}" alt="${value}">` : "🪵";
+      row.querySelector(".ingredient-row-icon").innerHTML = ingredientImage(value) ? `<img src="${craftingEscape(ingredientImage(value))}" alt="${craftingEscape(value)}">` : "🪵";
       picker.querySelectorAll("[data-ingredient-value]").forEach(item => item.classList.toggle("is-selected", item === option));
       return;
     }

@@ -9,33 +9,159 @@ let stateSyncInFlight = false;
 let stateSyncDirty = false;
 let stateLocalRevision = 0;
 let stateSyncErrorShown = false;
+let statePersistenceBlocked = false;
+let stateRecoveryNoticePending = false;
+let stateRecoveryKeyPending = null;
+
+function escapeHtml(value) {
+  return String(value ?? "").replace(/[&<>"']/g, character => ({
+    "&": "&amp;",
+    "<": "&lt;",
+    ">": "&gt;",
+    "\"": "&quot;",
+    "'": "&#039;",
+  })[character]);
+}
+
+function normalizeStateData(value) {
+  const validation = ACCOUNT_STATE.validateAccountState(value);
+  if (!validation.valid) throw new Error(`invalid account state: ${validation.error}`);
+  let migrated = value.schemaVersion !== STATE_SCHEMA_VERSION
+    || !Array.isArray(value.farmServices)
+    || !Array.isArray(value.farmOrders)
+    || !Array.isArray(value.orders)
+    || !Array.isArray(value.upgradeOrders)
+    || !value.dailyChecklist
+    || !Array.isArray(value.cart);
+  const normalized = { ...defaultState({ emptyWorkspace: true }), ...value, schemaVersion: STATE_SCHEMA_VERSION };
+  normalized.settings = { ...defaultState({ emptyWorkspace: true }).settings, ...value.settings };
+  normalized.settings.categories = Array.isArray(value.settings.categories)
+    ? value.settings.categories
+    : defaultState({ emptyWorkspace: true }).settings.categories;
+  normalized.farmServices = Array.isArray(value.farmServices) ? value.farmServices : [];
+  normalized.farmOrders = Array.isArray(value.farmOrders) ? value.farmOrders : [];
+  normalized.orders = Array.isArray(value.orders) ? value.orders : [];
+  normalized.upgradeOrders = Array.isArray(value.upgradeOrders) ? value.upgradeOrders : [];
+  normalized.dailyChecklist = value.dailyChecklist && typeof value.dailyChecklist === "object" && !Array.isArray(value.dailyChecklist) ? value.dailyChecklist : {};
+  normalized.cart = Array.isArray(value.cart) ? value.cart : [];
+  normalized.activityLog = Array.isArray(value.activityLog) ? value.activityLog : [];
+  normalized.products.forEach(product => {
+    if (!Number.isFinite(product.crafted)) product.crafted = 0;
+    if (product.category === "Game Pass" && !product.gamePass) {
+      product.gamePass = GAME_PASS.migrateLegacyProduct(product);
+      migrated = true;
+    }
+    if (!product.source) product.source = String(product.image || "").startsWith("assets/products/") ? "catalog" : "custom";
+    if (product.source === "catalog" && !product.catalogId) product.catalogId = RAW_CATALOG.find(([name]) => name === product.name)?.[0] || null;
+    if (!["tradable", "craft-only", "independent"].includes(product.tradeability)) {
+      product.tradeability = product.name === "Eye of Acro" ? "craft-only" : "tradable";
+    }
+  });
+  normalized.cart.forEach(item => {
+    if (item.type !== "product") return;
+    const product = normalized.products.find(entry => entry.id === item.refId);
+    if (!product || product.category !== "Game Pass") return;
+    item.type = "gamepass";
+    item.deliveryMethod = "gift";
+    item.productName = product.name;
+    item.name = item.name || product.name;
+    migrated = true;
+  });
+  const defaultRecipes = RECIPES.map(recipe => ({ ...recipe, ingredients: recipe.ingredients.map(item => [...item]) }));
+  if (!Array.isArray(normalized.recipes)) normalized.recipes = defaultRecipes;
+  else defaultRecipes.forEach(recipe => {
+    if (!normalized.recipes.some(existing => existing.name.toLowerCase() === recipe.name.toLowerCase())) normalized.recipes.push(recipe);
+  });
+  normalized.farmServices.forEach(service => {
+    if (!service.pricingMode) service.pricingMode = "unit";
+    if (!service.rateQty) service.rateQty = service.unitsPerBaht || 1;
+    if (!service.ratePrice) service.ratePrice = 1;
+    if (!service.hourRate && service.pricingMode === "hour") service.hourRate = service.ratePrice;
+  });
+  if (!normalized.settings.categories.includes("Game Pass")) {
+    normalized.settings.categories.push("Game Pass");
+    migrated = true;
+  }
+  if (repairKnownCorruptedText(normalized)) migrated = true;
+  return { state: normalized, migrated };
+}
+
+function repairKnownCorruptedText(accountState) {
+  const replacement = "\uFFFD";
+  const archive = Array.isArray(accountState.unicodeRepairArchive) ? accountState.unicodeRepairArchive : [];
+  let changed = false;
+  const record = (path, owner, key, repaired) => {
+    const original = owner[key];
+    if (typeof original !== "string" || !original.includes(replacement) || !repaired || repaired === original) return;
+    if (!archive.some(entry => entry.path === path && entry.original === original)) {
+      archive.push({ path, original, repaired, repairedAt: Date.now() });
+    }
+    owner[key] = repaired;
+    changed = true;
+  };
+  const catalogCategories = new Map(RAW_CATALOG.map(([name, category]) => [name.toLowerCase(), category]));
+  accountState.products.forEach((product, index) => {
+    const category = catalogCategories.get(String(product.name || "").toLowerCase());
+    if (category) record(`products[${index}].category`, product, "category", category);
+  });
+  const productsByName = new Map(accountState.products.map(product => [String(product.name || "").toLowerCase(), product]));
+  accountState.recipes.forEach((recipe, index) => {
+    const product = productsByName.get(String(recipe.name || "").toLowerCase());
+    const category = product?.category || catalogCategories.get(String(recipe.name || "").toLowerCase());
+    if (category) record(`recipes[${index}].category`, recipe, "category", category);
+  });
+  accountState.settings.categories = accountState.settings.categories.map((category, index) => {
+    if (typeof category !== "string" || !category.includes(replacement)) return category;
+    const compact = category.replaceAll(replacement, "");
+    const likelyCategory = compact.includes("วัตถุดิบ") || compact.includes("ถุดิบ") ? "ของวัตถุดิบ"
+      : compact.includes("ปีศาจ") || compact.includes("ผลปี") ? "ผลปีศาจ"
+      : compact.includes("ดาบ") || (compact.includes("ด") && compact.includes("บ")) ? "ดาบ"
+      : compact.includes("แต่ง") || compact.includes("ต่ง") ? "ของแต่ง"
+      : compact.includes("คราฟ") ? "ของคราฟ"
+      : null;
+    if (!likelyCategory) return category;
+    const temporary = { value: category };
+    record(`settings.categories[${index}]`, temporary, "value", likelyCategory);
+    return temporary.value;
+  });
+
+  accountState.sales.forEach((sale, index) => {
+    if (typeof sale.note !== "string" || !sale.note.includes(replacement)) return;
+    const activity = accountState.activityLog.find(item =>
+      item.type === "craft" && item.ts === sale.date && typeof item.sub === "string"
+      && !item.sub.includes(replacement) && item.sub.includes("• หัก:")
+    );
+    if (!activity) return;
+    const materials = activity.sub.slice(activity.sub.lastIndexOf("• หัก:") + "• หัก:".length).trim();
+    record(`sales[${index}].note`, sale, "note", `คราฟ ${sale.quantity} ชุด • หักวัตถุดิบ: ${materials}`);
+  });
+  if (archive.length) accountState.unicodeRepairArchive = archive.slice(-1000);
+  return changed;
+}
 
 function loadState() {
+  let raw = null;
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
+    raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) { state = defaultState(); saveState(); return state; }
-    const parsed = JSON.parse(raw);
-    if (!parsed.products || !parsed.sales || !parsed.settings) throw new Error("invalid");
-    state = parsed;
-    state.products.forEach(product => { if (!Number.isFinite(product.crafted)) product.crafted = 0; });
-    const defaultRecipes = RECIPES.map(recipe => ({ ...recipe, ingredients: recipe.ingredients.map(item => [...item]) }));
-    if (!Array.isArray(state.recipes)) state.recipes = defaultRecipes;
-    else defaultRecipes.forEach(recipe => {
-      if (!state.recipes.some(existing => existing.name.toLowerCase() === recipe.name.toLowerCase())) state.recipes.push(recipe);
-    });
-    if (!Array.isArray(state.farmServices)) state.farmServices = [];
-    if (!Array.isArray(state.farmOrders)) state.farmOrders = [];
-    if (!Array.isArray(state.activityLog)) state.activityLog = [];
-    state.farmServices.forEach(service => {
-      if (!service.pricingMode) service.pricingMode = "unit";
-      if (!service.rateQty) service.rateQty = service.unitsPerBaht || 1;
-      if (!service.ratePrice) service.ratePrice = 1;
-      if (!service.hourRate && service.pricingMode === "hour") service.hourRate = service.ratePrice;
-    });
-    if (!state.settings.categories) state.settings.categories = Object.keys(CATEGORY_ICONS).filter(c=>c!=="อื่นๆ");
+    const result = normalizeStateData(JSON.parse(raw));
+    state = result.state;
+    if (result.migrated) saveState();
     return state;
   } catch (e) {
-    console.error("loadState error", e);
+    if (raw) {
+      try {
+        const recoveryKey = ACCOUNT_STATE.quarantineLocalState(localStorage, STORAGE_KEY, raw, genId("recovery"));
+        console.error(`Invalid local workspace data was preserved at ${recoveryKey}.`, e);
+        stateRecoveryNoticePending = true;
+        stateRecoveryKeyPending = recoveryKey;
+      } catch (recoveryError) {
+        statePersistenceBlocked = true;
+        console.error("Could not preserve invalid local workspace data; persistence is blocked.", recoveryError);
+        state = defaultState();
+        return state;
+      }
+    } else console.error("loadState error", e);
     state = defaultState();
     saveState();
     return state;
@@ -43,6 +169,11 @@ function loadState() {
 }
 
 function saveState() {
+  if (statePersistenceBlocked) {
+    console.error("Account state was not saved because recovery storage is unavailable.");
+    toast(t("state_recovery_failed"), "error");
+    return false;
+  }
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
     if (stateOwnerId) localStorage.setItem(`${STORAGE_KEY}_${encodeURIComponent(stateOwnerId)}`, JSON.stringify(state));
@@ -99,8 +230,11 @@ async function syncAccountState() {
 
 function renderAccountState() {
   renderProducts();
+  renderFarmServices();
   renderCrafting();
   renderSalesHistory();
+  renderProductionCart();
+  renderUpgradeOrders();
   renderDashboard();
   renderReports();
   renderSettings();
@@ -132,6 +266,7 @@ async function pollAccountState() {
 }
 
 async function activateUserState(ownerId) {
+  if (statePersistenceBlocked) throw new Error(t("state_recovery_failed"));
   clearTimeout(stateSyncTimer);
   clearInterval(statePollTimer);
   stateSyncReady = false;
@@ -144,29 +279,79 @@ async function activateUserState(ownerId) {
   stateOwnerId = ownerId;
   const personalKey = `${STORAGE_KEY}_${encodeURIComponent(ownerId)}`;
   const localState = localStorage.getItem(personalKey);
+  let recoveredLocalState = false;
+  let recoveredLocalStateKey = null;
+  let hasUsableLocalState = false;
   if (localState) {
-    try { state = JSON.parse(localState); } catch (error) { localStorage.removeItem(personalKey); }
+    try {
+      state = normalizeStateData(JSON.parse(localState)).state;
+      hasUsableLocalState = true;
+    }
+    catch (error) {
+      try {
+        const recoveryKey = ACCOUNT_STATE.quarantineLocalState(localStorage, personalKey, localState, genId("recovery"));
+        console.error(`Invalid local account data was preserved at ${recoveryKey}.`, error);
+        recoveredLocalState = true;
+        recoveredLocalStateKey = recoveryKey;
+        state = defaultState();
+      } catch (recoveryError) {
+        statePersistenceBlocked = true;
+        console.error("Could not preserve invalid local account data; activation was stopped.", recoveryError);
+        throw new Error(t("state_recovery_failed"));
+      }
+    }
   } else if (localStorage.getItem("igh_kinglegacy_legacy_owner") === ownerId) {
-    try { state = JSON.parse(localStorage.getItem(STORAGE_KEY)) || defaultState({ emptyWorkspace: true }); } catch (error) { state = defaultState({ emptyWorkspace: true }); }
+    const legacyState = localStorage.getItem(STORAGE_KEY);
+    if (legacyState) {
+      try {
+        state = normalizeStateData(JSON.parse(legacyState)).state;
+        hasUsableLocalState = true;
+      } catch (error) {
+        try {
+          recoveredLocalStateKey = ACCOUNT_STATE.quarantineLocalState(localStorage, STORAGE_KEY, legacyState, genId("recovery"));
+          stateRecoveryNoticePending = true;
+          stateRecoveryKeyPending = recoveredLocalStateKey;
+          recoveredLocalState = true;
+          state = defaultState();
+        } catch (recoveryError) {
+          statePersistenceBlocked = true;
+          console.error("Could not preserve invalid legacy account data; activation was stopped.", recoveryError);
+          throw new Error(t("state_recovery_failed"));
+        }
+      }
+    } else state = defaultState();
   } else {
-    state = defaultState({ emptyWorkspace: true });
+    state = defaultState();
   }
-  renderAccountState();
   const loadRevision = stateLocalRevision;
+  let migrated = false;
+  let stateSyncError = false;
   try {
     const response = await fetch("/api/state", { headers: { Authorization: `Bearer ${localStorage.getItem(AUTH_TOKEN_KEY) || ""}` } });
     if (response.ok) {
       const remoteState = await response.json();
       stateSyncAllowed = true;
       stateSyncEtag = response.headers.get("ETag");
-      if (stateLocalRevision === loadRevision) state = remoteState;
+      if (stateLocalRevision === loadRevision) {
+        const result = normalizeStateData(remoteState);
+        state = result.state;
+        migrated = result.migrated;
+      }
     } else if (response.status === 404) {
       stateSyncAllowed = true;
-      if (stateLocalRevision === loadRevision) state = defaultState({ emptyWorkspace: true });
+      if (stateLocalRevision === loadRevision && !hasUsableLocalState) state = defaultState();
       stateSyncDirty = true;
-    } else if (response.status !== 503) throw new Error("Could not load account data");
-  } catch (error) { console.warn("Account state sync unavailable; using this browser's local state."); }
-  if (!state || !Array.isArray(state.products) || !Array.isArray(state.sales) || !state.settings) state = defaultState({ emptyWorkspace: true });
+    } else if (response.status === 503) {
+      stateSyncError = true;
+      console.warn("Account state storage is unavailable; changes will remain local.");
+    }
+    else throw new Error("Could not load account data");
+  } catch (error) {
+    console.warn("Account state sync unavailable; using this browser's local state.", error);
+    stateSyncError = true;
+  }
+  if (!state || !Array.isArray(state.products) || !Array.isArray(state.sales) || !state.settings) state = defaultState();
+  if (migrated) stateSyncDirty = true;
   if (stateLocalRevision !== loadRevision) stateSyncDirty = true;
   stateSyncReady = true;
   localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
@@ -177,6 +362,11 @@ async function activateUserState(ownerId) {
     pollAccountState();
     statePollTimer = setInterval(pollAccountState, 5000);
   }
+  const recoveryNotice = recoveredLocalState || stateRecoveryNoticePending;
+  const recoveryKey = recoveredLocalStateKey || stateRecoveryKeyPending;
+  stateRecoveryNoticePending = false;
+  stateRecoveryKeyPending = null;
+  return { ownerId, loaded: true, synchronized: stateSyncAllowed, stateSyncError, recoveredLocalState: recoveryNotice, recoveryKey };
 }
 window.activateUserState = activateUserState;
 
@@ -283,7 +473,7 @@ function buildCustomSelect(select) {
   menu.className = "custom-select-menu";
   wrapper.append(trigger, menu);
   const rebuild = () => {
-    menu.innerHTML = Array.from(select.options).map(option => `<button type="button" data-value="${option.value}">${option.textContent}</button>`).join("");
+    menu.innerHTML = Array.from(select.options).map(option => `<button type="button" data-value="${escapeHtml(option.value)}">${escapeHtml(option.textContent)}</button>`).join("");
     syncCustomSelect(select);
   };
   trigger.addEventListener("click", event => {
@@ -465,8 +655,9 @@ function fmtNum(n) {
 function fmtBaht(n) { return "฿" + fmtNum(n); }
 function fmtDate(ts) {
   const d = new Date(ts);
-  return d.toLocaleDateString("th-TH", { day:"2-digit", month:"short", year:"2-digit" }) + " " +
-         d.toLocaleTimeString("th-TH", { hour:"2-digit", minute:"2-digit" });
+  const locale = currentLang === "th" ? "th-TH" : "en-US";
+  return d.toLocaleDateString(locale, { timeZone: APP_TIME.TIME_ZONE, day:"2-digit", month:"short", year:"2-digit" }) + " " +
+         d.toLocaleTimeString(locale, { timeZone: APP_TIME.TIME_ZONE, hour:"2-digit", minute:"2-digit" });
 }
 function timeAgo(ts) {
   const s = Math.floor((Date.now() - ts) / 1000);
@@ -482,43 +673,123 @@ function toast(msg, type = "success") {
   if (!box) {
     box = document.createElement("div");
     box.id = "toast-box";
-    box.className = "fixed z-[9999] bottom-20 md:bottom-6 right-4 flex flex-col gap-2 items-end";
+    box.className = "toast-container";
+    box.setAttribute("role", "region");
+    box.setAttribute("aria-label", t("toast_region"));
+    box.setAttribute("aria-live", "off");
     document.body.appendChild(box);
   }
+  while (box.children.length >= 4) box.firstElementChild.remove();
   const el = document.createElement("div");
   const color = type === "error" ? "border-rose-500/40 text-rose-300" : type === "info" ? "border-sky-500/40 text-sky-300" : "border-emerald-500/40 text-emerald-300";
-  el.className = `toast-item px-4 py-2.5 rounded-xl bg-slate-900/95 border ${color} shadow-lg text-sm font-medium backdrop-blur-sm`;
-  el.textContent = msg;
+  el.className = `toast-item ${color} shadow-lg text-sm font-medium backdrop-blur-sm`;
+  el.setAttribute("role", type === "error" ? "alert" : "status");
+  el.setAttribute("aria-live", type === "error" ? "assertive" : "polite");
+  el.setAttribute("aria-atomic", "true");
+  const message = document.createElement("span");
+  message.className = "toast-message";
+  message.textContent = String(msg ?? "");
+  const dismiss = document.createElement("button");
+  dismiss.className = "toast-dismiss";
+  dismiss.type = "button";
+  dismiss.setAttribute("aria-label", t("toast_dismiss"));
+  dismiss.textContent = "×";
+  dismiss.addEventListener("click", () => dismissToast(el));
+  el.append(message, dismiss);
   box.appendChild(el);
-  setTimeout(() => { el.style.opacity = "0"; el.style.transform="translateX(8px)"; }, 2200);
-  setTimeout(() => el.remove(), 2500);
+  setTimeout(() => dismissToast(el), type === "error" ? 6000 : 4500);
+}
+
+function dismissToast(element) {
+  if (!element?.isConnected || element.classList.contains("toast-item-exiting")) return;
+  element.classList.add("toast-item-exiting");
+  setTimeout(() => element.remove(), 220);
 }
 
 /* ---------- Modal (generic) ---------- */
+const modalFocusReturn = new WeakMap();
+const modalCloseTimers = new WeakMap();
+
+function modalFocusableElements(dialog) {
+  return [...dialog.querySelectorAll('a[href], button:not([disabled]), input:not([disabled]):not([type="hidden"]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])')]
+    .filter(element => element.getClientRects().length > 0 && !element.closest("[inert]") && !element.classList.contains("custom-select-native"));
+}
+
+function configureModalDialog(modal) {
+  const dialog = modal.querySelector(".modal-box") || modal;
+  dialog.setAttribute("role", "dialog");
+  dialog.setAttribute("aria-modal", "true");
+  dialog.setAttribute("tabindex", "-1");
+  const label = dialog.querySelector("h1, h2, [role='heading']") || dialog.querySelector("#confirm-message");
+  if (label) {
+    if (!label.id) label.id = genId("modal-title");
+    dialog.setAttribute("aria-labelledby", label.id);
+  } else {
+    dialog.setAttribute("aria-label", t("modal_dialog"));
+  }
+  return dialog;
+}
+
 function openModal(id) {
   const m = document.getElementById(id);
   if (!m) return;
+  clearTimeout(modalCloseTimers.get(m));
+  if (!m.classList.contains("modal-show")) modalFocusReturn.set(m, document.activeElement);
+  const dialog = configureModalDialog(m);
   m.classList.remove("hidden");
-  requestAnimationFrame(() => m.classList.add("modal-show"));
-  document.body.classList.add("overflow-hidden");
+  m.setAttribute("aria-hidden", "false");
+  document.body.classList.add("overflow-hidden", "dialog-scroll-locked");
+  requestAnimationFrame(() => {
+    m.classList.add("modal-show");
+    const focusable = modalFocusableElements(dialog);
+    const target = focusable.find(element => element.hasAttribute("autofocus"))
+      || focusable.find(element => element.matches("form input:not([type='hidden']), form select, form textarea"))
+      || focusable.find(element => !element.matches("[data-close-modal]"))
+      || dialog;
+    target.focus({ preventScroll: true });
+  });
 }
 function closeModal(id) {
   const m = id ? document.getElementById(id) : document.querySelector(".modal-overlay:not(.hidden)");
   if (!m) return;
   m.classList.remove("modal-show");
-  setTimeout(() => m.classList.add("hidden"), 120);
-  document.body.classList.remove("overflow-hidden");
+  m.setAttribute("aria-hidden", "true");
+  const timer = setTimeout(() => {
+    if (m.classList.contains("modal-show")) return;
+    m.classList.add("hidden");
+    const otherModal = [...document.querySelectorAll(".modal-overlay.modal-show:not(.hidden)")].pop();
+    if (!otherModal) document.body.classList.remove("overflow-hidden", "dialog-scroll-locked");
+    const previousFocus = modalFocusReturn.get(m);
+    if (previousFocus?.isConnected) previousFocus.focus({ preventScroll: true });
+    else if (otherModal) configureModalDialog(otherModal).focus({ preventScroll: true });
+    modalFocusReturn.delete(m);
+    modalCloseTimers.delete(m);
+  }, 120);
+  modalCloseTimers.set(m, timer);
 }
 function bindModalDismiss() {
   document.addEventListener("click", (e) => {
     if (e.target.classList.contains("modal-overlay")) closeModal(e.target.id);
     const closeBtn = e.target.closest("[data-close-modal]");
-    if (closeBtn) closeModal(closeBtn.closest(".modal-overlay").id);
+    if (closeBtn) closeModal(closeBtn.closest(".modal-overlay")?.id);
   });
   document.addEventListener("keydown", (e) => {
-    if (e.key === "Escape") {
-      const open = document.querySelector(".modal-overlay.modal-show");
-      if (open) closeModal(open.id);
+    const openModals = [...document.querySelectorAll(".modal-overlay.modal-show:not(.hidden)")];
+    const open = openModals[openModals.length - 1];
+    if (!open) return;
+    if (e.key === "Escape") { e.preventDefault(); closeModal(open.id); return; }
+    if (e.key !== "Tab") return;
+    const dialog = open.querySelector(".modal-box") || open;
+    const focusable = modalFocusableElements(dialog);
+    if (!focusable.length) { e.preventDefault(); dialog.focus(); return; }
+    const first = focusable[0];
+    const last = focusable[focusable.length - 1];
+    if (e.shiftKey && (document.activeElement === first || !dialog.contains(document.activeElement))) {
+      e.preventDefault();
+      last.focus();
+    } else if (!e.shiftKey && (document.activeElement === last || !dialog.contains(document.activeElement))) {
+      e.preventDefault();
+      first.focus();
     }
   });
 }

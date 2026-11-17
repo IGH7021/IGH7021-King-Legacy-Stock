@@ -25,12 +25,19 @@ function getClientId() {
   return clientId;
 }
 
+function communityPresenceHeaders() {
+  const headers = { "X-Client-Id": getClientId() };
+  const token = localStorage.getItem(AUTH_TOKEN_KEY);
+  if (token) headers.Authorization = `Bearer ${token}`;
+  return headers;
+}
+
 async function getCommunityStats() {
   const session = JSON.parse(localStorage.getItem(SESSION_KEY) || "null") || { startedAt: Date.now() };
   session.lastSeen = Date.now();
   localStorage.setItem(SESSION_KEY, JSON.stringify(session));
   try {
-    const response = await fetch("/api/presence", { method: "POST", headers: { "X-Client-Id": getClientId() } });
+    const response = await fetch("/api/presence", { method: "POST", headers: communityPresenceHeaders() });
     if (response.ok) return response.json();
   } catch (e) { /* local demo mode */ }
   return { totalUsers: 1, onlineUsers: navigator.onLine ? 1 : 0 };
@@ -55,7 +62,7 @@ async function renderCommunity(reviews = getReviews(), stats = null) {
     <article class="review-item">
       <div class="flex items-center justify-between gap-2">
         <span class="text-amber-300" aria-label="${t("review_stars", { count: review.rating })}">${"★".repeat(review.rating)}${"☆".repeat(5 - review.rating)}</span>
-        <time class="text-[11px] text-slate-400">${new Date(review.date).toLocaleDateString(currentLang === "th" ? "th-TH" : "en-US")}</time>
+        <time class="text-[11px] text-slate-400">${new Date(review.date).toLocaleDateString(currentLang === "th" ? "th-TH" : "en-US", { timeZone: APP_TIME.TIME_ZONE })}</time>
       </div>
       <p class="review-message text-sm mt-1">${escapeReviewText(review.text)}</p>
     </article>`).join("") : `<p class="text-sm text-slate-400 text-center py-3">${t("no_reviews")}</p>`;
@@ -112,6 +119,6 @@ document.addEventListener("DOMContentLoaded", () => {
       communitySection?.querySelectorAll(".skeleton-pending").forEach(element => element.classList.remove("skeleton-pending"));
     });
   setInterval(async () => {
-    try { await fetch("/api/presence", { method: "POST", headers: { "X-Client-Id": getClientId() } }); } catch (e) { /* local demo mode */ }
+    try { await fetch("/api/presence", { method: "POST", headers: communityPresenceHeaders() }); } catch (e) { /* local demo mode */ }
   }, 30000);
 });

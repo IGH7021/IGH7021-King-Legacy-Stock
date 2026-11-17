@@ -3,8 +3,11 @@ const fs = require("fs");
 const path = require("path");
 const crypto = require("crypto");
 const UPDATE_HISTORY = require("./update-history.json");
+const { requestBody } = require("./request-body");
+const APP_TIME = require("../shared/time");
+const { validateAccountState } = require("../shared/state-validation");
 
-const ENV_FILES = [path.resolve(__dirname, "../.env"), process.env.RENDER_ENV_FILE].filter(Boolean);
+const ENV_FILES = process.env.NODE_ENV === "test" ? [] : [path.resolve(__dirname, "../.env"), process.env.RENDER_ENV_FILE].filter(Boolean);
 for (const envFile of ENV_FILES) {
   if (!fs.existsSync(envFile)) continue;
   fs.readFileSync(envFile, "utf8").split(/\r?\n/).forEach(line => {
@@ -76,13 +79,8 @@ function archiveLocalExpiredKeys(now = Date.now()) {
   return count;
 }
 function json(response, status, body, headers = {}) { response.writeHead(status, { ...SECURITY_HEADERS, "Content-Type": "application/json; charset=utf-8", ...headers }); response.end(JSON.stringify(body)); }
-function requestBody(request, maxBytes = 10000) {
-  return new Promise((resolve, reject) => { let raw = ""; request.on("data", chunk => { raw += chunk; if (raw.length > maxBytes) reject(new Error("payload too large")); }); request.on("end", () => { try { resolve(raw ? JSON.parse(raw) : {}); } catch (error) { reject(error); } }); request.on("error", reject); });
-}
 function bangkokDate(now = new Date()) {
-  const parts = new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Bangkok", year: "numeric", month: "2-digit", day: "2-digit" }).formatToParts(now);
-  const values = Object.fromEntries(parts.map(part => [part.type, part.value]));
-  return `${values.year}-${values.month}-${values.day}`;
+  return APP_TIME.dateKey(now.getTime());
 }
 function stableJson(value) {
   if (Array.isArray(value)) return `[${value.map(stableJson).join(",")}]`;
@@ -92,10 +90,13 @@ function stableJson(value) {
 function stateEtag(state, updatedAt) {
   return `"${crypto.createHash("sha256").update(`${updatedAt}:${stableJson(state)}`).digest("hex")}"`;
 }
-function communityStats() {
+function communityStats(totalUsers) {
   const now = Date.now();
-  for (const [id, lastSeen] of presence) if (now - lastSeen > ONLINE_WINDOW) presence.delete(id);
-  return { onlineUsers: presence.size, totalUsers: readData().totalUsers };
+  for (const [id, value] of presence) {
+    const lastSeen = typeof value === "number" ? value : value.lastSeen;
+    if (now - lastSeen > ONLINE_WINDOW) presence.delete(id);
+  }
+  return { onlineUsers: presence.size, totalUsers };
 }
 function authData() { const data = readData(); data.keys = readKeyFiles(); data.users = Array.isArray(data.users) ? data.users : []; data.identities = Array.isArray(data.identities) ? data.identities : []; const expired = new Set(data.keys.filter(key => !key.permanent && key.expiresAt && key.expiresAt + KEY_EXPIRY_GRACE_MS < Date.now()).map(key => key.id)); const keptUsers = data.users.filter(user => !expired.has(user.keyId)); if (keptUsers.length !== data.users.length) { data.users = keptUsers; writeData(data); } return data; }
 async function supabaseRequest(table, method = "GET", query = "", body = null, prefer = null) {
@@ -407,6 +408,7 @@ const server = http.createServer(async (request, response) => {
       if (request.method === "GET") {
         const rows = await supabaseRequest("user_states", "GET", `owner_id=eq.${encodeURIComponent(session.ownerId)}&select=state,updated_at`);
         if (!rows.length) return json(response, 404, { error: "STATE_NOT_FOUND" });
+        if (!validateAccountState(rows[0].state).valid) return json(response, 409, { error: "INVALID_STORED_ACCOUNT_STATE" });
         const etag = stateEtag(rows[0].state, rows[0].updated_at);
         if (request.headers["if-none-match"] === etag) {
           response.writeHead(304, { ETag: etag, "Cache-Control": "no-store" });
@@ -414,7 +416,14 @@ const server = http.createServer(async (request, response) => {
         }
         return json(response, 200, rows[0].state, { ETag: etag, "Cache-Control": "no-store" });
       }
-      const body = await requestBody(request, 5 * 1024 * 1024);
+      let body;
+      try { body = await requestBody(request, 5 * 1024 * 1024); }
+      catch (error) {
+        const tooLarge = error.message === "payload too large";
+        return json(response, tooLarge ? 413 : 400, { error: tooLarge ? "STATE_PAYLOAD_TOO_LARGE" : "INVALID_STATE_JSON" });
+      }
+      const validation = validateAccountState(body);
+      if (!validation.valid) return json(response, 400, { error: "INVALID_ACCOUNT_STATE", detail: validation.error });
       const updatedAt = new Date().toISOString();
       await supabaseRequest("user_states", "POST", "on_conflict=owner_id", { owner_id: session.ownerId, state: body, updated_at: updatedAt });
       return json(response, 200, { saved: true }, { ETag: stateEtag(body, updatedAt), "Cache-Control": "no-store" });
@@ -489,6 +498,17 @@ const server = http.createServer(async (request, response) => {
       }
       return json(response, 201, { submitted: true, createdAt: suggestion.created_at });
     } catch (error) { console.error("Could not save site suggestion:", error.message); return json(response, 503, { error: "SUGGESTION_STORAGE_UNAVAILABLE" }); }
+  }
+  if (url.pathname === "/api/admin/overview" && request.method === "GET") {
+    const session = sessionFromRequest(request);
+    if (!session?.admin) return json(response, 403, { error: "ADMIN_ONLY" });
+    return json(response, 503, { error: "ADMIN_ANALYTICS_DISABLED" });
+  }
+  const adminUserDetailRoute = url.pathname.match(/^\/api\/admin\/users\/([^/]+)$/);
+  if (adminUserDetailRoute && request.method === "GET") {
+    const session = sessionFromRequest(request);
+    if (!session?.admin) return json(response, 403, { error: "ADMIN_ONLY" });
+    return json(response, 503, { error: "ADMIN_ANALYTICS_DISABLED" });
   }
   if (url.pathname === "/api/admin/suggestions" && request.method === "GET") {
     const session = sessionFromRequest(request);
@@ -677,30 +697,62 @@ const server = http.createServer(async (request, response) => {
     } catch (error) { return json(response, 400, { error: "Invalid JSON" }); }
   }
   if (url.pathname === "/api/presence" && request.method === "POST") {
-    const clientId = request.headers["x-client-id"] || crypto.randomUUID();
+    const candidateClientId = request.headers["x-client-id"];
+    const clientId = typeof candidateClientId === "string" && candidateClientId.trim().length > 0 && candidateClientId.length <= 100
+      ? candidateClientId
+      : crypto.randomUUID();
+    const lastSeen = new Date().toISOString();
     presence.set(clientId, Date.now());
-    const data = readData();
-    data.userIds = Array.isArray(data.userIds) ? data.userIds : [];
-    if (!data.userIds.includes(clientId)) data.userIds.push(clientId);
-    data.totalUsers = data.userIds.length;
-    if (SUPABASE_ENABLED) { try { await supabaseRequest("presence_clients", "POST", "on_conflict=client_id", { client_id: clientId, last_seen: new Date().toISOString() }); data.totalUsers = (await supabaseRequest("presence_clients", "GET", "select=client_id")).length; } catch (error) { console.error(error.message); } }
-    else writeData(data);
-    const stats = communityStats(); stats.totalUsers = data.totalUsers;
+    let totalUsers;
+    if (SUPABASE_ENABLED) {
+      const presenceRecord = { client_id: clientId, last_seen: lastSeen };
+      try {
+        await supabaseRequest("presence_clients", "POST", "on_conflict=client_id", presenceRecord);
+      } catch (error) { console.error(error.message); }
+      try { totalUsers = (await supabaseRequest("presence_clients", "GET", "select=client_id")).length; }
+      catch (error) {
+        console.error(error.message);
+        const data = readData();
+        data.userIds = Array.isArray(data.userIds) ? data.userIds : [];
+        if (!data.userIds.includes(clientId)) data.userIds.push(clientId);
+        totalUsers = data.userIds.length;
+      }
+    } else {
+      const data = readData();
+      data.userIds = Array.isArray(data.userIds) ? data.userIds : [];
+      if (!data.userIds.includes(clientId)) data.userIds.push(clientId);
+      data.totalUsers = data.userIds.length;
+      writeData(data);
+      totalUsers = data.totalUsers;
+    }
+    const stats = communityStats(totalUsers || 0);
     response.writeHead(200, { "Content-Type": "application/json; charset=utf-8", "X-Client-Id": clientId });
     return response.end(JSON.stringify(stats));
   }
   if (url.pathname === "/api/community" && request.method === "GET") {
-    const stats = communityStats();
-    if (SUPABASE_ENABLED) { try { stats.totalUsers = (await supabaseRequest("presence_clients", "GET", "select=client_id")).length; } catch (error) { console.error(error.message); } }
-    return json(response, 200, stats);
+    let totalUsers = 0;
+    if (SUPABASE_ENABLED) {
+      try { totalUsers = (await supabaseRequest("presence_clients", "GET", "select=client_id")).length; }
+      catch (error) {
+        console.error(error.message);
+        totalUsers = readData().totalUsers;
+      }
+    } else totalUsers = readData().totalUsers;
+    return json(response, 200, communityStats(totalUsers));
   }
   if (request.method !== "GET" && request.method !== "HEAD") return json(response, 405, { error: "Method not allowed" });
   const clientRoutes = new Set(["/dashboard", "/products", "/sales", "/reports", "/settings", "/updates", "/admin"]);
-  const requested = decodeURIComponent(url.pathname === "/" || clientRoutes.has(url.pathname.toLowerCase()) ? "/index.html" : url.pathname);
+  let requested;
+  try {
+    requested = decodeURIComponent(url.pathname === "/" || clientRoutes.has(url.pathname.toLowerCase()) ? "/index.html" : url.pathname);
+  } catch (error) {
+    if (!(error instanceof URIError)) throw error;
+    return json(response, 400, { error: "INVALID_REQUEST_PATH" });
+  }
   const filePath = path.resolve(ROOT, `.${requested}`);
   const relativePath = path.relative(ROOT, filePath);
   const normalizedRelativePath = relativePath.split(path.sep).join("/").toLowerCase();
-  const protectedPath = normalizedRelativePath.split("/").some(part => part.startsWith(".env") || part === ".git" || part === "node_modules") || normalizedRelativePath.startsWith("server/") || normalizedRelativePath.startsWith("scripts/") || normalizedRelativePath.startsWith("supabase/") || ["package.json", "package-lock.json", "render.yaml", ".gitignore"].includes(normalizedRelativePath);
+  const protectedPath = normalizedRelativePath === "test" || normalizedRelativePath.startsWith("test/") || normalizedRelativePath.split("/").some(part => part.startsWith(".env") || part === ".git" || part === "node_modules") || normalizedRelativePath.startsWith("server/") || normalizedRelativePath.startsWith("scripts/") || normalizedRelativePath.startsWith("supabase/") || ["package.json", "package-lock.json", "render.yaml", ".gitignore"].includes(normalizedRelativePath);
   if (!relativePath || relativePath.startsWith("..") || path.isAbsolute(relativePath) || protectedPath || !fs.existsSync(filePath) || fs.statSync(filePath).isDirectory()) {
     const notFound = path.join(ROOT, "404.html");
     response.writeHead(404, { ...SECURITY_HEADERS, "Content-Type": "text/html; charset=utf-8" });
@@ -711,9 +763,15 @@ const server = http.createServer(async (request, response) => {
   fs.createReadStream(filePath).pipe(response);
 });
 
-server.listen(PORT, () => {
-  console.log(`King Legacy Stock server: http://localhost:${PORT}`);
-  archiveExpiredKeys().catch(error => console.error("Could not archive expired keys:", error.message));
-  const archiveTimer = setInterval(() => archiveExpiredKeys().catch(error => console.error("Could not archive expired keys:", error.message)), 60 * 60 * 1000);
-  archiveTimer.unref();
-});
+function startServer(port = PORT) {
+  server.listen(port, () => {
+    console.log(`King Legacy Stock server: http://localhost:${port}`);
+    archiveExpiredKeys().catch(error => console.error("Could not archive expired keys:", error.message));
+    const archiveTimer = setInterval(() => archiveExpiredKeys().catch(error => console.error("Could not archive expired keys:", error.message)), 60 * 60 * 1000);
+    archiveTimer.unref();
+  });
+}
+
+if (require.main === module) startServer();
+
+module.exports = { server, startServer };

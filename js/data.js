@@ -1,17 +1,19 @@
 const STORAGE_KEY = "igh_kinglegacy_state";
 const THEME_KEY = "igh_theme";
 const LANG_KEY = "igh_lang";
-const APP_VERSION = "V.4.44";
+const APP_VERSION = "V.4.56";
+const STATE_SCHEMA_VERSION = 4;
 
 const CATEGORY_ICONS = {
   "ดาบ": "🗡️",
   "ผลปีศาจ": "🍇",
   "ของวัตถุดิบ": "🪵",
   "ของแต่ง": "🎩",
+  "Game Pass": "🎟️",
   "อื่นๆ": "📦",
 };
 
-const CATEGORY_ORDER = ["ดาบ", "ผลปีศาจ", "ของวัตถุดิบ", "ของแต่ง", "อื่นๆ"];
+const CATEGORY_ORDER = ["ดาบ", "ผลปีศาจ", "ของวัตถุดิบ", "ของแต่ง", "Game Pass", "อื่นๆ"];
 
 const RARITY_ORDER = ["limited","mythical","legendary","epic","rare","uncommon","common","none"];
 const RARITY_COLORS = {
@@ -193,6 +195,9 @@ function buildDefaultProducts() {
     return {
       id: "p_" + Date.now().toString(36) + "_" + i,
       name, category,
+      source: "catalog",
+      catalogId: name,
+      tradeability: name === "Eye of Acro" ? "craft-only" : "tradable",
       image: image || null,
       rarity: rarity || "none",
       stock, sold: 0, crafted: 0,
@@ -206,12 +211,17 @@ function buildDefaultProducts() {
 
 function defaultState({ emptyWorkspace = false } = {}) {
   return {
+    schemaVersion: STATE_SCHEMA_VERSION,
     products: emptyWorkspace ? [] : buildDefaultProducts(),
     farmServices: [],
     farmOrders: [],
+    orders: [],
+    upgradeOrders: [],
+    dailyChecklist: {},
+    cart: [],
     activityLog: [],
     sales: [],
     settings: { stockAlert: 5, categories: Object.keys(CATEGORY_ICONS).filter(c=>c!=="อื่นๆ") },
-    ...(emptyWorkspace ? { recipes: RECIPES.map(recipe => ({ ...recipe, ingredients: recipe.ingredients.map(item => [...item]) })) } : {}),
+    recipes: RECIPES.map(recipe => ({ ...recipe, ingredients: recipe.ingredients.map(item => [...item]) })),
   };
 }

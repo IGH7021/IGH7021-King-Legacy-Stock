@@ -5,13 +5,8 @@ let supportRequestVerified = false;
 let supportRequestCountdownTimer = null;
 
 function millisecondsUntilBangkokMidnight(now = Date.now()) {
-  const bangkokNow = new Date(now + 7 * 60 * 60 * 1000);
-  const nextMidnightUtc = Date.UTC(
-    bangkokNow.getUTCFullYear(),
-    bangkokNow.getUTCMonth(),
-    bangkokNow.getUTCDate() + 1,
-  ) - 7 * 60 * 60 * 1000;
-  return Math.max(0, nextMidnightUtc - now);
+  const nextMidnight = APP_TIME.nextDayStart(now);
+  return Number.isFinite(nextMidnight) ? Math.max(0, nextMidnight - now) : 0;
 }
 
 function stopSupportRequestCountdown() {

@@ -10,7 +10,7 @@ function updateKeySettings(result = {}) {
   panel.dataset.key = key;
   value.textContent = "•".repeat(Math.min(24, Math.max(8, key.length)));
   const locale = currentLang === "th" ? "th-TH" : "en-US";
-  expiry.textContent = result.expiresAt ? t("key_active_expires", { date: new Date(result.expiresAt).toLocaleString(locale) }) : t("key_active_unlimited");
+  expiry.textContent = result.expiresAt ? t("key_active_expires", { date: new Date(result.expiresAt).toLocaleString(locale, { timeZone: APP_TIME.TIME_ZONE }) }) : t("key_active_unlimited");
   if (toggle) toggle.textContent = toggle.dataset.showing === "true" ? t("key_hide") : t("key_show");
 }
 
@@ -21,7 +21,7 @@ function applyTheme(theme) {
 
 function initializeApp(cb) {
   const app = document.getElementById("app-root");
-  app.classList.remove("hidden");
+  app.classList.add("hidden");
   cb();
   app.setAttribute("aria-busy", "false");
 }
@@ -40,7 +40,7 @@ function initFloatingProducts() {
     item.style.setProperty("--float-y", `${12 + (index * 23) % 72}%`);
     item.style.setProperty("--float-depth", `${index * 1.7}px`);
     item.style.setProperty("--float-delay", `${index * -1.2}s`);
-    item.innerHTML = `<img src="${product.image}" alt="">`;
+    item.innerHTML = `<img src="${escapeHtml(product.image)}" alt="">`;
     layer.appendChild(item);
   });
   document.body.appendChild(layer);
@@ -66,8 +66,8 @@ function renderSettings() {
   const catList = document.getElementById("settings-category-list");
   catList.innerHTML = state.settings.categories.map(c => `
     <span class="px-2.5 py-1 rounded-full text-xs bg-slate-700/60 border border-slate-600/50 flex items-center gap-1.5">
-      ${c}
-      <button data-cat="${c}" class="remove-cat-btn text-slate-400 hover:text-rose-400" aria-label="${t('aria_delete')}">×</button>
+      ${escapeHtml(c)}
+      <button data-cat="${escapeHtml(c)}" class="remove-cat-btn text-slate-400 hover:text-rose-400" aria-label="${t('aria_delete')}">×</button>
     </span>`).join("");
 }
 
@@ -104,6 +104,8 @@ document.addEventListener("DOMContentLoaded", () => {
     renderProducts();
     renderCrafting();
     renderSalesHistory();
+    renderProductionCart();
+    renderUpgradeOrders();
     renderDashboard();
     renderReports();
     renderSettings();

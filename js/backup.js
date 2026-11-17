@@ -20,6 +20,19 @@ function normalizeBackupIdentities(identities) {
   }));
 }
 
+function addBackupActivity(action) {
+  if (!Array.isArray(state.activityLog)) state.activityLog = [];
+  state.activityLog.unshift({
+    id: genId("activity"),
+    type: "backup",
+    action,
+    text: t(`activity_backup_${action}`),
+    sub: "",
+    ts: Date.now(),
+  });
+  state.activityLog = state.activityLog.slice(0, 100);
+}
+
 async function exportBackup() {
   try {
     let linkedIdentities = [];
@@ -37,6 +50,9 @@ async function exportBackup() {
         existing.provider === identity.provider && existing.displayName === identity.displayName && existing.email === identity.email
       )) identityProfiles.push(identity);
     });
+    addBackupActivity("exported");
+    saveState();
+    if (typeof syncAccountState === "function") await syncAccountState();
     const backup = {
       format: "igh7021-kinglegacy-backup",
       backupVersion: 3,
@@ -67,7 +83,13 @@ function importBackup(file) {
       const source = data.state && typeof data.state === "object" ? data.state : data;
       if (!Array.isArray(source.products) || !Array.isArray(source.sales) || !source.settings || typeof source.settings !== "object") throw new Error("bad structure");
       const { backupVersion, exportedAt, format, preferences, account, ...restoredState } = source;
-      state = { ...restoredState, farmServices: Array.isArray(source.farmServices) ? source.farmServices : [], farmOrders: Array.isArray(source.farmOrders) ? source.farmOrders : [], activityLog: Array.isArray(source.activityLog) ? source.activityLog : [] };
+      state = normalizeStateData({
+        ...restoredState,
+        farmServices: Array.isArray(source.farmServices) ? source.farmServices : [],
+        farmOrders: Array.isArray(source.farmOrders) ? source.farmOrders : [],
+        activityLog: Array.isArray(source.activityLog) ? source.activityLog : [],
+      }).state;
+      addBackupActivity("restored");
       const importedIdentities = normalizeBackupIdentities(data.account?.identityProfiles || data.account?.verifiedIdentities);
       state.portableAccount = {
         identityProfiles: importedIdentities.length ? importedIdentities : normalizeBackupIdentities(source.portableAccount?.identityProfiles),
@@ -76,7 +98,7 @@ function importBackup(file) {
       saveState();
       if (data.preferences?.theme === "light" || data.preferences?.theme === "dark") applyTheme(data.preferences.theme);
       if (data.preferences?.language === "th" || data.preferences?.language === "en") setLang(data.preferences.language);
-      renderProducts(); renderFarmServices?.(); renderSalesHistory(); renderDashboard(); renderReports(); renderSettings();
+      renderProducts(); renderFarmServices?.(); renderProductionCart(); renderUpgradeOrders(); renderSalesHistory(); renderDashboard(); renderReports(); renderSettings();
       const needsReverification = state.portableAccount.identityProfiles.length > 0;
       toast(needsReverification ? t("toast_restore_success_reverify") : t("toast_restore_success"));
     } catch (err) {
@@ -94,16 +116,21 @@ function csvEscape(v) {
 }
 
 function exportProductsCSV() {
-  const header = ["id","name","category","stock","sold","remaining","unitsPerBaht","description"];
-  const rows = state.products.map(p => [p.id,p.name,p.category,p.stock,p.sold,remaining(p),p.unitsPerBaht,p.description]);
+  const header = ["id","name","category","stock","sold","remaining","unitsPerBaht","gamePassGiftPrice","gamePassGiftStock","gamePassGiftRemaining","gamePassTradePrice","gamePassTradeStock","gamePassTradeRemaining","description"];
+  const rows = state.products.map(p => [
+    p.id,p.name,p.category,p.stock,p.sold,remaining(p),p.unitsPerBaht,
+    p.gamePass?.gift?.price ?? "",p.gamePass?.gift?.stock === null ? "unlimited" : (p.gamePass?.gift?.stock ?? ""),isGamePassProduct(p) && gamePassRemaining(p, "gift") === Infinity ? "unlimited" : (isGamePassProduct(p) ? gamePassRemaining(p, "gift") : ""),
+    p.gamePass?.trade?.price ?? "",p.gamePass?.trade?.stock === null ? "unlimited" : (p.gamePass?.trade?.stock ?? ""),isGamePassProduct(p) && gamePassRemaining(p, "trade") === Infinity ? "unlimited" : (isGamePassProduct(p) ? gamePassRemaining(p, "trade") : ""),
+    p.description,
+  ]);
   const csv = [header, ...rows].map(r => r.map(csvEscape).join(",")).join("\n");
   downloadFile("IGH7021_Products.csv", "\uFEFF"+csv, "text/csv;charset=utf-8;");
   toast(t("toast_products_csv_exported"));
 }
 
 function exportSalesCSV() {
-  const header = ["id","productName","quantity","money","rate","date","note"];
-  const rows = state.sales.map(s => [s.id,s.productName,s.quantity,s.money,s.rate,fmtDate(s.date),s.note]);
+  const header = ["id","productName","deliveryMethod","quantity","money","rate","date","note"];
+  const rows = state.sales.map(s => [s.id,s.productName,s.deliveryMethod || "",s.quantity,s.money,s.rate,fmtDate(s.date),s.note]);
   const csv = [header, ...rows].map(r => r.map(csvEscape).join(",")).join("\n");
   downloadFile("IGH7021_Sales.csv", "\uFEFF"+csv, "text/csv;charset=utf-8;");
   toast(t("toast_sales_csv_exported"));

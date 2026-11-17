@@ -3,7 +3,7 @@ services:
     name: igh7021-kinglegacy-stock-node
     runtime: node
     plan: free
-    buildCommand: npm install
+    buildCommand: npm ci --include=dev && npm run build && npm prune --omit=dev
     startCommand: npm start
     healthCheckPath: /api/config
     envVars:

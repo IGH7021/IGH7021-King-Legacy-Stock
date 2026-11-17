@@ -8,7 +8,7 @@ function farmRateLabel(service) {
 
 function farmCategoryLabel(category) {
   const icons = { "ของคราฟ": "🛠️", "ของแต่ง": "🎩", "ดาบ": "🗡️", "ผลปีศาจ": "🍇", "ของวัตถุดิบ": "🪵", "อื่นๆ": "📦" };
-  return `${icons[category] || "📦"} ${category}`;
+  return `${icons[category] || "📦"} ${escapeHtml(category)}`;
 }
 
 function addFarmActivity(action, text, sub = "") {
@@ -19,14 +19,14 @@ function addFarmActivity(action, text, sub = "") {
 
 function farmServiceCard(service) {
   const rarity = service.rarity || "none";
-  return `<div class="glass-card rounded-2xl overflow-hidden flex flex-col" data-farm-id="${service.id}">
-    <div class="h-32 bg-emerald-900/20 flex items-center justify-center text-4xl">${service.image ? `<img src="${service.image}" loading="lazy" decoding="async" class="w-full h-full object-cover" alt="${service.name}">` : "🌾"}</div>
+  return `<div class="glass-card rounded-2xl overflow-hidden flex flex-col" data-farm-id="${escapeHtml(service.id)}">
+    <div class="h-32 bg-emerald-900/20 flex items-center justify-center text-4xl">${service.image ? `<img src="${escapeHtml(service.image)}" loading="lazy" decoding="async" class="w-full h-full object-cover" alt="${escapeHtml(service.name)}">` : "🌾"}</div>
     <div class="p-3 flex-1 flex flex-col gap-1.5">
-      <div class="flex items-center justify-between gap-2"><h4 class="font-semibold text-sm truncate">${service.name}</h4><span class="text-[10px] px-2 py-0.5 rounded-full border ${rarityBadgeClass(rarity)}">${rarityLabel(rarity)}</span></div>
+      <div class="flex items-center justify-between gap-2"><h4 class="font-semibold text-sm truncate">${escapeHtml(service.name)}</h4><span class="text-[10px] px-2 py-0.5 rounded-full border ${rarityBadgeClass(rarity)}">${rarityLabel(rarity)}</span></div>
       <span class="text-[11px] w-fit px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">${farmCategoryLabel(service.category)}</span>
       <div class="text-xs text-slate-300 mt-1">💰 เรท ${farmRateLabel(service)}</div>
-      <div class="text-xs text-slate-400">${service.description || "ไม่มีรายละเอียด"}</div>
-      <div class="flex gap-1.5 mt-auto pt-2"><button data-farm-action="order" class="flex-1 text-xs font-medium py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500">รับงาน</button><button data-farm-action="edit" class="text-xs px-2 py-1.5 rounded-lg bg-slate-700/60">✏️</button><button data-farm-action="delete" class="text-xs px-2 py-1.5 rounded-lg bg-slate-700/60 hover:bg-rose-600/70">🗑️</button></div>
+      <div class="text-xs text-slate-400">${escapeHtml(service.description || "ไม่มีรายละเอียด")}</div>
+      <div class="flex gap-1.5 mt-auto pt-2"><button data-farm-action="order" class="flex-1 text-xs font-medium py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500">รับงาน</button><button data-farm-action="cart" class="text-xs px-2 py-1.5 rounded-lg bg-emerald-500/15 text-emerald-300" aria-label="เพิ่มงานลงตะกร้า">🛒+</button><button data-farm-action="edit" class="text-xs px-2 py-1.5 rounded-lg bg-slate-700/60">✏️</button><button data-farm-action="delete" class="text-xs px-2 py-1.5 rounded-lg bg-slate-700/60 hover:bg-rose-600/70">🗑️</button></div>
     </div>
   </div>`;
 }
@@ -56,7 +56,7 @@ function renderFarmOrders() {
   const orders = state.farmOrders || [];
   if (!orders.length) { box.innerHTML = `<div class="text-xs text-slate-400 py-4">ยังไม่มีประวัติงานฟาร์ม</div>`; return; }
   box.innerHTML = orders.map(order => `<div class="glass-card rounded-xl p-3 flex items-center gap-3">
-    <div class="w-10 h-10 rounded-lg bg-emerald-500/15 flex items-center justify-center">🌾</div><div class="flex-1 min-w-0"><div class="flex justify-between gap-2"><span class="font-medium text-sm truncate">${order.serviceName}</span><span class="font-semibold text-sm text-emerald-400">${fmtBaht(order.money)}</span></div><div class="text-xs text-slate-400">${order.pricingMode === "hour" ? `⏱️ ${fmtNum(order.hours || order.quantity)} ชั่วโมง` : `📦 ${fmtNum(order.quantity)} ชิ้น`} • ${fmtDate(order.date)}${order.customer ? ` • ${order.customer}` : ""}${order.note ? ` • ${order.note}` : ""}</div></div><button data-farm-order-delete="${order.id}" class="text-xs px-2 py-1.5 rounded-lg bg-slate-700/60 hover:bg-rose-600/70" aria-label="ลบงาน">🗑️</button>
+    <div class="w-10 h-10 rounded-lg bg-emerald-500/15 flex items-center justify-center">🌾</div><div class="flex-1 min-w-0"><div class="flex justify-between gap-2"><span class="font-medium text-sm truncate">${escapeHtml(order.serviceName)}</span><span class="font-semibold text-sm text-emerald-400">${fmtBaht(order.money)}</span></div><div class="text-xs text-slate-400">${order.pricingMode === "hour" ? `⏱️ ${fmtNum(order.hours || order.quantity)} ชั่วโมง` : `📦 ${fmtNum(order.quantity)} ชิ้น`} • ${fmtDate(order.date)}${order.customer ? ` • ${escapeHtml(order.customer)}` : ""}${order.note ? ` • ${escapeHtml(order.note)}` : ""}</div></div><button data-farm-order-delete="${escapeHtml(order.id)}" class="text-xs px-2 py-1.5 rounded-lg bg-slate-700/60 hover:bg-rose-600/70" aria-label="ลบงาน">🗑️</button>
   </div>`).join("");
 }
 
@@ -83,7 +83,7 @@ function openFarmOrderModal(id) {
   selectedFarmServiceId = id || services[0].id;
   const form = document.getElementById("farm-order-form");
   form.reset();
-  document.getElementById("farm-order-service").innerHTML = services.map(service => `<option value="${service.id}" ${service.id === selectedFarmServiceId ? "selected" : ""}>${service.name}</option>`).join("");
+  document.getElementById("farm-order-service").innerHTML = services.map(service => `<option value="${escapeHtml(service.id)}" ${service.id === selectedFarmServiceId ? "selected" : ""}>${escapeHtml(service.name)}</option>`).join("");
   updateFarmOrderMoney();
   openModal("farm-order-modal");
 }
@@ -146,28 +146,35 @@ document.addEventListener("DOMContentLoaded", () => {
   const productTab = document.getElementById("stock-tab-products");
   const farmTab = document.getElementById("stock-tab-farming");
   const craftingTab = document.getElementById("stock-tab-crafting");
+  const upgradesTab = document.getElementById("stock-tab-upgrades");
   const productToolbar = document.getElementById("products-toolbar");
   const bulkToolbar = document.getElementById("bulk-toolbar");
   const productGrid = document.getElementById("products-grid");
   const farmPanel = document.getElementById("farming-panel");
   const craftingPanel = document.getElementById("crafting-panel");
+  const upgradesPanel = document.getElementById("upgrades-panel");
   const setStockTab = tab => {
     const farming = tab === "farming";
     const crafting = tab === "crafting";
-    productTab.classList.toggle("seg-active", !farming && !crafting);
+    const upgrades = tab === "upgrades";
+    productTab.classList.toggle("seg-active", !farming && !crafting && !upgrades);
     farmTab.classList.toggle("seg-active", farming);
     craftingTab.classList.toggle("seg-active", crafting);
-    productToolbar.classList.toggle("hidden", farming || crafting);
-    bulkToolbar.classList.toggle("hidden", farming || crafting || !selectMode);
-    productGrid.classList.toggle("hidden", farming || crafting);
+    upgradesTab.classList.toggle("seg-active", upgrades);
+    productToolbar.classList.toggle("hidden", farming || crafting || upgrades);
+    bulkToolbar.classList.toggle("hidden", farming || crafting || upgrades || !selectMode);
+    productGrid.classList.toggle("hidden", farming || crafting || upgrades);
     farmPanel.classList.toggle("hidden", !farming);
     craftingPanel.classList.toggle("hidden", !crafting);
+    upgradesPanel.classList.toggle("hidden", !upgrades);
     if (farming) renderFarmServices();
     if (crafting) renderCrafting();
+    if (upgrades) renderUpgradeProductOptions();
   };
   productTab.addEventListener("click", () => setStockTab("products"));
   farmTab.addEventListener("click", () => setStockTab("farming"));
   craftingTab.addEventListener("click", () => setStockTab("crafting"));
+  upgradesTab.addEventListener("click", () => setStockTab("upgrades"));
   document.getElementById("add-farm-service-btn").addEventListener("click", () => openFarmServiceModal());
   document.getElementById("farm-service-form").addEventListener("submit", handleFarmServiceSubmit);
   document.getElementById("farm-pricing-mode").addEventListener("change", updateFarmServiceRateFields);
@@ -183,6 +190,6 @@ document.addEventListener("DOMContentLoaded", () => {
   document.getElementById("farm-order-form").quantity.addEventListener("input", updateFarmOrderMoney);
   document.getElementById("farm-order-form").hours.addEventListener("input", updateFarmOrderMoney);
   document.getElementById("farm-order-form").service.addEventListener("change", updateFarmOrderMoney);
-  document.getElementById("farm-services-grid").addEventListener("click", event => { const card = event.target.closest("[data-farm-id]"); const action = event.target.closest("[data-farm-action]")?.dataset.farmAction; if (!card || !action) return; const id = card.dataset.farmId; const service = state.farmServices.find(item => item.id === id); if (action === "order") openFarmOrderModal(id); else if (action === "edit") openFarmServiceModal(id); else if (action === "delete") { state.farmServices = state.farmServices.filter(item => item.id !== id); addFarmActivity("ลบรายการฟาร์ม", `ลบรายการฟาร์ม: ${service?.name || "ไม่ทราบชื่อ"}`); saveState(); renderFarmServices(); renderDashboard(); toast("ลบงานฟาร์มแล้ว"); } });
+  document.getElementById("farm-services-grid").addEventListener("click", event => { const card = event.target.closest("[data-farm-id]"); const action = event.target.closest("[data-farm-action]")?.dataset.farmAction; if (!card || !action) return; const id = card.dataset.farmId; const service = state.farmServices.find(item => item.id === id); if (action === "order") openFarmOrderModal(id); else if (action === "cart") addToCart("farm", id); else if (action === "edit") openFarmServiceModal(id); else if (action === "delete") { state.farmServices = state.farmServices.filter(item => item.id !== id); addFarmActivity("ลบรายการฟาร์ม", `ลบรายการฟาร์ม: ${service?.name || "ไม่ทราบชื่อ"}`); saveState(); renderFarmServices(); renderDashboard(); toast("ลบงานฟาร์มแล้ว"); } });
   document.getElementById("farm-orders-list").addEventListener("click", event => { const button = event.target.closest("[data-farm-order-delete]"); if (!button) return; const order = state.farmOrders.find(item => item.id === button.dataset.farmOrderDelete); state.farmOrders = state.farmOrders.filter(order => order.id !== button.dataset.farmOrderDelete); addFarmActivity("ลบงานฟาร์ม", `ลบประวัติงานฟาร์ม: ${order?.serviceName || "ไม่ทราบชื่อ"}`); saveState(); renderFarmOrders(); renderDashboard(); toast("ลบประวัติงานแล้ว"); });
 });

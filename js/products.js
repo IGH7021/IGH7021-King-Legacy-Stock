@@ -4,8 +4,58 @@ let restockProductId = null;
 let selectMode = false;
 let selectedIds = new Set();
 
-function remaining(p) { return Math.max(0, p.stock - p.sold); }
+function addProductActivity(action, product, sub = "") {
+  if (!Array.isArray(state.activityLog)) state.activityLog = [];
+  state.activityLog.unshift({
+    id: genId("activity"),
+    type: "product",
+    action,
+    text: t(`activity_product_${action}`, { name: product.name }),
+    sub,
+    ts: Date.now(),
+  });
+  state.activityLog = state.activityLog.slice(0, 100);
+}
+
+function summarizeProductChanges(previous, product) {
+  const changes = [];
+  if (previous.name !== product.name) changes.push(`Name: ${previous.name} -> ${product.name}`);
+  if (previous.category !== product.category) changes.push(`Category: ${previous.category} -> ${product.category}`);
+  if (previous.tradeability !== product.tradeability) changes.push(`Tradeability: ${previous.tradeability} -> ${product.tradeability}`);
+  if (previous.stock !== product.stock) changes.push(`Stock: ${fmtNum(previous.stock)} -> ${fmtNum(product.stock)}`);
+  if (previous.unitsPerBaht !== product.unitsPerBaht) changes.push("Price rate changed");
+  ["gift", "trade"].forEach(method => {
+    const before = previous.gamePass?.[method];
+    const after = product.gamePass?.[method];
+    if (!before && !after) return;
+    if (before?.price !== after?.price) changes.push(`${method} price changed`);
+    if (before?.stock !== after?.stock) changes.push(`${method} stock changed`);
+  });
+  return changes.join(" · ") || t("activity_product_details_updated");
+}
+
+function isGamePassProduct(product) { return product?.category === "Game Pass"; }
+function gamePassRemaining(product, method) { return GAME_PASS.remaining(product, method); }
+function gamePassRemainingLabel(product, method) {
+  const value = gamePassRemaining(product, method);
+  return value === Infinity ? t("gamepass_unlimited") : fmtNum(value);
+}
+function remaining(p) {
+  if (isGamePassProduct(p)) {
+    return ["gift", "trade"].reduce((total, method) => {
+      const available = gamePassRemaining(p, method);
+      return total + (Number.isFinite(available) ? available : 0);
+    }, 0);
+  }
+  return Math.max(0, p.stock - p.sold);
+}
 function stockStatus(p) {
+  if (isGamePassProduct(p)) {
+    const available = ["gift", "trade"].map(method => gamePassRemaining(p, method));
+    if (available.some(value => value === Infinity || value > state.settings.stockAlert)) return "instock";
+    if (available.some(value => value > 0)) return "low";
+    return "out";
+  }
   const r = remaining(p);
   if (r <= 0) return "out";
   if (r <= state.settings.stockAlert) return "low";
@@ -23,9 +73,13 @@ function statusBadgeClass(s) {
 }
 function rarityLabel(r) { return t("rarity_" + (r || "none")); }
 function rarityBadgeClass(r) { return RARITY_COLORS[r] || RARITY_COLORS.none; }
+function tradeabilityLabel(value) {
+  const key = value === "craft-only" ? "tradeability_badge_craft" : value === "independent" ? "tradeability_badge_independent" : "tradeability_badge_tradable";
+  return t(key);
+}
 
 function productImg(p) {
-  if (p.image) return `<img src="${p.image}" loading="lazy" decoding="async" class="w-full h-full object-cover" alt="${p.name}">`;
+  if (p.image) return `<img src="${escapeHtml(p.image)}" loading="lazy" decoding="async" class="w-full h-full object-cover" alt="${escapeHtml(p.name)}">`;
   const icon = CATEGORY_ICONS[p.category] || "📦";
   return `<div class="w-full h-full flex items-center justify-center text-4xl">${icon}</div>`;
 }
@@ -38,12 +92,13 @@ function rateLabel(p) {
 
 function productCard(p) {
   const rem = remaining(p);
+  const isGamePass = isGamePassProduct(p);
   const pct = p.stock > 0 ? Math.min(100, Math.round((p.sold / p.stock) * 100)) : 0;
   const status = stockStatus(p);
   const isSelected = selectedIds.has(p.id);
   const rarity = p.rarity || "none";
   return `
-  <div class="glass-card rounded-2xl overflow-hidden flex flex-col ${isSelected ? "ring-2 ring-indigo-500" : ""}" data-id="${p.id}">
+  <div class="glass-card rounded-2xl overflow-hidden flex flex-col ${isSelected ? "ring-2 ring-indigo-500" : ""}" data-id="${escapeHtml(p.id)}">
     <div class="h-32 bg-slate-800/60 relative ${selectMode ? "cursor-pointer" : ""}" ${selectMode ? 'data-action="toggle-select"' : ""}>
       ${productImg(p)}
       ${selectMode
@@ -54,20 +109,30 @@ function productCard(p) {
     </div>
     <div class="p-3 flex-1 flex flex-col gap-1.5">
       <div class="flex items-center justify-between gap-2">
-        <h4 class="font-semibold text-sm truncate">${p.name}</h4>
+        <h4 class="font-semibold text-sm truncate">${escapeHtml(p.name)}</h4>
       </div>
-      <span class="text-[11px] w-fit px-2 py-0.5 rounded-full bg-indigo-500/15 text-indigo-300 border border-indigo-500/30">${p.category}</span>
-      <div class="text-xs text-slate-400 mt-1">${t("remaining_label")} <b class="text-slate-200">${fmtNum(rem)}</b> ${t("pieces_unit")} • ${t("sold_label")} ${fmtNum(p.sold)}</div>
-      <div class="text-xs text-slate-400">${rateLabel(p)}</div>
-      <div class="w-full h-1.5 bg-slate-700/50 rounded-full overflow-hidden mt-1">
-        <div class="h-full bg-gradient-to-r from-indigo-500 to-pink-500" style="width:${pct}%"></div>
-      </div>
+      <span class="text-[11px] w-fit px-2 py-0.5 rounded-full bg-indigo-500/15 text-indigo-300 border border-indigo-500/30">${escapeHtml(p.category)}</span>
+      ${!isGamePass ? `<span class="text-[10px] w-fit px-2 py-0.5 rounded-full border ${p.tradeability === "craft-only" ? "border-amber-500/30 bg-amber-500/10 text-amber-300" : p.tradeability === "independent" ? "border-slate-500/40 bg-slate-500/10 text-slate-300" : "border-emerald-500/30 bg-emerald-500/10 text-emerald-300"}">${tradeabilityLabel(p.tradeability)}</span>` : ""}
+      ${isGamePass ? `
+        <div class="grid grid-cols-2 gap-2 mt-1 text-[11px]">
+          ${["gift", "trade"].map(method => `<div class="rounded-lg bg-slate-800/40 px-2 py-1.5"><div class="flex justify-between gap-1"><span class="font-semibold ${method === "gift" ? "text-amber-200" : "text-sky-200"}">${t(`gamepass_${method}`)}</span><span class="text-slate-200">${fmtBaht(p.gamePass?.[method]?.price || 0)}</span></div><p class="text-slate-400 mt-0.5">${t("label_remaining_short")} ${gamePassRemainingLabel(p, method)}</p></div>`).join("")}
+        </div>
+        <div class="text-[11px] text-slate-400">${t("sold_label")} ${fmtNum(p.sold || 0)}</div>
+      ` : `
+        <div class="text-xs text-slate-400 mt-1">${t("remaining_label")} <b class="text-slate-200">${fmtNum(rem)}</b> ${t("pieces_unit")} • ${t("sold_label")} ${fmtNum(p.sold)}</div>
+        <div class="text-xs text-slate-400">${rateLabel(p)}</div>
+        <div class="w-full h-1.5 bg-slate-700/50 rounded-full overflow-hidden mt-1">
+          <div class="h-full bg-gradient-to-r from-indigo-500 to-pink-500" style="width:${pct}%"></div>
+        </div>
+      `}
       ${selectMode ? `
       <button data-action="toggle-select" class="mt-2 text-xs font-medium py-1.5 rounded-lg ${isSelected ? "bg-indigo-600" : "bg-slate-700/60 hover:bg-slate-700"}">${isSelected ? t("select_btn_selected") : t("select_btn_default")}</button>
       ` : `
       <div class="flex gap-1.5 mt-2">
         <button data-action="sell" class="flex-1 text-xs font-medium py-1.5 rounded-lg bg-gradient-to-r from-indigo-500 to-purple-600 hover:opacity-90">${t("btn_sell")}</button>
-        <button data-action="restock" class="text-xs px-2 py-1.5 rounded-lg bg-slate-700/60 hover:bg-slate-700" aria-label="${t('aria_restock')}">📦</button>
+        ${isGamePass
+          ? `<button data-action="gamepass-cart" data-method="gift" class="text-xs px-2 py-1.5 rounded-lg bg-amber-500/15 text-amber-200 hover:bg-amber-500/25" aria-label="${escapeHtml(t("gamepass_add_gift", { name: p.name }))}" title="${escapeHtml(t("gamepass_add_gift", { name: p.name }))}">🎁+</button><button data-action="gamepass-cart" data-method="trade" class="text-xs px-2 py-1.5 rounded-lg bg-sky-500/15 text-sky-200 hover:bg-sky-500/25" aria-label="${escapeHtml(t("gamepass_add_trade", { name: p.name }))}" title="${escapeHtml(t("gamepass_add_trade", { name: p.name }))}">🔁+</button>`
+          : `<button data-action="cart" class="text-xs px-2 py-1.5 rounded-lg bg-emerald-500/15 text-emerald-300 hover:bg-emerald-500/25" aria-label="Add ${escapeHtml(p.name)} to cart" title="Add to cart">🛒+</button><button data-action="restock" class="text-xs px-2 py-1.5 rounded-lg bg-slate-700/60 hover:bg-slate-700" aria-label="${t('aria_restock')}">📦</button>`}
         <button data-action="edit" class="text-xs px-2 py-1.5 rounded-lg bg-slate-700/60 hover:bg-slate-700" aria-label="${t('aria_edit')}">✏️</button>
         <button data-action="delete" class="text-xs px-2 py-1.5 rounded-lg bg-slate-700/60 hover:bg-rose-600/70" aria-label="${t('aria_delete')}">🗑️</button>
       </div>
@@ -127,11 +192,11 @@ function renderCategoryOptions() {
   const cats = state.settings.categories;
   document.querySelectorAll(".category-filter-select").forEach(sel => {
     const cur = sel.value;
-    sel.innerHTML = `<option value="all">${t("filter_all_category")}</option>` + cats.map(c=>`<option value="${c}">${c}</option>`).join("");
+    sel.innerHTML = `<option value="all">${t("filter_all_category")}</option>` + cats.map(c=>`<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join("");
     if (cats.includes(cur)) sel.value = cur;
   });
   document.querySelectorAll(".product-category-select").forEach(pc => {
-    pc.innerHTML = cats.map(c=>`<option value="${c}">${c}</option>`).join("");
+    pc.innerHTML = cats.map(c=>`<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join("");
   });
   document.querySelectorAll(".rarity-select-input").forEach(sel => {
     const cur = sel.value;
@@ -156,6 +221,8 @@ document.addEventListener("DOMContentLoaded", () => {
     const p = state.products.find(x => x.id === id);
     if (!p) return;
     if (action === "sell") openSaleModal(p.id);
+    else if (action === "cart") addToCart("product", p.id);
+    else if (action === "gamepass-cart") addToCart("gamepass", p.id, 1, null, e.target.closest("[data-action]")?.dataset.method);
     else if (action === "edit") openEditProductModal(p.id);
     else if (action === "delete") deleteProduct(p.id);
     else if (action === "restock") openRestockModal(p.id);
@@ -189,6 +256,7 @@ document.addEventListener("DOMContentLoaded", () => {
   document.getElementById("add-product-menu-btn").addEventListener("click", () => { document.getElementById("add-entry-menu").classList.add("hidden"); openAddProductModal(); });
   document.getElementById("add-farm-menu-btn").addEventListener("click", () => { document.getElementById("add-entry-menu").classList.add("hidden"); openFarmServiceModal(); });
   document.getElementById("product-form").addEventListener("submit", handleProductFormSubmit);
+  document.getElementById("product-category").addEventListener("change", syncProductCategoryFields);
   document.getElementById("product-image-input").addEventListener("change", (e) => {
     const f = e.target.files[0];
     if (f) applyImageToForm(f);
@@ -300,6 +368,10 @@ function deleteSelectedProducts() {
 
 function openBulkEditModal() {
   if (selectedIds.size === 0) { toast(t("toast_nothing_selected"), "error"); return; }
+  if (state.products.some(product => selectedIds.has(product.id) && isGamePassProduct(product))) {
+    toast(t("bulk_edit_gamepass_unavailable"), "error");
+    return;
+  }
   document.getElementById("bulk-edit-form").reset();
   renderCategoryOptions();
   document.getElementById("bulk-edit-desc").textContent = t("bulk_edit_desc", { count: selectedIds.size });
@@ -358,6 +430,23 @@ function handleBulkEditSubmit(e) {
       if (applyRarity) p.rarity = rarity;
       count++;
     });
+    if (count) {
+      if (!Array.isArray(state.activityLog)) state.activityLog = [];
+      const changes = [];
+      if (applyRate) changes.push("price rate");
+      if (applyStock) changes.push(stockMode === "add" ? `stock +${fmtNum(stockValue)}` : `stock set to ${fmtNum(stockValue)}`);
+      if (applyCategory) changes.push("category");
+      if (applyRarity) changes.push("rarity");
+      state.activityLog.unshift({
+        id: genId("activity"),
+        type: "product",
+        action: "bulk_updated",
+        text: t("activity_products_bulk_updated", { count }),
+        sub: changes.join(" · "),
+        ts: Date.now(),
+      });
+      state.activityLog = state.activityLog.slice(0, 100);
+    }
     saveState();
     selectedIds.clear();
     toggleSelectMode();
@@ -373,11 +462,42 @@ function openAddProductModal() {
   document.getElementById("product-modal-title").textContent = t("modal_add_product_title");
   document.getElementById("product-form").reset();
   document.getElementById("product-form").dataset.image = "";
+  document.getElementById("product-form").dataset.gamePassInitialized = "";
   document.getElementById("product-image-preview-wrap").classList.add("hidden");
   document.getElementById("product-dropzone-placeholder").classList.remove("hidden");
   renderCategoryOptions();
   document.getElementById("product-form").rarity.value = "none";
+  document.getElementById("product-form").tradeability.value = "tradable";
+  syncCustomSelect(document.getElementById("product-form").tradeability);
+  syncProductCategoryFields();
   openModal("product-modal");
+}
+
+function writeGamePassFormValues(form, variants) {
+  form.giftPrice.value = variants.gift.price;
+  form.giftStock.value = variants.gift.stock === null ? "" : variants.gift.stock;
+  form.tradePrice.value = variants.trade.price;
+  form.tradeStock.value = variants.trade.stock === null ? "" : variants.trade.stock;
+}
+
+function syncProductCategoryFields() {
+  const form = document.getElementById("product-form");
+  if (!form) return;
+  const gamePassMode = form.category.value === "Game Pass";
+  document.getElementById("product-standard-stock-fields").classList.toggle("hidden", gamePassMode);
+  document.getElementById("product-game-pass-fields").classList.toggle("hidden", !gamePassMode);
+  document.getElementById("product-tradeability-field").classList.toggle("hidden", gamePassMode);
+  form.stock.required = !gamePassMode;
+  form.giftPrice.required = gamePassMode;
+  form.tradePrice.required = gamePassMode;
+  if (gamePassMode) {
+    form.tradeability.value = "tradable";
+    if (!form.dataset.gamePassInitialized) {
+      const currentProduct = editingProductId ? state.products.find(product => product.id === editingProductId) : null;
+      if (currentProduct) writeGamePassFormValues(form, currentProduct.gamePass || GAME_PASS.migrateLegacyProduct(currentProduct));
+      form.dataset.gamePassInitialized = "true";
+    }
+  }
 }
 
 function openEditProductModal(id) {
@@ -390,10 +510,17 @@ function openEditProductModal(id) {
   renderCategoryOptions();
   f.category.value = p.category;
   f.rarity.value = p.rarity || "none";
+  f.tradeability.value = p.tradeability || "tradable";
+  syncCustomSelect(f.tradeability);
   f.stock.value = p.stock;
   f.rateQty.value = p.unitsPerBaht >= 1 ? Math.round(p.unitsPerBaht) : 1;
   f.ratePrice.value = p.unitsPerBaht >= 1 ? 1 : Math.round(1/p.unitsPerBaht);
   f.description.value = p.description || "";
+  f.dataset.gamePassInitialized = "";
+  if (isGamePassProduct(p)) {
+    writeGamePassFormValues(f, p.gamePass || GAME_PASS.migrateLegacyProduct(p));
+    f.dataset.gamePassInitialized = "true";
+  }
   f.dataset.image = p.image || "";
   if (p.image) {
     document.getElementById("product-image-preview").src = p.image;
@@ -403,6 +530,7 @@ function openEditProductModal(id) {
     document.getElementById("product-image-preview-wrap").classList.add("hidden");
     document.getElementById("product-dropzone-placeholder").classList.remove("hidden");
   }
+  syncProductCategoryFields();
   openModal("product-modal");
 }
 
@@ -418,6 +546,7 @@ function handleProductFormSubmit(e) {
     const name = f.name.value.trim();
     const category = f.category.value;
     const rarity = f.rarity.value;
+    const tradeability = f.tradeability.value;
     const stock = Math.max(0, parseInt(f.stock.value) || 0);
     const qty = Math.max(0.0001, parseFloat(f.rateQty.value) || 1);
     const price = Math.max(0.0001, parseFloat(f.ratePrice.value) || 1);
@@ -426,16 +555,46 @@ function handleProductFormSubmit(e) {
     const image = f.dataset.image || null;
 
     if (!name) { toast(t("toast_name_required"), "error"); submitBtn.disabled=false; submitBtn.innerHTML=originalLabel; return; }
+    let gamePass = null;
+    if (category === "Game Pass") {
+      const parseStock = input => input.value.trim() === "" ? null : Number(input.value);
+      const giftStock = parseStock(f.giftStock);
+      const tradeStock = parseStock(f.tradeStock);
+      const giftPrice = Number(f.giftPrice.value);
+      const tradePrice = Number(f.tradePrice.value);
+      if ([f.giftPrice.value, f.tradePrice.value].some(value => value.trim() === "")
+        || ![giftPrice, tradePrice].every(value => Number.isFinite(value) && value >= 0)
+        || [giftStock, tradeStock].some(value => value !== null && (!Number.isSafeInteger(value) || value < 0))) {
+        toast(t("gamepass_invalid_values"), "error");
+        submitBtn.disabled = false; submitBtn.innerHTML = originalLabel; return;
+      }
+      const currentProduct = editingProductId ? state.products.find(product => product.id === editingProductId) : null;
+      const oldPass = currentProduct ? (currentProduct.gamePass || GAME_PASS.migrateLegacyProduct(currentProduct)) : null;
+      gamePass = {
+        gift: { price: giftPrice, stock: giftStock, sold: oldPass?.gift?.sold || 0 },
+        trade: { price: tradePrice, stock: tradeStock, sold: oldPass?.trade?.sold || 0 },
+      };
+    }
 
     if (editingProductId) {
       const p = state.products.find(x => x.id === editingProductId);
-      Object.assign(p, { name, category, rarity, unitsPerBaht: rate, stock, description, image });
+      const previous = {
+        name: p.name, category: p.category, tradeability: p.tradeability,
+        stock: p.stock, unitsPerBaht: p.unitsPerBaht, gamePass: p.gamePass,
+      };
+      Object.assign(p, { name, category, rarity, tradeability: category === "Game Pass" ? "tradable" : tradeability, unitsPerBaht: rate, stock: category === "Game Pass" ? 0 : stock, description, image });
+      if (gamePass) p.gamePass = gamePass;
+      includeExistingRecipeForProduct(p);
+      addProductActivity("updated", p, summarizeProductChanges(previous, p));
       toast(t("toast_product_updated"));
     } else {
-      state.products.push({
-        id: genId("p"), name, category, rarity, image, stock, sold: 0,
-        unitsPerBaht: rate, description, createdAt: Date.now(), restockHistory: [],
-      });
+      const product = {
+        id: genId("p"), name, category, rarity, tradeability: category === "Game Pass" ? "tradable" : tradeability, source: "custom", image, stock: category === "Game Pass" ? 0 : stock, sold: 0,
+        unitsPerBaht: rate, description, createdAt: Date.now(), restockHistory: [], ...(gamePass ? { gamePass } : {}),
+      };
+      state.products.push(product);
+      includeExistingRecipeForProduct(product);
+      addProductActivity("created", product);
       toast(t("toast_product_added"));
     }
     saveState();
@@ -446,10 +605,19 @@ function handleProductFormSubmit(e) {
   }, 250);
 }
 
+function includeExistingRecipeForProduct(product) {
+  if (!product || product.tradeability === "tradable") return false;
+  const recipe = RECIPES.find(item => item.name.toLowerCase() === product.name.toLowerCase());
+  if (!recipe || state.recipes.some(item => item.name.toLowerCase() === recipe.name.toLowerCase())) return false;
+  state.recipes.unshift({ ...recipe, ingredients: recipe.ingredients.map(item => [...item]) });
+  return true;
+}
+
 function deleteProduct(id) {
   const p = state.products.find(x => x.id === id);
   if (!p) return;
   confirmDialog(t("confirm_delete_product", { name: p.name }), () => {
+    addProductActivity("deleted", p);
     state.products = state.products.filter(x => x.id !== id);
     saveState();
     renderProducts();
@@ -476,6 +644,7 @@ function handleRestockSubmit(e) {
   p.stock += amount;
   p.restockHistory = p.restockHistory || [];
   p.restockHistory.push({ date: Date.now(), amount, from: old, to: p.stock });
+  addProductActivity("restocked", p, `${fmtNum(old)} -> ${fmtNum(p.stock)} (+${fmtNum(amount)})`);
   saveState();
   renderProducts();
   renderDashboard();

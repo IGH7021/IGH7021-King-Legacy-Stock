@@ -8,6 +8,12 @@
   },
   "scripts": {
     "start": "node server/server.js",
-    "migrate:supabase": "node scripts/migrate-supabase.js"
+    "migrate:supabase": "node scripts/migrate-supabase.js",
+    "test": "node --test",
+    "build": "npm run build:css",
+    "build:css": "tailwindcss -c tailwind.config.cjs -i css/tailwind.input.css -o css/tailwind.generated.css --minify"
+  },
+  "devDependencies": {
+    "tailwindcss": "3.4.17"
   }
 }
