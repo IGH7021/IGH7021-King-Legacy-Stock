@@ -165,6 +165,8 @@ function closeSuggestionDialog() {
 
 document.addEventListener("DOMContentLoaded", () => {
   const avatarInput = document.getElementById("profile-avatar-input");
+  const avatarChoose = document.getElementById("profile-avatar-choose");
+  const avatarFilename = document.getElementById("profile-avatar-filename");
   const presenceSelect = document.getElementById("profile-presence-select");
   const avatarClear = document.getElementById("profile-avatar-clear");
   const dialog = document.getElementById("site-suggestion-dialog");
@@ -185,9 +187,11 @@ document.addEventListener("DOMContentLoaded", () => {
     if (fallback) fallback.hidden = false;
   });
 
+  avatarChoose?.addEventListener("click", () => avatarInput?.click());
   avatarInput?.addEventListener("change", async () => {
     const file = avatarInput.files?.[0];
     if (!file) return;
+    if (avatarFilename) avatarFilename.textContent = file.name;
     try {
       const previous = profileState.avatarData;
       profileState.avatarData = await profileImageData(file);
@@ -215,9 +219,11 @@ document.addEventListener("DOMContentLoaded", () => {
   avatarClear?.addEventListener("click", async () => {
     const previous = profileState.avatarData;
     profileState.avatarData = "";
+    if (avatarFilename) avatarFilename.textContent = t("profile_avatar_no_file");
     renderProfile();
     if (!await saveProfile()) {
       profileState.avatarData = previous;
+      if (avatarFilename && previous) avatarFilename.textContent = t("profile_avatar_saved");
       renderProfile();
     }
   });

@@ -42,6 +42,8 @@ async function openApp(result) {
   if (result.admin && sessionStorage.getItem("igh_pending_admin_route") === "1") {
     sessionStorage.removeItem("igh_pending_admin_route");
     setTimeout(() => window.showPage?.("admin"), 400);
+  } else if (!result.admin) {
+    sessionStorage.removeItem("igh_pending_admin_route");
   }
 }
 function startKeyStatus(expiresAt) {
@@ -144,15 +146,24 @@ document.addEventListener("DOMContentLoaded", () => {
       await window.refreshSupportRequestStatus?.();
     } catch (error) { toast(error.message, "error"); }
   }));
-  githubButton?.addEventListener("click", () => { location.href = "/api/auth/github"; });
+  githubButton?.addEventListener("click", () => {
+    sessionStorage.setItem("igh_pending_admin_route", "1");
+    location.href = "/api/auth/github";
+  });
   if (new URLSearchParams(location.search).get("github") === "success") {
     fetch("/api/auth/session", { credentials: "same-origin" }).then(async response => {
       const result = await readApiResponse(response);
       if (!response.ok || !result.admin) throw new Error(t("auth_github_confirm_failed"));
       pendingAuthKey = ""; await openApp(result); history.replaceState({}, "", location.pathname);
-    }).catch(error => authMessage(error.message));
+    }).catch(error => {
+      sessionStorage.removeItem("igh_pending_admin_route");
+      authMessage(error.message);
+    });
   }
-  if (new URLSearchParams(location.search).get("github") === "failed") authMessage(t("auth_github_failed"));
+  if (new URLSearchParams(location.search).get("github") === "failed") {
+    sessionStorage.removeItem("igh_pending_admin_route");
+    authMessage(t("auth_github_failed"));
+  }
   document.getElementById("signup-password-toggle")?.addEventListener("click", event => {
     const input = document.getElementById("signup-password");
     const visible = input.type === "text";
@@ -169,6 +180,7 @@ document.addEventListener("DOMContentLoaded", () => {
       const login = await postAuth("/api/auth/login", { key: pendingAuthKey });
       const loginResult = await readApiResponse(login);
       if (!login.ok) throw new Error(t("auth_login_failed"));
+      if (loginResult.admin) sessionStorage.setItem("igh_pending_admin_route", "1");
       await openApp(loginResult);
     } catch (error) { authMessage(error.message); }
   });

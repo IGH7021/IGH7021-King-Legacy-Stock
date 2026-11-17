@@ -32,6 +32,13 @@ test("hidden cookie banners are styled out of layout", () => {
   assert.match(html, /id="cookie-banner" class="cookie-banner hidden"/);
 });
 
+test("profile avatar picker uses localized controls instead of native file-picker text", () => {
+  assert.match(html, /id="profile-avatar-choose"[^>]*data-i18n="profile_avatar_choose"/);
+  assert.match(html, /id="profile-avatar-filename"[^>]*data-i18n="profile_avatar_no_file"/);
+  assert.match(html, /id="profile-avatar-input"[^>]*class="sr-only"/);
+  assert.doesNotMatch(html, /class="profile-file-input/);
+});
+
 test("the existing modal API opens and closes an overlay", () => {
   const classes = new Set(["hidden"]);
   const attributes = new Map();
