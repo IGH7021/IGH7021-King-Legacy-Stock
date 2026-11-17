@@ -39,6 +39,13 @@ test("profile avatar picker uses localized controls instead of native file-picke
   assert.doesNotMatch(html, /class="profile-file-input/);
 });
 
+test("hidden profile avatars do not display over the active avatar", () => {
+  const hiddenAvatarRule = ruleFor(".profile-avatar[hidden], .profile-avatar-fallback[hidden]");
+  assert.match(hiddenAvatarRule.declarations, /display:\s*none\s*!important\s*;/);
+  assert.match(html, /id="user-profile-avatar"[^>]*hidden/);
+  assert.match(html, /id="header-profile-avatar-fallback"[^>]*class="profile-avatar-fallback"/);
+});
+
 test("the existing modal API opens and closes an overlay", () => {
   const classes = new Set(["hidden"]);
   const attributes = new Map();
