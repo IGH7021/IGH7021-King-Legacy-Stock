@@ -109,6 +109,22 @@ test("normalizes restored account data without dropping personal production fiel
   assert.ok(restored.settings.categories.includes("Personal category"));
 });
 
+test("migrates catalog craft-only statuses for legacy account states", () => {
+  const { context } = createAccountContext();
+  const legacyState = JSON.parse(vm.runInContext("JSON.stringify(defaultState())", context));
+  legacyState.schemaVersion = 4;
+  for (const name of ["Eye of Acro", "Fortune Tales", "Heart of Sea"]) {
+    legacyState.products.find(product => product.name === name).tradeability = "tradable";
+  }
+  context.__legacyState = legacyState;
+
+  const migrated = JSON.parse(vm.runInContext("JSON.stringify(normalizeStateData(__legacyState))", context));
+  assert.equal(migrated.migrated, true);
+  for (const name of ["Eye of Acro", "Fortune Tales", "Heart of Sea"]) {
+    assert.equal(migrated.state.products.find(product => product.name === name).tradeability, "craft-only");
+  }
+});
+
 test("migrates a legacy Game Pass stock pool without duplicating it", () => {
   const { context } = createAccountContext();
   const legacyState = {

@@ -59,6 +59,7 @@ function initFloatingProducts() {
 
 function renderSettings() {
   document.getElementById("app-version").textContent = APP_VERSION;
+  renderReleaseNotes();
   const stockAlertSlider = document.getElementById("stock-alert-slider");
   stockAlertSlider.value = state.settings.stockAlert;
   updateStockAlertSliderProgress(stockAlertSlider);
@@ -69,6 +70,18 @@ function renderSettings() {
       ${escapeHtml(c)}
       <button data-cat="${escapeHtml(c)}" class="remove-cat-btn text-slate-400 hover:text-rose-400" aria-label="${t('aria_delete')}">×</button>
     </span>`).join("");
+}
+
+function renderReleaseNotes() {
+  document.getElementById("release-notes-current-version").textContent = APP_VERSION;
+  const releaseNotes = document.getElementById("app-release-notes-content");
+  if (releaseNotes) {
+    const language = currentLang === "en" ? "en" : "th";
+    releaseNotes.innerHTML = APP_CHANGELOG.map(release => `<section class="border-t border-slate-700/50 pt-3 first:border-t-0 first:pt-0">
+      <div class="flex items-center justify-between gap-2"><strong class="text-sm">${escapeHtml(release.version)}</strong><time class="text-xs text-slate-400">${escapeHtml(release.date)}</time></div>
+      <ul class="mt-2 list-disc pl-5 text-xs text-slate-300">${release.changes[language].map(change => `<li class="mb-1">${escapeHtml(change)}</li>`).join("")}</ul>
+    </section>`).join("");
+  }
 }
 
 function updateStockAlertSliderProgress(slider) {
@@ -151,10 +164,6 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   const backToTop = document.getElementById("products-back-to-top");
-  const updateBackToTop = () => {
-    backToTop?.classList.toggle("back-to-top-visible", window.scrollY > 300);
-  };
-  window.addEventListener("scroll", updateBackToTop, { passive: true });
   backToTop?.addEventListener("click", () => window.scrollTo({ top: 0, behavior: "smooth" }));
 
   // Language toggle

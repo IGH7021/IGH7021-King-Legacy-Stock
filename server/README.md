@@ -90,4 +90,16 @@ Run the latest `supabase/schema.sql` to create the `user_profiles` and `site_sug
 
 The matching endpoints are `GET/PUT /api/profile`, `POST /api/suggestions`, and Admin-only `GET /api/admin/suggestions` / `DELETE /api/admin/suggestions/:id`. Existing once-per-day customer requests remain separate. If the migration has not been applied, the request form reports a storage error instead of claiming the request was sent.
 
+### Admin system monitoring
+
+The Core V4.56 release disables the Admin overview and account-analytics endpoints; it does not require `supabase/migrations/20261117_presence_account_attribution.sql`. Existing community heartbeat and visitor counts continue to use the legacy `client_id`, `first_seen`, and `last_seen` columns. The heartbeat does not write account-attribution fields.
+
+To re-enable Admin Analytics in a later release, first verify the live `public.presence_clients` schema and service-role permissions, then obtain approval to apply the additive, idempotent migration. It adds nullable `owner_id` and `last_authenticated_at` columns and indexes; it does not alter account workspaces or RLS. The repository does not track live migration state.
+
+While Analytics is isolated, authenticated Admin requests to `GET /api/admin/overview` and `GET /api/admin/users/:ownerId` return `503 ADMIN_ANALYTICS_DISABLED`; unauthenticated requests remain `403 ADMIN_ONLY`. Admin key management, inbox, and updates are separate and remain available. When Analytics is enabled in a later release, these endpoints provide aggregate metrics and a limited, sanitized account view. Product edits, stock restocks, and backup export/restore actions are recorded in each account's activity log; these user-state entries are operational history, not an immutable security audit log.
+
+### Production CSS build
+
+The production build compiles Tailwind locally from `index.html` and `js/**/*.js`, including a safelist for classes selected at runtime. Run `npm ci --include=dev` and `npm run build` before serving the app; the generated `css/tailwind.generated.css` is the local utility stylesheet. `npm start` serves the checked-in generated stylesheet and does not invoke a build.
+
 The browser must receive its HTML, CSS, and JavaScript to render the app; these client files can always be inspected in browser developer tools. The server blocks direct HTTP access to server code, local key/data files, migration scripts, and Supabase schema files. Secrets and privileged operations must remain server-side; source minification cannot make delivered client code confidential.

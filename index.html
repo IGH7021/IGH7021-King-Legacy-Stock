@@ -8,8 +8,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Itim&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/tailwind.generated.css?v=4.56">
-<link rel="stylesheet" href="css/style.css?v=4.56">
+<link rel="stylesheet" href="css/tailwind.generated.css?v=4.62">
+<link rel="stylesheet" href="css/style.css?v=4.62">
 </head>
 <body class="min-h-screen itim-regular">
 
@@ -22,6 +22,7 @@
       <form id="auth-key-form" class="auth-form"><div class="inputContainer"><label for="auth-key" data-i18n="auth_key_label">Access key *</label><input id="auth-key" required autocomplete="off" data-i18n-placeholder="auth_key_placeholder" placeholder="เช่น IGH000001..."><small id="auth-key-hint" data-i18n="auth_key_hint">ใช้คีย์ที่ได้รับจากแอดมิน</small><span id="auth-key-error" class="field-error" role="alert"></span></div><button class="enter" type="submit" data-i18n="auth_continue">Continue</button></form>
       <button id="github-admin-login" class="hidden mt-3 w-full rounded-xl bg-slate-700/70 px-4 py-2.5 text-sm font-semibold hover:bg-slate-600" type="button" data-i18n="auth_github_admin">เข้าสู่ระบบผู้ดูแลด้วย GitHub</button>
     </div>
+
     <p id="auth-message" class="auth-message" role="alert"></p>
   </div>
 </section>
@@ -46,14 +47,21 @@
           <p id="key-status-mobile" class="key-status hidden"></p>
       </div>
       </button>
-      <button id="header-profile-button" type="button" class="header-profile-button hidden" data-i18n-aria="profile_open_settings" aria-label="เปิดหน้าโปรไฟล์">
-        <span class="profile-avatar-wrap header-profile-avatar-wrap">
-          <img id="header-profile-avatar" class="profile-avatar" alt="" hidden>
-          <span id="header-profile-avatar-fallback" class="profile-avatar-fallback" aria-hidden="true">👤</span>
-          <span id="header-profile-presence" class="presence-dot is-offline" role="img" aria-label="ออฟไลน์"><span class="presence-halo" aria-hidden="true"></span></span>
-        </span>
-        <span id="header-profile-label" class="header-profile-label"></span>
-      </button>
+      <div class="header-actions">
+        <button id="production-cart-toggle" type="button" class="header-cart-toggle" aria-expanded="false" aria-controls="production-cart-panel" data-i18n-aria="production_cart_toggle_aria" aria-label="เปิดหรือปิดตะกร้าออเดอร์ (0 รายการ)">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 3h2l2.2 11.1a2 2 0 0 0 2 1.6h8.9a2 2 0 0 0 1.9-1.4L22 8H6"></path><circle cx="10" cy="20" r="1.5"></circle><circle cx="18" cy="20" r="1.5"></circle></svg>
+          <span id="production-cart-count" class="header-cart-count">0</span>
+          <span id="production-cart-status" class="sr-only" role="status" aria-live="polite" aria-atomic="true"></span>
+        </button>
+        <button id="header-profile-button" type="button" class="header-profile-button hidden" data-i18n-aria="profile_open_settings" aria-label="เปิดหน้าโปรไฟล์">
+          <span class="profile-avatar-wrap header-profile-avatar-wrap">
+            <img id="header-profile-avatar" class="profile-avatar" alt="" hidden>
+            <span id="header-profile-avatar-fallback" class="profile-avatar-fallback" aria-hidden="true">👤</span>
+            <span id="header-profile-presence" class="presence-dot is-offline" role="img" aria-label="ออฟไลน์"><span class="presence-halo" aria-hidden="true"></span></span>
+          </span>
+          <span id="header-profile-label" class="header-profile-label"></span>
+        </button>
+      </div>
     </header>
 
     <div class="p-4 md:p-8 max-w-6xl mx-auto">
@@ -99,6 +107,25 @@
           <div class="glass-card rounded-2xl p-4"><p class="text-xs text-slate-400 mb-1" data-i18n="today_orders">ออเดอร์วันนี้</p><p id="stat-today-orders" class="text-xl font-bold text-rose-300">0</p></div>
           <div class="glass-card rounded-2xl p-4"><p class="text-xs text-slate-400 mb-1" data-i18n="average_order">เฉลี่ยต่อออเดอร์</p><p id="stat-average-order" class="text-xl font-bold text-lime-300">฿0</p></div>
         </div>
+
+        <section class="glass-card rounded-2xl p-4 mb-6" aria-labelledby="daily-checklist-title">
+          <div class="flex flex-wrap items-center justify-between gap-3 mb-3">
+            <div>
+              <h2 id="daily-checklist-title" class="font-semibold" data-i18n="checklist_title">Daily checklist</h2>
+              <p id="daily-checklist-date" class="text-xs text-slate-400 mt-1"></p>
+            </div>
+            <label class="text-xs text-slate-400"><span data-i18n="checklist_history">Activity date</span>
+              <select id="checklist-history-date" class="ml-2 rounded-lg bg-slate-800 border border-slate-600 px-2 py-1.5" aria-label="Activity date"></select>
+            </label>
+          </div>
+          <form id="daily-checklist-form" class="flex flex-col sm:flex-row gap-2 mb-3">
+            <label class="sr-only" for="daily-checklist-input" data-i18n="checklist_task_label">Task</label>
+            <input id="daily-checklist-input" maxlength="160" required class="flex-1 rounded-xl bg-slate-800/60 border border-slate-700 px-3 py-2 text-sm" data-i18n-placeholder="checklist_task_placeholder" placeholder="Add a task for today">
+            <button type="submit" class="btn-primary px-4 py-2 rounded-xl text-sm" data-i18n="checklist_add">Add task</button>
+          </form>
+          <div id="daily-checklist-list" class="flex flex-col gap-2" aria-live="polite"></div>
+          <p id="daily-checklist-empty" class="hidden text-sm text-slate-400 text-center py-4" data-i18n="checklist_empty">No activities recorded for this day.</p>
+        </section>
 
         <div class="dashboard-feedback-grid">
         <section id="community-section" class="dashboard-community feature-section glass-card rounded-2xl p-4" aria-labelledby="community-title" aria-busy="true">
@@ -161,58 +188,56 @@
         </div>
 
         <div class="dashboard-timeline glass-card rounded-2xl p-4 mt-4">
-          <p class="font-semibold text-sm mb-3" data-i18n="timeline_title">กิจกรรมล่าสุด</p>
+          <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
+            <p class="font-semibold text-sm" data-i18n="timeline_title">กิจกรรมล่าสุด</p>
+            <label class="text-xs text-slate-400"><span data-i18n="timeline_period">ช่วงเวลา</span><select id="activity-range-select" class="ml-2 rounded-lg bg-slate-800/60 border border-slate-700 px-2 py-1.5 text-xs" aria-label="กรองช่วงเวลากิจกรรม"><option value="today" data-i18n="timeline_today">วันนี้</option><option value="7d" selected data-i18n="timeline_7days">7 วัน</option><option value="30d" data-i18n="timeline_30days">30 วัน</option><option value="all" data-i18n="timeline_all">ทั้งหมด</option></select></label>
+          </div>
           <div id="activity-timeline" class="flex flex-col gap-3"></div>
         </div>
 
-        <section class="glass-card rounded-2xl p-4 mt-4" aria-labelledby="daily-checklist-title">
-          <div class="flex flex-wrap items-center justify-between gap-3 mb-3">
-            <div>
-              <h2 id="daily-checklist-title" class="font-semibold" data-i18n="checklist_title">Daily checklist</h2>
-              <p id="daily-checklist-date" class="text-xs text-slate-400 mt-1"></p>
-            </div>
-            <label class="text-xs text-slate-400"><span data-i18n="checklist_history">Activity date</span>
-              <select id="checklist-history-date" class="ml-2 rounded-lg bg-slate-800 border border-slate-600 px-2 py-1.5" aria-label="Activity date"></select>
-            </label>
-          </div>
-          <form id="daily-checklist-form" class="flex flex-col sm:flex-row gap-2 mb-3">
-            <label class="sr-only" for="daily-checklist-input" data-i18n="checklist_task_label">Task</label>
-            <input id="daily-checklist-input" maxlength="160" required class="flex-1 rounded-xl bg-slate-800/60 border border-slate-700 px-3 py-2 text-sm" data-i18n-placeholder="checklist_task_placeholder" placeholder="Add a task for today">
-            <button type="submit" class="btn-primary px-4 py-2 rounded-xl text-sm" data-i18n="checklist_add">Add task</button>
-          </form>
-          <div id="daily-checklist-list" class="flex flex-col gap-2" aria-live="polite"></div>
-          <p id="daily-checklist-empty" class="hidden text-sm text-slate-400 text-center py-4" data-i18n="checklist_empty">No activities recorded for this day.</p>
-        </section>
       </section>
 
       <!-- ============ PAGE: PRODUCTS ============ -->
       <section id="page-products" class="page hidden">
-        <div class="flex items-center justify-between mb-4 gap-2">
-          <h1 class="text-xl md:text-2xl font-bold" data-i18n="products_title">สินค้า / Stock</h1>
-          <div class="flex gap-2">
-            <button id="toggle-select-mode-btn" class="px-3 py-2 rounded-xl bg-slate-700/50 hover:bg-slate-700 text-sm whitespace-nowrap" data-i18n="select_mode_btn_on">☑️ เลือกหลายรายการ</button>
-            <div class="relative">
-              <button id="add-entry-btn" class="btn-primary px-4 py-2 rounded-xl text-sm whitespace-nowrap" type="button">+ เพิ่มรายการเพิ่มเติม</button>
-              <div id="add-entry-menu" class="hidden absolute right-0 top-full mt-2 z-30 w-44 glass-card rounded-xl p-1 shadow-xl">
-                <button id="add-product-menu-btn" type="button" class="w-full text-left px-3 py-2 rounded-lg hover:bg-slate-700/60 text-sm">📦 เพิ่มสินค้า</button>
-                <button id="add-farm-menu-btn" type="button" class="w-full text-left px-3 py-2 rounded-lg hover:bg-slate-700/60 text-sm">🌾 เพิ่มรายการฟาร์ม</button>
-                <button id="add-recipe-menu-btn" type="button" class="w-full text-left px-3 py-2 rounded-lg hover:bg-slate-700/60 text-sm">🛠️ เพิ่มสูตรคราฟ</button>
+        <div class="products-sticky-tools">
+          <div class="flex items-center justify-between mb-3 gap-2">
+            <h1 class="text-xl md:text-2xl font-bold" data-i18n="products_title">สินค้า / Stock</h1>
+            <div class="flex gap-2">
+              <button id="toggle-select-mode-btn" class="px-3 py-2 rounded-xl bg-slate-700/50 hover:bg-slate-700 text-sm whitespace-nowrap" data-i18n="select_mode_btn_on">☑️ เลือกหลายรายการ</button>
+              <div class="relative">
+                <button id="add-entry-btn" class="btn-primary px-4 py-2 rounded-xl text-sm whitespace-nowrap" type="button" aria-expanded="false" aria-controls="add-entry-menu">+ เพิ่มรายการเพิ่มเติม</button>
+                <div id="add-entry-menu" class="hidden absolute right-0 top-full mt-2 z-30 w-48 glass-card rounded-xl p-1 shadow-xl">
+                  <button id="add-product-menu-btn" type="button" class="w-full text-left px-3 py-2 rounded-lg hover:bg-slate-700/60 text-sm">📦 เพิ่มสินค้า</button>
+                  <button id="add-farm-menu-btn" type="button" class="w-full text-left px-3 py-2 rounded-lg hover:bg-slate-700/60 text-sm">🌾 เพิ่มรายการฟาร์ม</button>
+                  <button id="add-recipe-menu-btn" type="button" class="w-full text-left px-3 py-2 rounded-lg hover:bg-slate-700/60 text-sm">🛠️ เพิ่มสูตรคราฟ</button>
+                  <button id="add-upgrade-menu-btn" type="button" class="w-full text-left px-3 py-2 rounded-lg hover:bg-slate-700/60 text-sm">⬆️ เพิ่มสูตรอัปเกรด</button>
+                </div>
               </div>
+            </div>
+          </div>
+          <!-- Bulk selection toolbar -->
+          <div id="bulk-toolbar" class="hidden glass-card rounded-2xl p-3 mb-3 flex flex-wrap items-center justify-between gap-2">
+            <div class="min-w-0 flex-1">
+              <span class="text-sm"><span id="bulk-selected-count">0</span> <span data-i18n="bulk_selected_label">รายการที่เลือก</span></span>
+              <div id="bulk-selection-names" class="bulk-selection-names" role="status" aria-live="polite" aria-atomic="true"></div>
+            </div>
+            <div class="flex gap-2 flex-wrap">
+              <button id="bulk-select-all-btn" class="px-3 py-1.5 rounded-lg bg-slate-700/60 hover:bg-slate-700 text-xs" data-i18n="bulk_select_all">เลือกทั้งหมด</button>
+              <button id="bulk-clear-btn" class="px-3 py-1.5 rounded-lg bg-slate-700/60 hover:bg-slate-700 text-xs" data-i18n="bulk_clear">ยกเลิกเลือก</button>
+              <button id="bulk-edit-btn" disabled class="px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-xs font-semibold disabled:opacity-40" data-i18n="bulk_edit">✏️ แก้ไขหมู่</button>
+              <button id="bulk-add-upgrades-btn" class="hidden px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-xs font-semibold" type="button">เพิ่มอัปเกรดลงตะกร้า</button>
+              <button id="bulk-delete-btn" disabled class="px-3 py-1.5 rounded-lg bg-rose-600 hover:bg-rose-700 text-xs font-semibold disabled:opacity-40" data-i18n="bulk_delete">🗑️ ลบที่เลือก</button>
             </div>
           </div>
         </div>
 
-        <div class="flex rounded-xl bg-slate-800/50 p-1 border border-slate-700/50 mb-4 max-w-md">
+        <div class="stock-tabs flex rounded-xl bg-slate-800/50 p-1 border border-slate-700/50 mb-4 max-w-md">
           <button id="stock-tab-products" type="button" class="seg-btn seg-active flex-1 py-2 rounded-lg text-sm font-semibold">🛒 ขายไอเทม</button>
           <button id="stock-tab-farming" type="button" class="seg-btn flex-1 py-2 rounded-lg text-sm font-semibold">🌾 รับฟาร์ม</button>
           <button id="stock-tab-crafting" type="button" class="seg-btn flex-1 py-2 rounded-lg text-sm font-semibold">🛠️ คราฟของ</button>
           <button id="stock-tab-upgrades" type="button" class="seg-btn flex-1 py-2 rounded-lg text-sm font-semibold">⬆️ อัปเกรด</button>
         </div>
 
-        <div class="glass-card rounded-2xl p-3 mb-4 flex flex-wrap items-center justify-between gap-2">
-          <div><p class="font-semibold text-sm" data-i18n="production_cart_heading">🛒 รายการสั่งซื้อ</p><p class="text-xs text-slate-400" data-i18n="production_cart_summary">รวมสินค้า งานฟาร์ม งานคราฟ และงานอัปเกรดในออเดอร์เดียว</p></div>
-          <button id="production-cart-toggle" type="button" class="px-3 py-2 rounded-xl bg-slate-700/60 hover:bg-slate-700 text-sm" aria-expanded="false" aria-controls="production-cart-panel" data-i18n-aria="production_cart_toggle_aria">🛒+ <span id="production-cart-count">0</span></button>
-        </div>
         <section id="production-cart-panel" class="hidden glass-card rounded-2xl p-4 mb-5" aria-labelledby="production-cart-title">
           <div class="flex items-center justify-between gap-2 mb-3"><h2 id="production-cart-title" class="font-semibold" data-i18n="production_cart_title">ตะกร้ารวม</h2><strong id="production-cart-total" class="text-lg text-emerald-300">฿0</strong></div>
           <div id="production-cart-lines" class="flex flex-col gap-2 mb-4"></div>
@@ -224,17 +249,6 @@
           </div>
           <div class="flex justify-end"><button id="production-cart-checkout" type="button" class="btn-primary px-4 py-2 rounded-xl text-sm" disabled data-i18n="production_cart_checkout">บันทึกออเดอร์</button></div>
         </section>
-
-        <!-- Bulk selection toolbar -->
-        <div id="bulk-toolbar" class="hidden glass-card rounded-2xl p-3 mb-4 flex flex-wrap items-center justify-between gap-2 sticky top-2 z-20">
-          <span class="text-sm"><span id="bulk-selected-count">0</span> <span data-i18n="bulk_selected_label">รายการที่เลือก</span></span>
-          <div class="flex gap-2 flex-wrap">
-            <button id="bulk-select-all-btn" class="px-3 py-1.5 rounded-lg bg-slate-700/60 hover:bg-slate-700 text-xs" data-i18n="bulk_select_all">เลือกทั้งหมด</button>
-            <button id="bulk-clear-btn" class="px-3 py-1.5 rounded-lg bg-slate-700/60 hover:bg-slate-700 text-xs" data-i18n="bulk_clear">ยกเลิกเลือก</button>
-            <button id="bulk-edit-btn" disabled class="px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-xs font-semibold disabled:opacity-40" data-i18n="bulk_edit">✏️ แก้ไขหมู่</button>
-            <button id="bulk-delete-btn" disabled class="px-3 py-1.5 rounded-lg bg-rose-600 hover:bg-rose-700 text-xs font-semibold disabled:opacity-40" data-i18n="bulk_delete">🗑️ ลบที่เลือก</button>
-          </div>
-        </div>
 
         <div id="products-toolbar">
         <div class="flex flex-col md:flex-row gap-2 mb-4">
@@ -274,18 +288,18 @@
           <div class="flex flex-wrap items-center justify-between gap-2 mb-4">
             <div><h2 class="font-semibold">⬆️ อัปเกรดดาบและเครื่องประดับ</h2><p class="text-xs text-slate-400">เพิ่มบริการอัปเกรดลงในออเดอร์รวม โดยไม่หักสต็อกสินค้าของลูกค้า</p></div>
           </div>
-          <form id="upgrade-cart-form" class="glass-card rounded-2xl p-4 grid md:grid-cols-[1fr_140px_160px_auto] gap-3 items-end">
+          <form id="upgrade-cart-form" class="glass-card rounded-2xl p-4 grid sm:grid-cols-2 xl:grid-cols-[minmax(0,1.35fr)_minmax(0,1.35fr)_minmax(9rem,1fr)_minmax(10rem,1.1fr)_auto] gap-3 items-end">
             <label class="text-xs text-slate-400">ไอเทมดาบหรือเครื่องประดับ<select id="upgrade-product-select" class="w-full mt-1 rounded-xl bg-slate-800/60 border border-slate-700 px-3 py-2 text-sm"></select></label>
+            <label class="text-xs text-slate-400">อัปเกรดถึงขั้น<select id="upgrade-level-select" class="w-full mt-1 rounded-xl bg-slate-800/60 border border-slate-700 px-3 py-2 text-sm"></select></label>
             <label class="text-xs text-slate-400">จำนวนงาน<input id="upgrade-quantity" type="number" min="1" step="1" value="1" class="w-full mt-1 rounded-xl bg-slate-800/60 border border-slate-700 px-3 py-2 text-sm"></label>
             <label class="text-xs text-slate-400">ราคาต่องาน (บาท)<input id="upgrade-unit-price" type="number" min="0" step="0.01" value="0" class="w-full mt-1 rounded-xl bg-slate-800/60 border border-slate-700 px-3 py-2 text-sm"></label>
             <button type="submit" class="btn-primary px-4 py-2 rounded-xl text-sm">เพิ่มลงตะกร้า</button>
           </form>
+          <div id="upgrade-material-preview" class="text-xs text-slate-400 mt-2" aria-live="polite"></div>
           <div id="upgrade-product-empty" class="hidden glass-card rounded-2xl p-6 mt-3 text-center text-sm text-slate-400">เพิ่มดาบหรือเครื่องประดับใน Stock ก่อนเริ่มสร้างรายการอัปเกรด</div>
+          <div id="upgrade-services-grid" class="products-grid gap-3 md:gap-4 my-4"></div>
           <div class="mt-6"><h3 class="font-semibold text-sm mb-3">ประวัติงานอัปเกรด</h3><div id="upgrade-orders-list" class="flex flex-col gap-2"></div></div>
         </section>
-        <button id="products-back-to-top" class="button back-to-top" type="button" aria-label="Back to top" data-i18n-aria="back_to_top">
-          <svg class="svgIcon" viewBox="0 0 384 512" aria-hidden="true"><path d="M214.6 41.4c-12.5-12.5-32.8-12.5-45.3 0l-160 160c-12.5 12.5-12.5 32.8 0 45.3s32.8 12.5 45.3 0L160 141.2V448c0 17.7 14.3 32 32 32s32-14.3 32-32V141.2L329.4 246.6c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3l-160-160z"></path></svg>
-        </button>
       </section>
 
       <!-- ============ PAGE: SALES ============ -->
@@ -304,6 +318,11 @@
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
             <div class="date-picker" data-date-picker="sales-date-from"><span class="text-xs text-slate-400">เริ่มวันที่</span><input id="sales-date-from" type="date" class="date-input date-native-input"><button type="button" class="date-picker-trigger"><span>เลือกวันที่</span><b>▣</b></button><div class="date-picker-popover"></div></div>
             <div class="date-picker" data-date-picker="sales-date-to"><span class="text-xs text-slate-400">ถึงวันที่</span><input id="sales-date-to" type="date" class="date-input date-native-input"><button type="button" class="date-picker-trigger"><span>เลือกวันที่</span><b>▣</b></button><div class="date-picker-popover"></div></div>
+          </div>
+          <div class="sales-range-summary glass-card rounded-xl p-3 mt-3" aria-live="polite" aria-atomic="true">
+            <div><p class="text-xs text-slate-400" data-i18n="sales_range_total">ยอดขายรวมในช่วงวันที่เลือก</p><strong id="sales-range-total" class="text-xl text-emerald-300">฿0</strong></div>
+            <div><p class="text-xs text-slate-400" data-i18n="sales_range_count">จำนวนรายการ</p><strong id="sales-range-count" class="text-lg">0</strong></div>
+            <div><p class="text-xs text-slate-400" data-i18n="sales_range_daily_average">เฉลี่ยต่อวันในช่วงวันที่เลือก</p><strong id="sales-range-daily-average" class="text-lg text-cyan-300">฿0</strong></div>
           </div>
           <button id="sales-clear-date" type="button" class="text-xs text-orange-300 mt-2" data-i18n="clear_date_filter">ล้างตัวกรอง</button>
         </div>
@@ -337,8 +356,12 @@
       <section id="page-settings" class="page hidden settings-page" data-settings-active="general">
         <div class="flex items-center justify-between mb-4 gap-3">
           <h1 class="text-xl md:text-2xl font-bold" data-i18n="settings_title">ตั้งค่า</h1>
-          <span id="app-version" class="text-xs font-semibold text-indigo-300 px-2.5 py-1 rounded-full bg-indigo-500/15 border border-indigo-500/30">V.4.56</span>
+          <span id="app-version" class="text-xs font-semibold text-indigo-300 px-2.5 py-1 rounded-full bg-indigo-500/15 border border-indigo-500/30">V.4.62</span>
         </div>
+        <details id="app-release-notes" class="glass-card rounded-2xl p-4 mb-4">
+          <summary class="cursor-pointer text-sm font-semibold"><span data-i18n="release_notes_title">รายการอัปเดต</span> · <span id="release-notes-current-version">V.4.62</span></summary>
+          <div id="app-release-notes-content" class="mt-3 flex flex-col gap-3"></div>
+        </details>
         <div class="settings-section-tabs flex gap-2 mb-4" role="tablist" data-i18n-aria="settings_tabs_aria" aria-label="Settings">
           <button id="settings-general-tab" type="button" role="tab" aria-selected="true" aria-controls="page-settings" class="admin-section-tab is-active" data-settings-tab="general" data-i18n="settings_tab_general">ทั่วไป</button>
           <button id="settings-messages-tab" type="button" role="tab" aria-selected="false" aria-controls="page-settings" class="admin-section-tab" data-settings-tab="messages" data-i18n="settings_tab_messages">โปรไฟล์</button>
@@ -586,7 +609,17 @@
       <div id="recipe-image-preview" class="recipe-image-preview"><div><img data-preview-product alt="ตัวอย่างไอเทม"><span>ไอคอนไอเทม</span></div><div><img data-preview-recipe alt="ตัวอย่างสูตร"><span>ภาพรวมสูตร</span></div></div>
       <label class="text-xs text-slate-400">ระดับ<select name="rarity" class="rarity-select-input w-full mt-1 px-3 py-2 rounded-xl bg-slate-800/50 border border-slate-700/50 text-sm"></select></label>
       <label class="text-xs text-slate-400">หมวดหมู่<select name="category" class="recipe-category-select w-full mt-1 px-3 py-2 rounded-xl bg-slate-800/50 border border-slate-700/50 text-sm"></select></label>
+      <label id="recipe-variant-picker-wrap" class="text-xs text-slate-400">เลือกสูตรที่จะปรับ<select id="recipe-variant-select" class="w-full mt-1 px-3 py-2 rounded-xl bg-slate-800/50 border border-slate-700/50 text-sm"></select></label>
+      <div class="flex flex-wrap gap-2">
+        <button type="button" id="add-recipe-variant-btn" class="rounded-lg bg-slate-700/60 px-3 py-2 text-xs hover:bg-slate-700">+ เพิ่มสูตรคราฟ</button>
+        <button type="button" id="add-component-recipe-btn" class="hidden rounded-lg bg-indigo-500/15 px-3 py-2 text-xs text-indigo-200 hover:bg-indigo-500/25">+ เพิ่มสูตรของวัตถุดิบคราฟ</button>
+        <button type="button" id="remove-recipe-variant-btn" class="hidden rounded-lg bg-rose-500/15 px-3 py-2 text-xs text-rose-200 hover:bg-rose-500/25">ลบสูตรนี้</button>
+      </div>
       <div><div class="flex items-center justify-between gap-2"><label class="text-xs text-slate-400">วัตถุดิบที่ใช้</label><button type="button" id="add-ingredient-row-btn" class="text-xs text-orange-300 hover:text-orange-200">+ เพิ่มวัตถุดิบ</button></div><div id="recipe-ingredients-editor" class="flex flex-col gap-2 mt-2"></div></div>
+      <section class="rounded-xl border border-indigo-400/20 bg-indigo-400/5 p-3">
+        <div class="mb-2"><h3 class="text-xs font-semibold text-indigo-200">สูตรวัตถุดิบคราฟที่ใช้</h3><p class="mt-1 text-[11px] text-slate-400">เลือกวัตถุดิบที่คราฟไม่ได้ เช่น Fortune Tales แล้วกำหนดสูตรของชิ้นนั้น ระบบจะคำนวณวัตถุดิบย่อยแทนให้อัตโนมัติ</p></div>
+        <div id="recipe-component-recipes-editor" class="flex flex-col gap-2"></div>
+      </section>
       <p class="text-[11px] text-slate-500">รูปไอเทมและภาพสูตรจะเลือกจากชื่อไอเทมให้อัตโนมัติ</p>
       <div class="flex gap-2"><button type="button" data-close-modal class="flex-1 py-2.5 rounded-xl bg-slate-700/50 text-sm">ยกเลิก</button><button type="submit" class="flex-1 btn-primary py-2.5 rounded-xl text-sm">บันทึกสูตร</button></div>
     </form>
@@ -647,6 +680,39 @@
   <button data-nav="admin" class="drawer-link admin-only hidden">🔐 Admin</button>
   <button id="mobile-logout-btn" class="drawer-link text-rose-300">↪ <span data-i18n="auth_logout">ออกจากบัญชี</span></button>
 </nav>
+
+<dialog id="production-cart-add-dialog" class="production-cart-add-dialog" aria-labelledby="production-cart-add-title" aria-describedby="production-cart-add-help">
+  <form id="production-cart-add-form" class="glass-card rounded-2xl p-5" novalidate>
+    <div class="flex items-start gap-3 mb-4">
+      <img id="production-cart-add-image" class="production-cart-add-image" alt="" hidden>
+      <div class="min-w-0 flex-1">
+        <h2 id="production-cart-add-title" class="font-bold text-lg" data-i18n="production_cart_add_title">เพิ่มสินค้าลงตะกร้า</h2>
+        <p id="production-cart-add-name" class="font-semibold mt-1 break-words"></p>
+        <p id="production-cart-add-rate" class="text-sm text-emerald-300 mt-1"></p>
+        <p id="production-cart-add-remaining" class="text-xs text-slate-400 mt-1"></p>
+      </div>
+      <button type="button" class="min-h-11 min-w-11 rounded-lg text-slate-400 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400" data-cart-add-close data-i18n-aria="production_cart_add_close" aria-label="ปิด">✕</button>
+    </div>
+    <div class="production-cart-add-tabs mb-4" role="tablist" data-i18n-aria="production_cart_add_modes_aria" aria-label="วิธีระบุสินค้า">
+      <button id="production-cart-add-quantity-tab" type="button" role="tab" aria-selected="true" aria-controls="production-cart-add-quantity-panel" data-cart-add-mode="quantity" data-i18n="production_cart_add_tab_quantity">ตามจำนวนชิ้น</button>
+      <button id="production-cart-add-amount-tab" type="button" role="tab" aria-selected="false" aria-controls="production-cart-add-amount-panel" data-cart-add-mode="amount" tabindex="-1" data-i18n="production_cart_add_tab_amount">ตามจำนวนเงิน</button>
+    </div>
+    <p id="production-cart-add-help" class="text-xs text-slate-400 mb-3" data-i18n="production_cart_add_help">เลือกกรอกจำนวนชิ้นหรืองบ ระบบคำนวณตามเรทราคาตั้งต้น</p>
+    <div id="production-cart-add-quantity-panel" role="tabpanel" aria-labelledby="production-cart-add-quantity-tab">
+      <label class="block text-sm text-slate-300" for="production-cart-add-quantity" data-i18n="production_cart_add_quantity">จำนวนชิ้น</label>
+      <input id="production-cart-add-quantity" type="number" min="1" step="1" value="1" inputmode="numeric" class="mt-1 h-11 w-full rounded-xl bg-slate-900/70 border border-slate-700 px-3 text-base focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400">
+    </div>
+    <div id="production-cart-add-amount-panel" role="tabpanel" aria-labelledby="production-cart-add-amount-tab" hidden>
+      <label class="block text-sm text-slate-300" for="production-cart-add-amount" data-i18n="production_cart_add_amount">งบ (บาท)</label>
+      <input id="production-cart-add-amount" type="number" min="0.01" step="0.01" inputmode="decimal" class="mt-1 h-11 w-full rounded-xl bg-slate-900/70 border border-slate-700 px-3 text-base focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400">
+    </div>
+    <p id="production-cart-add-preview" class="mt-3 min-h-6 text-sm text-emerald-300" role="status" aria-live="polite"></p>
+    <div class="grid grid-cols-2 gap-2 mt-4">
+      <button type="button" class="min-h-11 rounded-xl bg-slate-700/60 px-3 text-sm hover:bg-slate-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400" data-cart-add-close data-i18n="btn_cancel">ยกเลิก</button>
+      <button id="production-cart-add-submit" type="submit" class="btn-primary min-h-11 rounded-xl px-3 text-sm disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400" data-i18n="production_cart_add_submit_default">เพิ่มลงตะกร้า</button>
+    </div>
+  </form>
+</dialog>
 
 <dialog id="site-suggestion-dialog" class="site-suggestion-dialog" closedby="any" aria-labelledby="site-suggestion-dialog-title">
   <div class="glass-card rounded-2xl p-5">
@@ -739,6 +805,12 @@
             </label>
           </div>
         </div>
+      </fieldset>
+      <fieldset id="product-upgrade-fieldset" class="hidden rounded-xl border border-indigo-400/25 p-3">
+        <legend class="px-1 text-xs font-semibold text-indigo-200">สูตรอัปเกรด</legend>
+        <p class="text-[11px] text-slate-400 mb-3">กำหนดวัตถุดิบสำหรับแต่ละขั้น ระบบจะรวมวัตถุดิบตั้งแต่ขั้นแรกจนถึงขั้นที่เลือก</p>
+        <div id="product-upgrade-steps-editor" class="flex flex-col gap-3"></div>
+        <button id="add-upgrade-step-btn" type="button" class="mt-3 text-xs text-indigo-200 hover:text-indigo-100">+ เพิ่มขั้นอัปเกรด</button>
       </fieldset>
       <div>
         <label class="text-xs text-slate-400" data-i18n="label_description">รายละเอียด</label>
@@ -913,26 +985,30 @@
   </div>
 </div>
 
-<script defer src="shared/time.js?v=4.56"></script>
-<script defer src="shared/game-pass.js?v=4.56"></script>
-<script defer src="shared/state-validation.js?v=4.56"></script>
-<script defer src="js/data.js?v=4.56"></script>
-<script defer src="js/i18n.js?v=4.56"></script>
-<script defer src="js/utils.js?v=4.56"></script>
-<script defer src="js/products.js?v=4.56"></script>
-<script defer src="js/farm.js?v=4.56"></script>
-<script defer src="js/crafting.js?v=4.56"></script>
-<script defer src="js/sales.js?v=4.56"></script>
-<script defer src="js/production.js?v=4.56"></script>
-<script defer src="js/dashboard.js?v=4.56"></script>
-<script defer src="js/backup.js?v=4.56"></script>
-<script defer src="js/community.js?v=4.56"></script>
-<script defer src="js/auth.js?v=4.56"></script>
-<script defer src="js/profile.js?v=4.56"></script>
-<script defer src="js/requests.js?v=4.56"></script>
-<script defer src="js/admin.js?v=4.56"></script>
-<script defer src="js/cookie.js?v=4.56"></script>
-<script defer src="js/navigation.js?v=4.56"></script>
-<script defer src="js/main.js?v=4.56"></script>
+<button id="products-back-to-top" class="button back-to-top back-to-top-visible" type="button" aria-label="Back to top" data-i18n-aria="back_to_top">
+  <svg class="svgIcon" viewBox="0 0 384 512" aria-hidden="true"><path d="M214.6 41.4c-12.5-12.5-32.8-12.5-45.3 0l-160 160c-12.5 12.5-12.5 32.8 0 45.3s32.8 12.5 45.3 0L160 141.2V448c0 17.7 14.3 32 32 32s32-14.3 32-32V141.2L329.4 246.6c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3l-160-160z"></path></svg>
+</button>
+
+<script defer src="shared/time.js?v=4.62"></script>
+<script defer src="shared/game-pass.js?v=4.62"></script>
+<script defer src="shared/state-validation.js?v=4.62"></script>
+<script defer src="js/data.js?v=4.62"></script>
+<script defer src="js/i18n.js?v=4.62"></script>
+<script defer src="js/utils.js?v=4.62"></script>
+<script defer src="js/products.js?v=4.62"></script>
+<script defer src="js/farm.js?v=4.62"></script>
+<script defer src="js/crafting.js?v=4.62"></script>
+<script defer src="js/sales.js?v=4.62"></script>
+<script defer src="js/production.js?v=4.62"></script>
+<script defer src="js/dashboard.js?v=4.62"></script>
+<script defer src="js/backup.js?v=4.62"></script>
+<script defer src="js/community.js?v=4.62"></script>
+<script defer src="js/auth.js?v=4.62"></script>
+<script defer src="js/profile.js?v=4.62"></script>
+<script defer src="js/requests.js?v=4.62"></script>
+<script defer src="js/admin.js?v=4.62"></script>
+<script defer src="js/cookie.js?v=4.62"></script>
+<script defer src="js/navigation.js?v=4.62"></script>
+<script defer src="js/main.js?v=4.62"></script>
 </body>
 </html>

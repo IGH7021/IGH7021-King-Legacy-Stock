@@ -235,12 +235,27 @@ function handleSaleSubmit(e) {
   }, 250);
 }
 
+function salesRangeDayCount(visibleSales) {
+  const saleDays = visibleSales.map(sale => APP_TIME.dateKey(sale.date)).filter(Boolean).sort();
+  const firstDay = salesDateRange.from || saleDays[0] || salesDateRange.to;
+  const lastDay = salesDateRange.to || saleDays[saleDays.length - 1] || salesDateRange.from;
+  if (!firstDay || !lastDay || firstDay > lastDay) return 0;
+  const first = firstDay.split("-").map(Number);
+  const last = lastDay.split("-").map(Number);
+  return Math.floor((Date.UTC(last[0], last[1] - 1, last[2]) - Date.UTC(first[0], first[1] - 1, first[2])) / 86400000) + 1;
+}
+
 function renderSalesHistory() {
   const box = document.getElementById("sales-history-list");
   if (!box) return;
   const from = salesDateRange.from ? APP_TIME.startOfDateKey(salesDateRange.from) : -Infinity;
   const to = salesDateRange.to ? APP_TIME.startOfDateKey(APP_TIME.addDays(salesDateRange.to, 1)) : Infinity;
   const visibleSales = state.sales.filter(s => s.date >= from && s.date < to);
+  const rangeTotal = Math.round(visibleSales.reduce((sum, sale) => sum + (Number(sale.money) || 0), 0) * 100) / 100;
+  const dayCount = salesRangeDayCount(visibleSales);
+  document.getElementById("sales-range-total").textContent = fmtBaht(rangeTotal);
+  document.getElementById("sales-range-count").textContent = fmtNum(visibleSales.length);
+  document.getElementById("sales-range-daily-average").textContent = fmtBaht(dayCount ? Math.round(rangeTotal / dayCount * 100) / 100 : 0);
   if (visibleSales.length === 0) {
     box.innerHTML = `<div class="flex flex-col items-center justify-center py-16 text-slate-400">
       <div class="text-5xl mb-3">🧾</div><p>${state.sales.length ? t("no_sales_in_range") : t("empty_no_sales")}</p></div>`;

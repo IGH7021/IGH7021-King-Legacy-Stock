@@ -36,6 +36,27 @@ test("accepts the actual first-time workspace state", () => {
   assert.deepEqual(validateAccountState(defaultState), { valid: true, error: null });
 });
 
+test("validates linked craft-only component recipe materials", () => {
+  const state = {
+    products: [],
+    sales: [],
+    settings: {},
+    recipes: [{
+      name: "Chronicles Lore",
+      ingredients: [["Fortune Tales", 1]],
+      componentRecipes: [{ ingredientName: "Fortune Tales", ingredients: [["Seas Wraith", 1]] }],
+      alternatives: [{
+        ingredients: [["Heart of Sea", 1]],
+        componentRecipes: [{ ingredientName: "Heart of Sea", ingredients: [["Krakens Ink", 2]] }],
+      }],
+    }],
+  };
+  assert.equal(validateAccountState(state).valid, true);
+
+  state.recipes[0].componentRecipes[0].ingredients[0][1] = 0;
+  assert.equal(validateAccountState(state).valid, false);
+});
+
 test("rejects malformed state shapes before persistence", () => {
   assert.equal(validateAccountState({ products: {}, sales: [], settings: {} }).valid, false);
   assert.equal(validateAccountState({ products: [null], sales: [], settings: {} }).valid, false);

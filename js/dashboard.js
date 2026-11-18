@@ -1,5 +1,6 @@
 let salesChart = null;
 let lastChecklistToday = APP_TIME.dateKey();
+let activityRange = "7d";
 
 function totalSales() { return state.sales.reduce((a,s) => a + Number(s.money || 0), 0) + (state.farmOrders || []).reduce((a,o) => a + Number(o.money || 0), 0) + (state.upgradeOrders || []).reduce((a,o) => a + Number(o.money || 0), 0); }
 function totalSoldQty() { return state.sales.reduce((a,s) => a + Number(s.quantity || 0), 0) + (state.farmOrders || []).reduce((a,o) => a + Number(o.pricingMode === "hour" ? o.hours || 0 : o.quantity || 0), 0) + (state.upgradeOrders || []).reduce((a,o) => a + Number(o.quantity || 0), 0); }
@@ -176,28 +177,62 @@ function renderTimeline() {
   const box = document.getElementById("activity-timeline");
   if (!box) return;
   const events = [];
-  (state.activityLog || []).forEach(activity => events.push({ ts: activity.ts, text: `${activity.type === "craft" ? "🛠️" : "🧾"} ${activity.text}`, sub: activity.sub || "รายการฟาร์ม", color: activity.type === "craft" ? "bg-amber-400" : "bg-orange-400" }));
-  state.sales.slice(0, 8).forEach(s => {
+  const activityStyles = {
+    craft: ["🛠️", "bg-amber-400"],
+    recipe: ["📜", "bg-amber-400"],
+    product: ["📦", "bg-indigo-400"],
+    farm: ["🌾", "bg-orange-400"],
+    upgrade: ["⬆️", "bg-indigo-400"],
+    order: ["🧾", "bg-orange-400"],
+    backup: ["💾", "bg-sky-400"],
+  };
+  (state.activityLog || []).forEach(activity => {
+    const [icon, color] = activityStyles[activity.type] || ["🧾", "bg-orange-400"];
+    events.push({ ts: activity.ts, text: `${icon} ${activity.text}`, sub: activity.sub || "", color });
+  });
+  state.sales.forEach(s => {
+    if (s.source === "craft" && (state.activityLog || []).some(activity => activity.type === "craft" && activity.ts === s.date)) return;
     const name = s.deliveryMethod ? `${s.productName} (${t(`gamepass_${s.deliveryMethod}`)})` : s.productName;
     events.push({ ts: s.date, text: t("timeline_sold", { name, qty: fmtNum(s.quantity) }), sub: fmtBaht(s.money), color: "bg-emerald-400" });
   });
-  (state.farmOrders || []).slice(0, 8).forEach(order => { if (!(state.activityLog || []).some(activity => activity.ts === order.date && activity.text.includes(order.serviceName))) events.push({ ts: order.date, text: `🌾 รับฟาร์ม ${order.serviceName} ${order.pricingMode === "hour" ? `${fmtNum(order.hours || order.quantity)} ชั่วโมง` : `${fmtNum(order.quantity)} ${t("pieces_unit")}`}`, sub: fmtBaht(order.money), color: "bg-orange-400" }); });
-  (state.upgradeOrders || []).slice(0, 8).forEach(order => events.push({ ts: order.date, text: `⬆️ อัปเกรด ${order.productName}`, sub: fmtBaht(order.money), color: "bg-indigo-400" }));
-  state.products.forEach(p => (p.restockHistory||[]).forEach(r => events.push({ ts: r.date, text: t("timeline_restocked", { name: p.name }), sub: `+${fmtNum(r.amount)} ${t("pieces_unit")}`, color: "bg-indigo-400" })));
+  (state.farmOrders || []).forEach(order => {
+    if ((state.activityLog || []).some(activity => activity.type === "farm" && activity.text.includes(order.serviceName) && Math.abs(activity.ts - order.date) < 5000)) return;
+    events.push({ ts: order.date, text: `🌾 รับฟาร์ม ${order.serviceName} ${order.pricingMode === "hour" ? `${fmtNum(order.hours || order.quantity)} ชั่วโมง` : `${fmtNum(order.quantity)} ${t("pieces_unit")}`}`, sub: fmtBaht(order.money), color: "bg-orange-400" });
+  });
+  (state.upgradeOrders || []).forEach(order => events.push({ ts: order.date, text: `⬆️ อัปเกรด ${order.productName}${Number(order.upgradeLevel) ? ` · ขั้น ${fmtNum(order.upgradeLevel)}` : ""}`, sub: `${fmtNum(order.quantity)} งาน • ${fmtBaht(order.money)}`, color: "bg-indigo-400" }));
+  state.products.forEach(product => (product.restockHistory || []).forEach(restock => {
+    if ((state.activityLog || []).some(activity => activity.type === "product" && activity.text.includes(product.name) && activity.action === "restocked" && Math.abs(activity.ts - restock.date) < 5000)) return;
+    events.push({ ts: restock.date, text: t("timeline_restocked", { name: product.name }), sub: `+${fmtNum(restock.amount)} ${t("pieces_unit")}`, color: "bg-indigo-400" });
+  }));
   events.sort((a,b) => b.ts - a.ts);
-  const top = events.slice(0, 8);
-  if (top.length === 0) {
+  const today = APP_TIME.dateKey();
+  const start = activityRange === "today" ? today
+    : activityRange === "7d" ? APP_TIME.addDays(today, -6)
+      : activityRange === "30d" ? APP_TIME.addDays(today, -29) : "";
+  const visibleEvents = events.filter(event => !start || APP_TIME.dateKey(event.ts) >= start).slice(0, 200);
+  if (visibleEvents.length === 0) {
     box.innerHTML = `<p class="text-sm text-slate-400 text-center py-6">${t("no_sales_data")}</p>`;
     return;
   }
-  box.innerHTML = top.map(ev => `
-    <div class="flex gap-3 items-start">
-      <span class="w-2 h-2 rounded-full ${ev.color} mt-1.5 flex-shrink-0"></span>
-      <div class="flex-1 min-w-0">
-        <p class="text-sm truncate">${escapeHtml(ev.text)}</p>
-        <p class="text-xs text-slate-400">${escapeHtml(ev.sub)} • ${timeAgo(ev.ts)}</p>
-      </div>
-    </div>`).join("");
+  const eventsByDay = new Map();
+  visibleEvents.forEach(event => {
+    const key = APP_TIME.dateKey(event.ts);
+    if (!eventsByDay.has(key)) eventsByDay.set(key, []);
+    eventsByDay.get(key).push(event);
+  });
+  box.innerHTML = [...eventsByDay].map(([key, dayEvents]) => {
+    const dayLabel = new Date(APP_TIME.startOfDateKey(key)).toLocaleDateString(currentLang === "th" ? "th-TH" : "en-US", {
+      timeZone: APP_TIME.TIME_ZONE, weekday: "long", day: "numeric", month: "long", year: "numeric",
+    });
+    return `<section class="activity-day-group"><h3 class="text-xs font-semibold text-slate-400 mb-2">${escapeHtml(dayLabel)}</h3><div class="flex flex-col gap-3">${dayEvents.map(event => `
+      <div class="flex gap-3 items-start">
+        <span class="w-2 h-2 rounded-full ${event.color} mt-1.5 flex-shrink-0"></span>
+        <div class="flex-1 min-w-0">
+          <p class="text-sm break-words">${escapeHtml(event.text)}</p>
+          <p class="text-xs text-slate-400">${event.sub ? `${escapeHtml(event.sub)} • ` : ""}${timeAgo(event.ts)}</p>
+        </div>
+      </div>`).join("")}</div></section>`;
+  }).join("");
 }
 
 function getBestSellers() {
@@ -234,6 +269,10 @@ function renderReports() {
 }
 
 document.addEventListener("DOMContentLoaded", () => {
+  document.getElementById("activity-range-select")?.addEventListener("change", event => {
+    activityRange = event.target.value;
+    renderTimeline();
+  });
   document.getElementById("daily-checklist-form")?.addEventListener("submit", event => {
     event.preventDefault();
     const input = document.getElementById("daily-checklist-input");

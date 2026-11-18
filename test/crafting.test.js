@@ -221,3 +221,85 @@ test("non-tradable products only receive an existing default recipe", () => {
   assert.equal(state.recipes.length, 1);
   assert.equal(context.includeExistingRecipeForProduct({ name: "Acrospear", tradeability: "tradable" }), false);
 });
+
+test("recipe alternatives can be referenced independently and expand craft-only ingredient recipes", () => {
+    const recipe = {
+      name: "Chronicles Lore",
+      ingredients: [["Fortune Tales", 1], ["Heart of Sea", 1]],
+      alternatives: [{ ingredients: [["Fortune Tales", 2]] }],
+    };
+    const products = [
+      { id: "output", name: "Chronicles Lore", category: "ของวัตถุดิบ", stock: 0, sold: 0 },
+      { id: "fortune", name: "Fortune Tales", category: "ของวัตถุดิบ", tradeability: "craft-only", stock: 0, sold: 0 },
+      { id: "heart", name: "Heart of Sea", category: "ของวัตถุดิบ", tradeability: "craft-only", stock: 0, sold: 0 },
+      { id: "wraith", name: "Seas Wraith", category: "ของวัตถุดิบ", stock: 100, sold: 0 },
+      { id: "ink", name: "Krakens Ink", category: "ของวัตถุดิบ", stock: 100, sold: 0 },
+    ];
+    const { context, state } = createCraftingContext({ recipe, products });
+    state.recipes.push(
+      { name: "Fortune Tales", ingredients: [["Seas Wraith", 1]] },
+      { name: "Heart of Sea", ingredients: [["Heart of Sea", 3], ["Krakens Ink", 10]] },
+    );
+
+    const alternativeRef = context.recipeReference(recipe.name, 1);
+    assert.equal(context.recipeFromReference(alternativeRef).recipe.ingredients[0][1], 2);
+    assert.deepEqual(Array.from(context.expandCraftOnlyIngredients(recipe.ingredients, new Set(["chronicles lore"])), item => Array.from(item)), [
+      ["Seas Wraith", 1],
+      ["Heart of Sea", 3],
+      ["Krakens Ink", 10],
+    ]);
+});
+
+test("component recipes are bound to their craft-only ingredient and expand by required quantity", () => {
+  const recipe = {
+    name: "Chronicles Lore",
+    ingredients: [["Fortune Tales", 2], ["Heart of Sea", 1]],
+    componentRecipes: [
+      { ingredientName: "Fortune Tales", ingredients: [["Sharks Canine", 3]] },
+      { ingredientName: "Heart of Sea", ingredients: [["Krakens Ink", 4]] },
+    ],
+  };
+  const products = [
+    { id: "output", name: "Chronicles Lore", category: "ของวัตถุดิบ", stock: 0, sold: 0 },
+    { id: "fortune", name: "Fortune Tales", category: "ของวัตถุดิบ", tradeability: "craft-only", stock: 0, sold: 0 },
+    { id: "heart", name: "Heart of Sea", category: "ของวัตถุดิบ", tradeability: "craft-only", stock: 0, sold: 0 },
+    { id: "sharks", name: "Sharks Canine", category: "ของวัตถุดิบ", stock: 20, sold: 0 },
+    { id: "ink", name: "Krakens Ink", category: "ของวัตถุดิบ", stock: 10, sold: 0 },
+  ];
+  const { context } = createCraftingContext({ recipe, products });
+
+  assert.deepEqual(
+    Array.from(context.recipeMaterialRequirements(recipe, 2), material => ({
+      name: material.name,
+      required: material.required,
+      available: material.available,
+    })),
+    [
+      { name: "Sharks Canine", required: 12, available: 20 },
+      { name: "Krakens Ink", required: 8, available: 10 },
+    ],
+  );
+});
+
+test("recipe editor exposes the selected craft-only ingredient on its linked formula", () => {
+  const componentEditor = { innerHTML: "" };
+  const products = [
+    { id: "fortune", name: "Fortune Tales", category: "ของวัตถุดิบ", tradeability: "craft-only" },
+    { id: "wraith", name: "Seas Wraith", category: "ของวัตถุดิบ", tradeability: "tradable" },
+  ];
+  const context = vm.createContext({
+    state: { products, recipes: [] },
+    RECIPES: [],
+    document: { addEventListener() {}, getElementById: id => id === "recipe-component-recipes-editor" ? componentEditor : null },
+  });
+  vm.runInContext(fs.readFileSync(require.resolve("../js/crafting.js"), "utf8"), context);
+
+  context.renderRecipeComponentEditor(
+    [{ ingredientName: "Fortune Tales", ingredients: [["Seas Wraith", 1]] }],
+    [["Fortune Tales", 1]],
+  );
+
+  assert.match(componentEditor.innerHTML, /data-component-target/);
+  assert.match(componentEditor.innerHTML, /Fortune Tales/);
+  assert.match(componentEditor.innerHTML, /Seas Wraith/);
+});

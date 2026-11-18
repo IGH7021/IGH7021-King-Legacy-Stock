@@ -1,8 +1,84 @@
 const STORAGE_KEY = "igh_kinglegacy_state";
 const THEME_KEY = "igh_theme";
 const LANG_KEY = "igh_lang";
-const APP_VERSION = "V.4.56";
-const STATE_SCHEMA_VERSION = 4;
+const APP_VERSION = "V.4.62";
+const STATE_SCHEMA_VERSION = 6;
+const APP_CHANGELOG = [
+  {
+    version: "V.4.62",
+    date: "2026-11-19",
+    changes: {
+      th: [
+        "ปรับเมนูเลือกให้ไม่ถูกตัดขอบหรือจมหลังโมดัล พร้อมรองรับรายการที่เพิ่มภายหลังและการใช้งานด้วยคีย์บอร์ด",
+        "ปรับแท็บเลือกจำนวน/งบและจัดการ์ดสินค้าใหม่ให้ไม่เบียดกันบนจอแคบ",
+      ],
+      en: [
+        "Updated select menus to avoid clipping and layering issues, including dynamically added options and keyboard use.",
+        "Refined the count/budget tabs and product grid for narrow screens.",
+      ],
+    },
+  },
+  {
+    version: "V.4.61",
+    date: "2026-11-19",
+    changes: {
+      th: [
+        "เพิ่มหน้าต่างเพิ่มสินค้าลงตะกร้า เลือกกรอกจำนวนชิ้นหรือกำหนดงบเพื่อคำนวณจำนวนตามเรทราคาตั้งต้น",
+      ],
+      en: [
+        "Added a cart dialog with item-count and budget modes that calculate using the configured product rate.",
+      ],
+    },
+  },
+  {
+    version: "V.4.60",
+    date: "2026-11-18",
+    changes: {
+      th: [
+        "ปรับตะกร้าให้ใช้ราคาตั้งต้นจากสินค้าและบริการโดยอัตโนมัติ พร้อมลดช่องกรอกที่ซ้ำซ้อน",
+        "ปรับช่องจำนวนและฟอร์มอัปเกรดให้มีพื้นที่เหมาะสมบนจอขนาดต่าง ๆ",
+      ],
+      en: [
+        "Cart now uses configured product and service prices automatically with fewer redundant inputs.",
+        "Improved quantity controls and upgrade form spacing across screen sizes.",
+      ],
+    },
+  },
+  {
+    version: "V.4.58",
+    date: "2026-11-18",
+    changes: {
+      th: [
+        "เพิ่มสูตรย่อยที่ผูกกับวัตถุดิบคราฟต์ เช่น Fortune Tales และคำนวณวัตถุดิบแทนให้อัตโนมัติ",
+        "ตะกร้าแสดงรูปสินค้า เพิ่มทางลัดเพิ่มสูตรคราฟต์/อัปเกรด และคำนวณราคาวัตถุดิบตามเรทต่อชิ้น",
+        "ย้ายฟอร์มอัปเกรดขึ้นด้านบน เรียงไอเทมตามระดับ และเพิ่มยอดขายเฉลี่ยต่อวัน",
+        "เพิ่มตัวกรองกิจกรรมตามช่วงเวลา พร้อมบันทึกการเพิ่ม แก้ไข และลบสูตรคราฟต์",
+      ],
+      en: [
+        "Added linked sub-recipes for craft-only ingredients such as Fortune Tales, with automatic material calculation.",
+        "Cart now shows product images, adds crafting/upgrade shortcuts, and uses each item's configured unit rate.",
+        "Moved the upgrade form up, sorted items by rarity, and added average daily sales.",
+        "Added activity filters by time range and logs for creating, editing, and deleting recipes.",
+      ],
+    },
+  },
+  {
+    version: "V.4.57",
+    date: "2026-11-18",
+    changes: {
+      th: [
+        "ปรับปุ่มกลับด้านบน ตะกร้า และแถบเลือกสินค้าให้ติดตามหน้าจอ",
+        "เพิ่มสูตรคราฟต์ทางเลือก สูตรอัปเกรดหลายขั้น และสรุปยอดขายตามวันที่",
+        "ย้ายเช็กลิสต์ประจำวันมาไว้ใต้สถิติวันนี้",
+      ],
+      en: [
+        "Made Back to Top, the cart, and product-selection tools easier to reach while scrolling.",
+        "Added alternative crafting recipes, multi-stage upgrades, and date-range sales summaries.",
+        "Moved the daily checklist below today's statistics.",
+      ],
+    },
+  },
+];
 
 const CATEGORY_ICONS = {
   "ดาบ": "🗡️",
@@ -33,6 +109,7 @@ const CRAFT_OUTPUT_ITEMS = [
   "Glacier Stone", "Heart of Sea", "Life Stone", "Light Stone", "Poison Stone",
   "Spark Stone", "Tempestas Stone", "Chronicles Lore", "Essence Book", "Fate Book", "Fortune Tales",
 ];
+const CRAFT_ONLY_CATALOG_ITEMS = ["Eye of Acro", "Fortune Tales", "Heart of Sea"];
 
 const RECIPES = [
   { name: "Abyss Stone", rarity: "mythical", ingredients: [["Twilights Orb", 5], ["Dark Beards Totem", 4], ["Seas Wraith", 3], ["Dragon Scale", 35], ["Pile of Bones", 250]] },
@@ -197,7 +274,7 @@ function buildDefaultProducts() {
       name, category,
       source: "catalog",
       catalogId: name,
-      tradeability: name === "Eye of Acro" ? "craft-only" : "tradable",
+      tradeability: CRAFT_ONLY_CATALOG_ITEMS.includes(name) ? "craft-only" : "tradable",
       image: image || null,
       rarity: rarity || "none",
       stock, sold: 0, crafted: 0,

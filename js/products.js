@@ -22,6 +22,9 @@ function summarizeProductChanges(previous, product) {
   if (previous.name !== product.name) changes.push(`Name: ${previous.name} -> ${product.name}`);
   if (previous.category !== product.category) changes.push(`Category: ${previous.category} -> ${product.category}`);
   if (previous.tradeability !== product.tradeability) changes.push(`Tradeability: ${previous.tradeability} -> ${product.tradeability}`);
+  if (JSON.stringify(previous.upgradeSteps || []) !== JSON.stringify(product.upgradeSteps || [])) {
+    changes.push(`Upgrade recipe steps: ${(product.upgradeSteps || []).length}`);
+  }
   if (previous.stock !== product.stock) changes.push(`Stock: ${fmtNum(previous.stock)} -> ${fmtNum(product.stock)}`);
   if (previous.unitsPerBaht !== product.unitsPerBaht) changes.push("Price rate changed");
   ["gift", "trade"].forEach(method => {
@@ -221,7 +224,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const p = state.products.find(x => x.id === id);
     if (!p) return;
     if (action === "sell") openSaleModal(p.id);
-    else if (action === "cart") addToCart("product", p.id);
+    else if (action === "cart") openProductionCartAddDialog(p.id);
     else if (action === "gamepass-cart") addToCart("gamepass", p.id, 1, null, e.target.closest("[data-action]")?.dataset.method);
     else if (action === "edit") openEditProductModal(p.id);
     else if (action === "delete") deleteProduct(p.id);
@@ -234,6 +237,33 @@ document.addEventListener("DOMContentLoaded", () => {
   document.getElementById("bulk-clear-btn").addEventListener("click", clearSelection);
   document.getElementById("bulk-delete-btn").addEventListener("click", deleteSelectedProducts);
   document.getElementById("bulk-edit-btn").addEventListener("click", openBulkEditModal);
+  document.getElementById("bulk-add-upgrades-btn").addEventListener("click", () => {
+    const products = state.products.filter(product => selectedIds.has(product.id) && upgradeableCategory(product.category) && product.upgradeSteps?.length);
+    if (!products.length) { toast("รายการที่เลือกยังไม่มีสูตรอัปเกรด", "error"); return; }
+    products.forEach(product => addToCart("upgrade", product.id, 1, null, null, 1));
+  });
+  document.getElementById("product-upgrade-steps-editor").addEventListener("click", event => {
+    const steps = collectUpgradeSteps();
+    const step = event.target.closest("[data-upgrade-step]");
+    if (event.target.closest("#add-upgrade-step-btn")) return;
+    if (event.target.closest("[data-add-upgrade-material]") && step) {
+      const stepIndex = Array.from(document.querySelectorAll("[data-upgrade-step]")).indexOf(step);
+      steps[stepIndex].ingredients.push(["", 1]);
+    } else if (event.target.closest("[data-remove-upgrade-material]") && step) {
+      const row = event.target.closest(".upgrade-material-row");
+      const stepIndex = Array.from(document.querySelectorAll("[data-upgrade-step]")).indexOf(step);
+      const rowIndex = Array.from(step.querySelectorAll(".upgrade-material-row")).indexOf(row);
+      steps[stepIndex].ingredients.splice(rowIndex, 1);
+    } else if (event.target.closest("[data-remove-upgrade-step]") && step) {
+      steps.splice(Array.from(document.querySelectorAll("[data-upgrade-step]")).indexOf(step), 1);
+    } else return;
+    renderUpgradeStepsEditor(steps);
+  });
+  document.getElementById("add-upgrade-step-btn").addEventListener("click", () => {
+    const steps = collectUpgradeSteps();
+    steps.push({ ingredients: [["", 1]] });
+    renderUpgradeStepsEditor(steps);
+  });
 
   const searchInput = document.getElementById("product-search");
   searchInput.addEventListener("input", debounce((e) => {
@@ -252,9 +282,20 @@ document.addEventListener("DOMContentLoaded", () => {
     sel.addEventListener("change", (e) => { productFilters.category = e.target.value; renderProducts(); });
   });
 
-  document.getElementById("add-entry-btn").addEventListener("click", () => document.getElementById("add-entry-menu").classList.toggle("hidden"));
-  document.getElementById("add-product-menu-btn").addEventListener("click", () => { document.getElementById("add-entry-menu").classList.add("hidden"); openAddProductModal(); });
-  document.getElementById("add-farm-menu-btn").addEventListener("click", () => { document.getElementById("add-entry-menu").classList.add("hidden"); openFarmServiceModal(); });
+  document.getElementById("add-entry-btn").addEventListener("click", event => {
+    const menu = document.getElementById("add-entry-menu");
+    const opening = menu.classList.contains("hidden");
+    menu.classList.toggle("hidden", !opening);
+    event.currentTarget.setAttribute("aria-expanded", String(opening));
+  });
+  document.getElementById("add-product-menu-btn").addEventListener("click", () => { document.getElementById("add-entry-menu").classList.add("hidden"); document.getElementById("add-entry-btn").setAttribute("aria-expanded", "false"); openAddProductModal(); });
+  document.getElementById("add-farm-menu-btn").addEventListener("click", () => { document.getElementById("add-entry-menu").classList.add("hidden"); document.getElementById("add-entry-btn").setAttribute("aria-expanded", "false"); openFarmServiceModal(); });
+  document.getElementById("add-upgrade-menu-btn").addEventListener("click", () => {
+    document.getElementById("add-entry-menu").classList.add("hidden");
+    document.getElementById("add-entry-btn").setAttribute("aria-expanded", "false");
+    document.getElementById("stock-tab-upgrades").click();
+    document.getElementById("upgrade-product-select")?.focus();
+  });
   document.getElementById("product-form").addEventListener("submit", handleProductFormSubmit);
   document.getElementById("product-category").addEventListener("change", syncProductCategoryFields);
   document.getElementById("product-image-input").addEventListener("change", (e) => {
@@ -321,29 +362,40 @@ function bindImageDropzone() {
 function toggleSelectMode() {
   selectMode = !selectMode;
   selectedIds.clear();
-  document.getElementById("bulk-toolbar").classList.toggle("hidden", !selectMode);
+  const supportsSelection = activeStockTab === "products" || activeStockTab === "upgrades";
+  document.getElementById("bulk-toolbar").classList.toggle("hidden", !selectMode || !supportsSelection);
   document.getElementById("toggle-select-mode-btn").textContent = selectMode ? t("select_mode_btn_off") : t("select_mode_btn_on");
   document.getElementById("add-entry-btn").classList.toggle("hidden", selectMode);
+  document.getElementById("bulk-edit-btn").classList.toggle("hidden", activeStockTab === "upgrades");
+  document.getElementById("bulk-delete-btn").classList.toggle("hidden", activeStockTab === "upgrades");
+  document.getElementById("bulk-add-upgrades-btn").classList.toggle("hidden", activeStockTab !== "upgrades" || !selectMode);
   updateBulkCount();
   renderProducts();
+  if (activeStockTab === "upgrades") renderUpgradeProductOptions();
 }
 
 function toggleSelectItem(id) {
   if (selectedIds.has(id)) selectedIds.delete(id); else selectedIds.add(id);
   updateBulkCount();
   renderProducts();
+  if (activeStockTab === "upgrades") renderUpgradeProductOptions();
 }
 
 function selectAllVisible() {
-  getFilteredProducts().forEach(p => selectedIds.add(p.id));
+  const visible = activeStockTab === "upgrades"
+    ? state.products.filter(product => ["ดาบ", "ของแต่ง"].includes(product.category) && product.upgradeSteps?.length)
+    : getFilteredProducts();
+  visible.forEach(p => selectedIds.add(p.id));
   updateBulkCount();
   renderProducts();
+  if (activeStockTab === "upgrades") renderUpgradeProductOptions();
 }
 
 function clearSelection() {
   selectedIds.clear();
   updateBulkCount();
   renderProducts();
+  if (activeStockTab === "upgrades") renderUpgradeProductOptions();
 }
 
 function updateBulkCount() {
@@ -351,6 +403,10 @@ function updateBulkCount() {
   document.getElementById("bulk-selected-count").textContent = n;
   document.getElementById("bulk-edit-btn").disabled = n === 0;
   document.getElementById("bulk-delete-btn").disabled = n === 0;
+  const names = [...selectedIds].map(id => state.products.find(product => product.id === id)?.name).filter(Boolean);
+  const nameList = document.getElementById("bulk-selection-names");
+  nameList.innerHTML = names.slice(0, 6).map(name => `<span class="bulk-selection-name">${escapeHtml(name)}</span>`).join("")
+    + (names.length > 6 ? `<span class="bulk-selection-name">${escapeHtml(t("bulk_more_selected", { count: names.length - 6 }))}</span>` : "");
 }
 
 function deleteSelectedProducts() {
@@ -468,6 +524,7 @@ function openAddProductModal() {
   renderCategoryOptions();
   document.getElementById("product-form").rarity.value = "none";
   document.getElementById("product-form").tradeability.value = "tradable";
+  renderUpgradeStepsEditor([]);
   syncCustomSelect(document.getElementById("product-form").tradeability);
   syncProductCategoryFields();
   openModal("product-modal");
@@ -484,9 +541,11 @@ function syncProductCategoryFields() {
   const form = document.getElementById("product-form");
   if (!form) return;
   const gamePassMode = form.category.value === "Game Pass";
+  const upgradeable = ["ดาบ", "ของแต่ง"].includes(form.category.value);
   document.getElementById("product-standard-stock-fields").classList.toggle("hidden", gamePassMode);
   document.getElementById("product-game-pass-fields").classList.toggle("hidden", !gamePassMode);
   document.getElementById("product-tradeability-field").classList.toggle("hidden", gamePassMode);
+  document.getElementById("product-upgrade-fieldset").classList.toggle("hidden", !upgradeable);
   form.stock.required = !gamePassMode;
   form.giftPrice.required = gamePassMode;
   form.tradePrice.required = gamePassMode;
@@ -522,6 +581,7 @@ function openEditProductModal(id) {
     f.dataset.gamePassInitialized = "true";
   }
   f.dataset.image = p.image || "";
+  renderUpgradeStepsEditor(p.upgradeSteps || []);
   if (p.image) {
     document.getElementById("product-image-preview").src = p.image;
     document.getElementById("product-image-preview-wrap").classList.remove("hidden");
@@ -555,6 +615,11 @@ function handleProductFormSubmit(e) {
     const image = f.dataset.image || null;
 
     if (!name) { toast(t("toast_name_required"), "error"); submitBtn.disabled=false; submitBtn.innerHTML=originalLabel; return; }
+    const upgradeSteps = ["ดาบ", "ของแต่ง"].includes(category) ? collectUpgradeSteps() : [];
+    if (upgradeSteps.some(step => !step.ingredients.length || step.ingredients.some(([material, amount]) => !material || !Number.isFinite(amount) || amount <= 0))) {
+      toast("กรุณาระบุวัตถุดิบและจำนวนให้ครบทุกขั้นอัปเกรด", "error");
+      submitBtn.disabled = false; submitBtn.innerHTML = originalLabel; return;
+    }
     let gamePass = null;
     if (category === "Game Pass") {
       const parseStock = input => input.value.trim() === "" ? null : Number(input.value);
@@ -580,9 +645,10 @@ function handleProductFormSubmit(e) {
       const p = state.products.find(x => x.id === editingProductId);
       const previous = {
         name: p.name, category: p.category, tradeability: p.tradeability,
-        stock: p.stock, unitsPerBaht: p.unitsPerBaht, gamePass: p.gamePass,
+        stock: p.stock, unitsPerBaht: p.unitsPerBaht, gamePass: p.gamePass, upgradeSteps: p.upgradeSteps,
       };
       Object.assign(p, { name, category, rarity, tradeability: category === "Game Pass" ? "tradable" : tradeability, unitsPerBaht: rate, stock: category === "Game Pass" ? 0 : stock, description, image });
+      if (["ดาบ", "ของแต่ง"].includes(category)) p.upgradeSteps = upgradeSteps;
       if (gamePass) p.gamePass = gamePass;
       includeExistingRecipeForProduct(p);
       addProductActivity("updated", p, summarizeProductChanges(previous, p));
@@ -592,6 +658,7 @@ function handleProductFormSubmit(e) {
         id: genId("p"), name, category, rarity, tradeability: category === "Game Pass" ? "tradable" : tradeability, source: "custom", image, stock: category === "Game Pass" ? 0 : stock, sold: 0,
         unitsPerBaht: rate, description, createdAt: Date.now(), restockHistory: [], ...(gamePass ? { gamePass } : {}),
       };
+      if (["ดาบ", "ของแต่ง"].includes(category)) product.upgradeSteps = upgradeSteps;
       state.products.push(product);
       includeExistingRecipeForProduct(product);
       addProductActivity("created", product);
@@ -599,10 +666,43 @@ function handleProductFormSubmit(e) {
     }
     saveState();
     renderProducts();
+    renderUpgradeProductOptions();
     renderDashboard();
     submitBtn.disabled = false; submitBtn.innerHTML = originalLabel;
     closeModal("product-modal");
   }, 250);
+}
+
+function upgradeableCategory(category) { return ["ดาบ", "ของแต่ง"].includes(category); }
+
+function renderUpgradeStepsEditor(steps = []) {
+  const container = document.getElementById("product-upgrade-steps-editor");
+  if (!container) return;
+  const materials = state.products.filter(product => product.category === "ของวัตถุดิบ").sort((a, b) => a.name.localeCompare(b.name));
+  const options = selectedName => `<option value="">เลือกวัตถุดิบ</option>${materials.map(product => `<option value="${escapeHtml(product.name)}" ${product.name === selectedName ? "selected" : ""}>${escapeHtml(product.name)}</option>`).join("")}`;
+  const normalized = Array.isArray(steps) ? steps : [];
+  container.innerHTML = normalized.map((step, index) => {
+    const ingredients = Array.isArray(step.ingredients) ? step.ingredients : [];
+    const rows = ingredients.map(([name, amount]) => `<div class="upgrade-material-row">
+      <select data-upgrade-material class="min-w-0 flex-1 rounded-lg bg-slate-900/70 border border-slate-700 px-2 py-2 text-xs">${options(name)}</select>
+      <input data-upgrade-amount type="number" min="0.0001" step="any" value="${escapeHtml(amount)}" aria-label="จำนวนวัตถุดิบ" class="w-24 rounded-lg bg-slate-900/70 border border-slate-700 px-2 py-2 text-xs">
+      <button type="button" data-remove-upgrade-material class="ingredient-remove-btn" aria-label="ลบวัตถุดิบ">×</button>
+    </div>`).join("");
+    return `<section class="upgrade-step-editor" data-upgrade-step>
+      <div class="flex items-center justify-between gap-2"><strong class="text-xs">ขั้น ${index + 1}</strong><button type="button" data-remove-upgrade-step class="text-xs text-rose-300">ลบขั้น</button></div>
+      <div class="upgrade-step-materials flex flex-col gap-2 mt-2">${rows}</div>
+      <button type="button" data-add-upgrade-material class="mt-2 text-xs text-indigo-200">+ เพิ่มวัตถุดิบ</button>
+    </section>`;
+  }).join("");
+}
+
+function collectUpgradeSteps() {
+  return Array.from(document.querySelectorAll("[data-upgrade-step]")).map(step => ({
+    ingredients: Array.from(step.querySelectorAll(".upgrade-material-row")).map(row => [
+      row.querySelector("[data-upgrade-material]").value,
+      Number(row.querySelector("[data-upgrade-amount]").value),
+    ]),
+  }));
 }
 
 function includeExistingRecipeForProduct(product) {

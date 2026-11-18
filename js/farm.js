@@ -142,6 +142,8 @@ function handleFarmOrderSubmit(event) {
   saveState(); renderFarmOrders(); renderDashboard(); closeModal("farm-order-modal"); toast("บันทึกงานฟาร์มแล้ว");
 }
 
+let activeStockTab = "products";
+
 document.addEventListener("DOMContentLoaded", () => {
   const productTab = document.getElementById("stock-tab-products");
   const farmTab = document.getElementById("stock-tab-farming");
@@ -154,6 +156,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const craftingPanel = document.getElementById("crafting-panel");
   const upgradesPanel = document.getElementById("upgrades-panel");
   const setStockTab = tab => {
+    activeStockTab = tab;
     const farming = tab === "farming";
     const crafting = tab === "crafting";
     const upgrades = tab === "upgrades";
@@ -162,7 +165,12 @@ document.addEventListener("DOMContentLoaded", () => {
     craftingTab.classList.toggle("seg-active", crafting);
     upgradesTab.classList.toggle("seg-active", upgrades);
     productToolbar.classList.toggle("hidden", farming || crafting || upgrades);
-    bulkToolbar.classList.toggle("hidden", farming || crafting || upgrades || !selectMode);
+    bulkToolbar.classList.toggle("hidden", (farming || crafting) || !selectMode);
+    document.getElementById("bulk-edit-btn").classList.toggle("hidden", upgrades);
+    document.getElementById("bulk-delete-btn").classList.toggle("hidden", upgrades);
+    document.getElementById("bulk-add-upgrades-btn").classList.toggle("hidden", !upgrades || !selectMode);
+    document.getElementById("bulk-select-all-btn").classList.toggle("hidden", farming || crafting);
+    document.getElementById("bulk-clear-btn").classList.toggle("hidden", farming || crafting);
     productGrid.classList.toggle("hidden", farming || crafting || upgrades);
     farmPanel.classList.toggle("hidden", !farming);
     craftingPanel.classList.toggle("hidden", !crafting);

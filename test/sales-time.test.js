@@ -55,3 +55,41 @@ test("sales reject invalid local dates instead of saving NaN timestamps", () => 
   assert.equal(state.products[0].sold, 0);
   assert.deepEqual(messages, ["error_invalid_datetime"]);
 });
+
+test("sales history summarizes only transactions inside the selected local date range", () => {
+  const elements = {
+    "sales-history-list": { innerHTML: "" },
+    "sales-range-total": { textContent: "" },
+    "sales-range-count": { textContent: "" },
+    "sales-range-daily-average": { textContent: "" },
+  };
+  const dayStart = time.startOfDateKey("2026-11-18");
+  const previousDayStart = time.startOfDateKey("2026-11-17");
+  const state = {
+    products: [],
+    sales: [
+      { date: dayStart + 1000, money: 12.5, quantity: 1, productName: "A" },
+      { date: dayStart + 2000, money: 7.5, quantity: 2, productName: "B" },
+      { date: previousDayStart + 1000, money: 10, quantity: 1, productName: "C" },
+      { date: previousDayStart - 1000, money: 100, quantity: 1, productName: "D" },
+    ],
+  };
+  const context = vm.createContext({
+    state,
+    APP_TIME: time,
+    document: { addEventListener() {}, getElementById: id => elements[id] || null },
+    t: key => key,
+    fmtBaht: amount => `฿${amount.toFixed(2)}`,
+    fmtNum: String,
+    fmtDate: String,
+    escapeHtml: String,
+    productImg: () => "",
+  });
+  vm.runInContext(fs.readFileSync(require.resolve("../js/sales.js"), "utf8"), context);
+  vm.runInContext('salesDateRange = { from: "2026-11-17", to: "2026-11-19" };', context);
+  context.renderSalesHistory();
+
+  assert.equal(elements["sales-range-total"].textContent, "฿30.00");
+  assert.equal(elements["sales-range-count"].textContent, "3");
+  assert.equal(elements["sales-range-daily-average"].textContent, "฿10.00");
+});

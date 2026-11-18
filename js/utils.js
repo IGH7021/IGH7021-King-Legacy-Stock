@@ -26,6 +26,7 @@ function escapeHtml(value) {
 function normalizeStateData(value) {
   const validation = ACCOUNT_STATE.validateAccountState(value);
   if (!validation.valid) throw new Error(`invalid account state: ${validation.error}`);
+  const isLegacyTradeabilityState = Number(value.schemaVersion || 0) < 5;
   let migrated = value.schemaVersion !== STATE_SCHEMA_VERSION
     || !Array.isArray(value.farmServices)
     || !Array.isArray(value.farmOrders)
@@ -53,8 +54,12 @@ function normalizeStateData(value) {
     }
     if (!product.source) product.source = String(product.image || "").startsWith("assets/products/") ? "catalog" : "custom";
     if (product.source === "catalog" && !product.catalogId) product.catalogId = RAW_CATALOG.find(([name]) => name === product.name)?.[0] || null;
+    if (isLegacyTradeabilityState && product.source === "catalog" && CRAFT_ONLY_CATALOG_ITEMS.includes(product.name)) {
+      product.tradeability = "craft-only";
+      migrated = true;
+    }
     if (!["tradable", "craft-only", "independent"].includes(product.tradeability)) {
-      product.tradeability = product.name === "Eye of Acro" ? "craft-only" : "tradable";
+      product.tradeability = CRAFT_ONLY_CATALOG_ITEMS.includes(product.name) ? "craft-only" : "tradable";
     }
   });
   normalized.cart.forEach(item => {
@@ -446,55 +451,183 @@ function customSelectLabel(select) {
   return select.options[select.selectedIndex]?.textContent || "เลือกตัวเลือก";
 }
 
+let customSelectObserver = null;
+let customSelectSequence = 0;
+
+function customSelectMenuFor(wrapper) {
+  return wrapper?._customSelectMenu || wrapper?.querySelector(".custom-select-menu");
+}
+
+function closeCustomSelect(wrapper, returnFocus = false) {
+  if (!wrapper) return;
+  const trigger = wrapper._customSelectTrigger || wrapper.querySelector(".custom-select-trigger");
+  const menu = customSelectMenuFor(wrapper);
+  wrapper.classList.remove("is-open");
+  trigger?.setAttribute("aria-expanded", "false");
+  menu?.classList.remove("is-open");
+  if (returnFocus) trigger?.focus();
+}
+
+function positionCustomSelectMenu(wrapper) {
+  const trigger = wrapper?._customSelectTrigger;
+  const menu = customSelectMenuFor(wrapper);
+  if (!trigger || !menu) return;
+  const rect = trigger.getBoundingClientRect();
+  const viewportWidth = document.documentElement.clientWidth;
+  const viewportHeight = window.innerHeight;
+  const sidePadding = 8;
+  const maxWidth = Math.max(0, viewportWidth - sidePadding * 2);
+  const width = Math.min(Math.max(rect.width, Math.min(180, maxWidth)), maxWidth);
+  const left = Math.min(Math.max(sidePadding, rect.left), Math.max(sidePadding, viewportWidth - width - sidePadding));
+  const desiredHeight = Math.min(menu.scrollHeight || 240, 240);
+  const spaceBelow = Math.max(0, viewportHeight - rect.bottom - sidePadding);
+  const spaceAbove = Math.max(0, rect.top - sidePadding);
+  const opensAbove = spaceBelow < desiredHeight && spaceAbove > spaceBelow;
+  const availableHeight = Math.max(80, opensAbove ? spaceAbove : spaceBelow);
+  const height = Math.min(desiredHeight, availableHeight);
+  const top = opensAbove
+    ? Math.max(sidePadding, rect.top - height - 6)
+    : Math.min(viewportHeight - height - sidePadding, rect.bottom + 6);
+  menu.dataset.placement = opensAbove ? "top" : "bottom";
+  menu.style.left = `${left}px`;
+  menu.style.top = `${top}px`;
+  menu.style.width = `${width}px`;
+  menu.style.maxHeight = `${height}px`;
+}
+
+function openCustomSelect(wrapper) {
+  if (!wrapper) return;
+  document.querySelectorAll(".custom-select.is-open").forEach(open => {
+    if (open !== wrapper) closeCustomSelect(open);
+  });
+  wrapper.classList.add("is-open");
+  wrapper._customSelectTrigger?.setAttribute("aria-expanded", "true");
+  const menu = customSelectMenuFor(wrapper);
+  menu?.classList.add("is-open");
+  positionCustomSelectMenu(wrapper);
+}
+
 function syncCustomSelect(select) {
   const wrapper = select.closest(".custom-select");
   if (!wrapper) return;
-  const trigger = wrapper.querySelector(".custom-select-trigger");
-  const menu = wrapper.querySelector(".custom-select-menu");
+  const trigger = wrapper._customSelectTrigger || wrapper.querySelector(".custom-select-trigger");
+  const menu = customSelectMenuFor(wrapper);
   if (trigger) trigger.querySelector("span").textContent = customSelectLabel(select);
-  menu?.querySelectorAll("button").forEach(button => button.classList.toggle("is-selected", button.dataset.value === select.value));
+  if (trigger) trigger.disabled = select.disabled;
+  menu?.querySelectorAll("button[data-value]").forEach(button => {
+    const selected = button.dataset.value === select.value;
+    button.classList.toggle("is-selected", selected);
+    button.setAttribute("aria-selected", String(selected));
+  });
+  if (wrapper.classList.contains("is-open")) positionCustomSelectMenu(wrapper);
 }
 
 function buildCustomSelect(select) {
   if (select.closest(".custom-select")) { syncCustomSelect(select); return; }
+  const label = select.labels?.[0] || select.closest("label");
+  const labelText = label?.textContent?.replace(select.textContent || "", "").trim();
   const wrapper = document.createElement("div");
   wrapper.className = "custom-select";
-  if (select.classList.contains("w-full")) wrapper.classList.add("w-full");
-  if (select.classList.contains("flex-1")) wrapper.classList.add("flex-1");
-  if (select.classList.contains("mt-1")) wrapper.classList.add("mt-1");
+  ["w-full", "flex-1", "min-w-0", "mt-1"].forEach(className => {
+    if (select.classList.contains(className)) wrapper.classList.add(className);
+  });
+  if (select.classList.contains("ml-2")) wrapper.classList.add("custom-select-inline");
   select.parentNode.insertBefore(wrapper, select);
   wrapper.appendChild(select);
   select.classList.add("custom-select-native");
+  select.tabIndex = -1;
+  select.setAttribute("aria-hidden", "true");
   const trigger = document.createElement("button");
   trigger.type = "button";
   trigger.className = "custom-select-trigger";
+  trigger.setAttribute("aria-haspopup", "listbox");
+  trigger.setAttribute("aria-expanded", "false");
   trigger.innerHTML = `<span></span><b aria-hidden="true">⌄</b>`;
   const menu = document.createElement("div");
   menu.className = "custom-select-menu";
-  wrapper.append(trigger, menu);
+  menu.id = `custom-select-options-${select.id || ++customSelectSequence}`;
+  menu.setAttribute("role", "listbox");
+  if (select.getAttribute("aria-label") || labelText) {
+    menu.setAttribute("aria-label", select.getAttribute("aria-label") || labelText);
+    trigger.setAttribute("aria-label", select.getAttribute("aria-label") || labelText);
+  } else if (select.id) {
+    trigger.setAttribute("aria-label", select.id);
+  }
+  trigger.setAttribute("aria-controls", menu.id);
+  wrapper.appendChild(trigger);
+  wrapper._customSelectMenu = menu;
+  wrapper._customSelectTrigger = trigger;
+  menu._customSelectWrapper = wrapper;
+  const menuHost = wrapper.closest("dialog[open]") || document.body;
+  menuHost.appendChild(menu);
   const rebuild = () => {
-    menu.innerHTML = Array.from(select.options).map(option => `<button type="button" data-value="${escapeHtml(option.value)}">${escapeHtml(option.textContent)}</button>`).join("");
+    menu.innerHTML = Array.from(select.options).map(option =>
+      `<button type="button" role="option" tabindex="-1" aria-selected="${option.selected}" data-value="${escapeHtml(option.value)}" ${option.disabled ? "disabled" : ""}>${escapeHtml(option.textContent)}</button>`,
+    ).join("");
     syncCustomSelect(select);
   };
+  select.addEventListener("change", () => syncCustomSelect(select));
   trigger.addEventListener("click", event => {
     event.stopPropagation();
-    document.querySelectorAll(".custom-select.is-open").forEach(item => { if (item !== wrapper) item.classList.remove("is-open"); });
-    wrapper.classList.toggle("is-open");
+    if (wrapper.classList.contains("is-open")) closeCustomSelect(wrapper);
+    else {
+      openCustomSelect(wrapper);
+      menu.querySelector('[aria-selected="true"]:not(:disabled)')?.focus();
+    }
+  });
+  trigger.addEventListener("keydown", event => {
+    if (!["ArrowDown", "ArrowUp"].includes(event.key)) return;
+    event.preventDefault();
+    openCustomSelect(wrapper);
+    menu.querySelector('[aria-selected="true"]:not(:disabled)')?.focus();
   });
   menu.addEventListener("click", event => {
+    event.stopPropagation();
     const option = event.target.closest("button[data-value]");
-    if (!option) return;
+    if (!option || option.disabled) return;
     select.value = option.dataset.value;
     select.dispatchEvent(new Event("change", { bubbles: true }));
     syncCustomSelect(select);
-    wrapper.classList.remove("is-open");
+    closeCustomSelect(wrapper, true);
+  });
+  menu.addEventListener("keydown", event => {
+    const options = [...menu.querySelectorAll("button[data-value]:not(:disabled)")];
+    if (!options.length) return;
+    const currentIndex = options.indexOf(document.activeElement);
+    let nextIndex = currentIndex;
+    if (event.key === "ArrowDown" || event.key === "ArrowUp") {
+      event.preventDefault();
+      nextIndex = (currentIndex + (event.key === "ArrowDown" ? 1 : options.length - 1)) % options.length;
+      options[nextIndex].focus();
+    } else if (event.key === "Home" || event.key === "End") {
+      event.preventDefault();
+      options[event.key === "Home" ? 0 : options.length - 1].focus();
+    }
   });
   new MutationObserver(rebuild).observe(select, { childList: true });
   rebuild();
 }
 
-function enhanceCustomSelects() {
-  document.querySelectorAll("select").forEach(buildCustomSelect);
+function enhanceCustomSelects(root = document) {
+  root.querySelectorAll?.("select").forEach(buildCustomSelect);
+  if (customSelectObserver || !document.body || typeof MutationObserver !== "function") return;
+  customSelectObserver = new MutationObserver(records => {
+    records.forEach(record => record.addedNodes.forEach(node => {
+      if (node.nodeType !== 1 && node.nodeType !== 11) return;
+      if (node.matches?.("select")) buildCustomSelect(node);
+      node.querySelectorAll?.("select").forEach(buildCustomSelect);
+    }));
+    document.querySelectorAll(".custom-select-menu").forEach(menu => {
+      if (!menu._customSelectWrapper?.isConnected) menu.remove();
+    });
+  });
+  customSelectObserver.observe(document.body, { childList: true, subtree: true });
+  window.addEventListener("resize", () => {
+    document.querySelectorAll(".custom-select.is-open").forEach(positionCustomSelectMenu);
+  });
+  window.addEventListener("scroll", () => {
+    document.querySelectorAll(".custom-select.is-open").forEach(positionCustomSelectMenu);
+  }, true);
 }
 
 function enhanceNumberInput(input) {
@@ -640,7 +773,9 @@ function initializeNumberSteppers() {
 }
 
 document.addEventListener("click", event => {
-  if (!event.target.closest(".custom-select")) document.querySelectorAll(".custom-select.is-open").forEach(select => select.classList.remove("is-open"));
+  if (!event.target.closest(".custom-select") && !event.target.closest(".custom-select-menu")) {
+    document.querySelectorAll(".custom-select.is-open").forEach(select => closeCustomSelect(select));
+  }
 });
 
 function debounce(fn, ms) {
@@ -736,6 +871,7 @@ function openModal(id) {
   clearTimeout(modalCloseTimers.get(m));
   if (!m.classList.contains("modal-show")) modalFocusReturn.set(m, document.activeElement);
   const dialog = configureModalDialog(m);
+  enhanceCustomSelects(m);
   m.classList.remove("hidden");
   m.setAttribute("aria-hidden", "false");
   document.body.classList.add("overflow-hidden", "dialog-scroll-locked");
@@ -774,12 +910,28 @@ function bindModalDismiss() {
     if (closeBtn) closeModal(closeBtn.closest(".modal-overlay")?.id);
   });
   document.addEventListener("keydown", (e) => {
+    const openSelect = document.querySelector(".custom-select.is-open");
+    if (e.key === "Escape" && openSelect) {
+      e.preventDefault();
+      closeCustomSelect(openSelect, true);
+      return;
+    }
     const openModals = [...document.querySelectorAll(".modal-overlay.modal-show:not(.hidden)")];
     const open = openModals[openModals.length - 1];
     if (!open) return;
     if (e.key === "Escape") { e.preventDefault(); closeModal(open.id); return; }
     if (e.key !== "Tab") return;
     const dialog = open.querySelector(".modal-box") || open;
+    const activeMenu = document.activeElement.closest?.(".custom-select-menu");
+    const activeWrapper = activeMenu?._customSelectWrapper;
+    if (activeWrapper && dialog.contains(activeWrapper)) {
+      const focusable = modalFocusableElements(dialog);
+      const triggerIndex = focusable.indexOf(activeWrapper._customSelectTrigger);
+      const next = e.shiftKey ? focusable[triggerIndex] : focusable[triggerIndex + 1] || focusable[0];
+      e.preventDefault();
+      next?.focus();
+      return;
+    }
     const focusable = modalFocusableElements(dialog);
     if (!focusable.length) { e.preventDefault(); dialog.focus(); return; }
     const first = focusable[0];
