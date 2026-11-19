@@ -268,6 +268,21 @@ function renderProductionCart() {
   updateProductionCartFeedback();
 }
 
+function setProductionCartDialogOpen(open) {
+  const panel = document.getElementById("production-cart-panel");
+  const toggle = document.getElementById("production-cart-toggle");
+  if (!panel || !toggle) return;
+  if (open) {
+    if (document.getElementById("page-products")?.classList.contains("hidden")) showPage("products");
+    if (!panel.open) panel.showModal();
+    toggle.setAttribute("aria-expanded", "true");
+    renderProductionCart();
+  } else {
+    if (panel.open) panel.close();
+    toggle.setAttribute("aria-expanded", "false");
+  }
+}
+
 function refreshCartTotals() {
   const total = state.cart.reduce((sum, item) => {
     const subtotal = productionCartSubtotal(item.quantity, item.unitPrice);
@@ -426,6 +441,7 @@ function checkoutProductionCart() {
   renderSalesHistory();
   renderDashboard();
   renderReports();
+  setProductionCartDialogOpen(false);
   toast(t("production_cart_saved"));
 }
 
@@ -529,16 +545,16 @@ document.addEventListener("DOMContentLoaded", () => {
     if (addToCart("product", product.id, quantity)) addDialog.close();
   });
   addDialog?.addEventListener("close", () => { productionCartAddContext = null; });
-  document.getElementById("production-cart-toggle")?.addEventListener("click", event => {
-    const panel = document.getElementById("production-cart-panel");
-    const opening = event.currentTarget.getAttribute("aria-expanded") !== "true";
-    if (opening && document.getElementById("page-products").classList.contains("hidden")) showPage("products");
-    event.currentTarget.setAttribute("aria-expanded", String(opening));
-    panel.classList.toggle("hidden", !opening);
-    if (opening) {
-      renderProductionCart();
-      panel.scrollIntoView({ behavior: window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "start" });
-    }
+  const cartToggle = document.getElementById("production-cart-toggle");
+  const cartDialog = document.getElementById("production-cart-panel");
+  cartToggle?.addEventListener("click", () => setProductionCartDialogOpen(cartToggle.getAttribute("aria-expanded") !== "true"));
+  document.getElementById("production-cart-close")?.addEventListener("click", () => cartDialog?.close());
+  cartDialog?.addEventListener("click", event => {
+    if (event.target === cartDialog) cartDialog.close();
+  });
+  cartDialog?.addEventListener("close", () => {
+    cartToggle?.setAttribute("aria-expanded", "false");
+    cartToggle?.focus();
   });
   document.getElementById("production-cart-lines")?.addEventListener("input", event => {
     const article = event.target.closest("[data-cart-line]");

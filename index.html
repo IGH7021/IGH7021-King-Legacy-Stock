@@ -238,8 +238,9 @@
           <button id="stock-tab-upgrades" type="button" class="seg-btn flex-1 py-2 rounded-lg text-sm font-semibold">⬆️ อัปเกรด</button>
         </div>
 
-        <section id="production-cart-panel" class="hidden glass-card rounded-2xl p-4 mb-5" aria-labelledby="production-cart-title">
-          <div class="flex items-center justify-between gap-2 mb-3"><h2 id="production-cart-title" class="font-semibold" data-i18n="production_cart_title">ตะกร้ารวม</h2><strong id="production-cart-total" class="text-lg text-emerald-300">฿0</strong></div>
+        <dialog id="production-cart-panel" class="production-cart-dialog" aria-labelledby="production-cart-title">
+          <div class="glass-card rounded-2xl p-4 md:p-5">
+          <div class="flex items-center justify-between gap-2 mb-3"><h2 id="production-cart-title" class="font-semibold" data-i18n="production_cart_title">ตะกร้ารวม</h2><div class="flex items-center gap-3"><strong id="production-cart-total" class="text-lg text-emerald-300">฿0</strong><button id="production-cart-close" type="button" class="min-h-11 min-w-11 rounded-lg text-slate-400 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400" data-i18n-aria="production_cart_close" aria-label="ปิดตะกร้า">✕</button></div></div>
           <div id="production-cart-lines" class="flex flex-col gap-2 mb-4"></div>
           <p id="production-cart-empty" class="text-sm text-slate-400 text-center py-4" data-i18n="production_cart_empty">ยังไม่มีรายการในตะกร้า</p>
           <p id="production-cart-validation" class="hidden text-sm text-rose-300 mb-3" role="alert" aria-live="polite"></p>
@@ -248,7 +249,8 @@
             <label class="text-xs text-slate-400"><span data-i18n="production_cart_note">หมายเหตุ</span><textarea id="production-cart-note" maxlength="500" rows="1" class="w-full mt-1 rounded-xl bg-slate-800/60 border border-slate-700 px-3 py-2 text-sm"></textarea></label>
           </div>
           <div class="flex justify-end"><button id="production-cart-checkout" type="button" class="btn-primary px-4 py-2 rounded-xl text-sm" disabled data-i18n="production_cart_checkout">บันทึกออเดอร์</button></div>
-        </section>
+          </div>
+        </dialog>
 
         <div id="products-toolbar">
         <div class="flex flex-col md:flex-row gap-2 mb-4">

@@ -444,7 +444,10 @@ html.light .nav-active { color: #312e81; }
 .bulk-selection-name { max-width: 13rem; overflow: hidden; padding: .15rem .45rem; border: 1px solid var(--border); border-radius: 999px; color: #cbd5e1; font-size: .68rem; text-overflow: ellipsis; white-space: nowrap; }
 .stock-tabs { position: relative; z-index: 1; overflow-x: auto; max-width: 100%; }
 .stock-tabs .seg-btn { min-width: max-content; padding-inline: .65rem; }
-#production-cart-panel { scroll-margin-top: 5rem; }
+.production-cart-dialog { position: fixed; inset: 0; width: 100%; height: 100%; max-width: none; max-height: none; margin: 0; padding: max(.75rem, env(safe-area-inset-top)) max(.75rem, env(safe-area-inset-right)) max(.75rem, env(safe-area-inset-bottom)) max(.75rem, env(safe-area-inset-left)); place-items: center; overflow: hidden; border: 0; color: var(--text); background: transparent; }
+.production-cart-dialog[open] { display: grid; animation: dialog-enter .18s ease-out both; }
+.production-cart-dialog::backdrop { background: rgba(2,6,23,.72); -webkit-backdrop-filter: blur(5px); backdrop-filter: blur(5px); }
+.production-cart-dialog > .glass-card { width: min(68rem, 100%); max-height: min(90vh, 44rem); max-height: min(90dvh, 44rem); overflow: auto; overscroll-behavior: contain; background: var(--bg); }
 .sales-range-summary { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1rem; }
 .sales-range-summary > div { min-width: 0; }
 .sales-range-summary strong { display: block; margin-top: .15rem; }
@@ -549,7 +552,7 @@ html.light .nav-active { color: #312e81; }
 }
 @media (prefers-reduced-motion: reduce) {
   .presence-halo { animation: none; }
-  .nav-drawer, .nav-scrim, .hamburger-btn span, .site-suggestion-dialog[open], .production-cart-add-dialog[open], .custom-select-menu { transition-duration: .01ms; animation-duration: .01ms; }
+  .nav-drawer, .nav-scrim, .hamburger-btn span, .site-suggestion-dialog[open], .production-cart-add-dialog[open], .production-cart-dialog[open], .custom-select-menu { transition-duration: .01ms; animation-duration: .01ms; }
 }
 .date-range-toolbar { position: relative; z-index: 20; border-color: rgba(249,115,22,.2); }
 .date-input { display: block; width: 100%; margin-top: .3rem; padding: .55rem .7rem; border: 1px solid var(--border); border-radius: .65rem; background: rgba(148,163,184,.08); color: var(--text); }

@@ -24,6 +24,14 @@ test("hidden modal overlays are styled out of layout and pointer hit-testing", (
   assert.ok((html.match(/class="[^"]*\bmodal-overlay\b[^"]*\bhidden\b[^"]*"/g) || []).length > 0);
 });
 
+test("order cart is a responsive modal dialog with a labeled close control", () => {
+  assert.match(html, /<dialog id="production-cart-panel" class="production-cart-dialog" aria-labelledby="production-cart-title">/);
+  assert.match(html, /id="production-cart-close"[^>]*data-i18n-aria="production_cart_close"/);
+  assert.match(css, /\.production-cart-dialog\[open\]\s*\{[^}]*display:\s*grid\s*;/);
+  assert.match(css, /\.production-cart-dialog::backdrop\s*\{/);
+  assert.match(css, /\.production-cart-dialog\s*>\s*\.glass-card\s*\{[^}]*max-height:/);
+});
+
 test("hidden cookie banners are styled out of layout", () => {
   const baseRule = ruleFor(".cookie-banner");
   const hiddenRule = ruleFor(".cookie-banner.hidden");

@@ -25,10 +25,20 @@ function createProductionContext(cart) {
     activityLog: [],
   };
   const elements = {
-    "production-cart-panel": { classList: { toggle() {} } },
+    "production-cart-panel": {
+      open: false,
+      showModal() { this.open = true; },
+      close() { this.open = false; },
+      classList: { toggle() {} },
+    },
     "production-cart-lines": { innerHTML: "" },
     "production-cart-count": { textContent: "" },
-    "production-cart-toggle": { setAttribute() {} },
+    "production-cart-toggle": {
+      attributes: new Map(),
+      getAttribute(name) { return this.attributes.get(name) || "false"; },
+      setAttribute(name, value) { this.attributes.set(name, value); },
+    },
+    "page-products": { classList: { contains: () => false } },
     "production-cart-status": { textContent: "" },
     "production-cart-empty": { classList: { toggle() {} } },
     "production-cart-checkout": { disabled: false },
@@ -56,6 +66,7 @@ function createProductionContext(cart) {
     renderSalesHistory() {},
     renderDashboard() {},
     renderReports() {},
+    showPage() {},
     renderUpgradeOrders() {},
     toast() {},
     fmtBaht: value => `฿${value}`,
@@ -75,9 +86,20 @@ function createProductionContext(cart) {
     },
   });
   const source = fs.readFileSync(require.resolve("../js/production.js"), "utf8");
-  vm.runInContext(source, context);
+  vm.runInContext(`${source}\nthis.testSetProductionCartDialogOpen = setProductionCartDialogOpen;`, context);
   return { context, state, elements };
 }
+
+test("cart toggle opens and closes the modal dialog accessibly", () => {
+  const { context, elements } = createProductionContext([]);
+  context.testSetProductionCartDialogOpen(true);
+  assert.equal(elements["production-cart-panel"].open, true);
+  assert.equal(elements["production-cart-toggle"].getAttribute("aria-expanded"), "true");
+
+  context.testSetProductionCartDialogOpen(false);
+  assert.equal(elements["production-cart-panel"].open, false);
+  assert.equal(elements["production-cart-toggle"].getAttribute("aria-expanded"), "false");
+});
 
 test("cart validation checks stock separately for Gift and Trade", () => {
   const { context } = createProductionContext([
