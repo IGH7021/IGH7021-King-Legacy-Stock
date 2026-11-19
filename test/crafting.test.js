@@ -3,6 +3,7 @@ const assert = require("node:assert/strict");
 const fs = require("node:fs");
 const vm = require("node:vm");
 const GAME_PASS = require("../shared/game-pass");
+const APP_TIME = require("../shared/time");
 
 function createCraftingContext({ recipe, products, cart = [] }) {
   const state = {
@@ -38,11 +39,13 @@ function createCraftingContext({ recipe, products, cart = [] }) {
     "crafting-modal-content": container,
     "craft-quantity-input": quantityInput,
     "confirm-craft-btn": confirmButton,
+    "production-cart-datetime": { value: "2026-11-18T10:45" },
   };
   const context = vm.createContext({
     state,
     RECIPES: [recipe],
     GAME_PASS,
+    APP_TIME,
     document: {
       addEventListener() {},
       getElementById: id => elements[id] || ({

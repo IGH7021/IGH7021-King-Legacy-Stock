@@ -1,9 +1,21 @@
 const STORAGE_KEY = "igh_kinglegacy_state";
 const THEME_KEY = "igh_theme";
 const LANG_KEY = "igh_lang";
-const APP_VERSION = "V.4.62";
+const APP_VERSION = "V.4.63";
 const STATE_SCHEMA_VERSION = 6;
 const APP_CHANGELOG = [
+  {
+    version: "V.4.63",
+    date: "2026-11-19",
+    changes: {
+      th: [
+        "เพิ่มช่องกำหนดวันที่และเวลาขายในตะกร้า ใช้เวลาไทยและตั้งเป็นเวลาปัจจุบันได้",
+      ],
+      en: [
+        "Added a Thailand-time sale date and time field to the order cart, with a shortcut to use the current time.",
+      ],
+    },
+  },
   {
     version: "V.4.62",
     date: "2026-11-19",

@@ -3,6 +3,7 @@ const assert = require("node:assert/strict");
 const fs = require("node:fs");
 const vm = require("node:vm");
 const GAME_PASS = require("../shared/game-pass");
+const APP_TIME = require("../shared/time");
 
 function createProductionContext(cart) {
   const state = {
@@ -44,12 +45,14 @@ function createProductionContext(cart) {
     "production-cart-checkout": { disabled: false },
     "production-cart-validation": { textContent: "", classList: { toggle() {} } },
     "production-cart-total": { textContent: "" },
+    "production-cart-datetime": { value: "2026-11-18T10:45" },
     "production-cart-customer": { value: "Customer" },
     "production-cart-note": { value: "Test order" },
   };
   const context = vm.createContext({
     state,
     GAME_PASS,
+    APP_TIME,
     document: {
       addEventListener() {},
       getElementById: id => elements[id] || { textContent: "", disabled: false, classList: { toggle() {} }, setAttribute() {} },
@@ -128,6 +131,28 @@ test("checkout uses the selected delivery method's configured price and stock", 
   assert.equal(state.sales[0].rate, 1 / 12);
   assert.equal(state.orders[0].lines[0].deliveryMethod, "gift");
   assert.equal(state.orders[0].lines[0].unitPrice, 12);
+});
+
+test("cart checkout saves the selected Thailand-local sale time", () => {
+  const item = { id: "cart-1", type: "gamepass", refId: "pass-1", quantity: 1, unitPrice: 12, deliveryMethod: "gift" };
+  const { context, state } = createProductionContext([item]);
+  context.checkoutProductionCart();
+
+  const timestamp = Date.parse("2026-11-18T03:45:00Z");
+  assert.equal(state.sales[0].date, timestamp);
+  assert.equal(state.orders[0].date, timestamp);
+});
+
+test("cart checkout rejects invalid sale dates without changing stock", () => {
+  const item = { id: "cart-1", type: "gamepass", refId: "pass-1", quantity: 1, unitPrice: 12, deliveryMethod: "gift" };
+  const { context, state, elements } = createProductionContext([item]);
+  elements["production-cart-datetime"].value = "2026-02-31T10:45";
+  context.checkoutProductionCart();
+
+  assert.equal(state.sales.length, 0);
+  assert.equal(state.orders.length, 0);
+  assert.equal(state.products[0].gamePass.gift.sold, 0);
+  assert.equal(state.cart.length, 1);
 });
 
 test("cart item uses the selected method's default price", () => {

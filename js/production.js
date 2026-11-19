@@ -239,6 +239,8 @@ function renderProductionCart() {
   const panel = document.getElementById("production-cart-panel");
   const lines = document.getElementById("production-cart-lines");
   if (!panel || !lines) return;
+  const saleDatetime = document.getElementById("production-cart-datetime");
+  if (saleDatetime && !saleDatetime.value) saleDatetime.value = APP_TIME.dateTimeInput();
   state.cart = Array.isArray(state.cart) ? state.cart : [];
   synchronizeCartConfiguredPrices();
   document.getElementById("production-cart-count").textContent = String(state.cart.length);
@@ -307,6 +309,8 @@ function updateProductionCartFeedback() {
 
 function validateProductionCart() {
   if (!state.cart.length) return t("production_cart_error_empty");
+  const saleDatetime = document.getElementById("production-cart-datetime")?.value;
+  if (!Number.isFinite(APP_TIME.parseDateTimeInput(saleDatetime))) return t("production_cart_error_datetime");
   synchronizeCartConfiguredPrices();
   const stockDeductions = new Map();
   const gamePassDeductions = new Map();
@@ -372,7 +376,7 @@ function checkoutProductionCart() {
     toast(validationError, "error");
     return;
   }
-  const timestamp = Date.now();
+  const timestamp = APP_TIME.parseDateTimeInput(document.getElementById("production-cart-datetime").value);
   const orderId = genId("order");
   const customer = document.getElementById("production-cart-customer").value.trim();
   const note = document.getElementById("production-cart-note").value.trim();
@@ -432,6 +436,7 @@ function checkoutProductionCart() {
   const orderSummary = orderLines.map(line => `${line.name} × ${fmtNum(line.quantity)}`).join(" • ");
   addProductionActivity("order", `บันทึกออเดอร์ ${orderId}`, `${orderSummary} • ${fmtBaht(total)}`, timestamp);
   state.cart = [];
+  document.getElementById("production-cart-datetime").value = APP_TIME.dateTimeInput();
   saveState();
   renderProductionCart();
   renderProducts();
@@ -582,6 +587,13 @@ document.addEventListener("DOMContentLoaded", () => {
     renderProductionCart();
   });
   document.getElementById("production-cart-checkout")?.addEventListener("click", checkoutProductionCart);
+  const cartDatetime = document.getElementById("production-cart-datetime");
+  cartDatetime?.addEventListener("input", updateProductionCartFeedback);
+  document.getElementById("production-cart-datetime-now")?.addEventListener("click", () => {
+    if (!cartDatetime) return;
+    cartDatetime.value = APP_TIME.dateTimeInput();
+    cartDatetime.dispatchEvent(new Event("input", { bubbles: true }));
+  });
   document.getElementById("upgrade-product-select")?.addEventListener("change", renderUpgradeProductOptions);
   document.getElementById("upgrade-level-select")?.addEventListener("change", renderUpgradeMaterialPreview);
   document.getElementById("upgrade-quantity")?.addEventListener("input", renderUpgradeMaterialPreview);
